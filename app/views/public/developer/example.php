@@ -77,26 +77,28 @@ and views render the final output.
 </p>
 
 <hr>
-<h2>Posts Controller</h2>
+<h2>Example Controller</h2>
 
 <pre>
-<?= dev_code(APPROOT . '/controllers/posts.php'); ?>
+<?= dev_code(APPROOT . '/controllers/example.php'); ?>
 </pre>
 <hr>
 
-<h2>Posts Model</h2>
+<h2>Example Model</h2>
 
 <pre>
-<?= dev_code(APPROOT . '/models/posts_model.php'); ?>
+<?= dev_code(APPROOT . '/models/example_model.php'); ?>
 </pre>
 
 <hr>
 
-<h2>Posts View</h2>
+<h2>Example View</h2>
 
 <pre>
-<?= dev_code(APPROOT . '/views/public/posts/show.php'); ?>
+<?= dev_code(APPROOT . '/views/public/example/index.php'); ?>
 </pre>
+
+<p>You can see this Page in action at <a href="/example">Example</a></p>
 
 <?php
 $content = ob_get_clean();
