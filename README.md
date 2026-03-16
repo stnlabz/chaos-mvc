@@ -47,6 +47,82 @@ then the Chaos MVC may be the framework you are looking for.
 
 ---
 
+# Design Principles
+
+Chaos MVC follows a set of strict design principles intended to keep the framework stable, understandable, and maintainable over time.
+
+### Simplicity
+
+Chaos MVC avoids unnecessary abstraction.  
+The framework should remain small, readable, and easy to reason about.
+
+Complex systems often fail because they hide how things work.
+
+Chaos MVC does the opposite.
+
+---
+
+### Predictable Architecture
+
+Every request follows the same execution path:
+```bash
+Request
+→ Router
+→ Controller
+→ Model
+→ Database
+→ View
+→ Response
+```
+Developers should always know where data is coming from and where it is going.
+
+---
+
+### Code Traceability
+
+All architectural changes must be traceable.
+
+AI-generated code and developer modifications must include annotation markers so the origin of the code is always known.
+
+Example:
+
+```php
+/* [AI:GPT | YYYY-MM-DD HH:MM:SS UTC] */
+/* modified code */
+/* [End AI:GPT] */
+```
+This ensures full accountability in collaborative environments.
+
+### Discipline Over Convenience
+
+Chaos MVC enforces development discipline to prevent long-term code decay.
+
+This includes:
+
+ - Mandatory annotations for AI-generated code
+ - PSR-12 code formatting
+ - Proper DocBlock documentation
+ - Controlled modification of core files
+ - Strict code review expectations
+
+### Lowercase Convention
+
+Chaos MVC enforces lowercase naming conventions for:
+```bash
+files
+classes
+controllers
+modules
+```
+This rule exists to ensure filesystem consistency and predictable behavior across environments.
+
+### Transparent Development
+
+Chaos MVC does not hide system behavior behind framework magic.
+
+Instead, it exposes the architecture clearly so developers can understand exactly how the application works.
+---
+
 # Architecture
 
 Chaos MVC follows the traditional MVC pattern.
