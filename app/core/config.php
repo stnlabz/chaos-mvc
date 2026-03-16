@@ -3,6 +3,6 @@
  * path: /app/core/config.php
  */
 define('DB_HOST', 'localhost');
-define('DB_USER', 'microcms_loguser');
-define('DB_PASS', 'LsXJNW9S#');
-define('DB_NAME', 'microcms_mvc');
+define('DB_USER', 'usre_name');
+define('DB_PASS', 'password');
+define('DB_NAME', 'database');
