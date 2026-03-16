@@ -18,32 +18,6 @@ define('PUBROOT', $ROOT . '/public');
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 define('URLROOT', $scheme . '://' . $_SERVER['HTTP_HOST']);
 
-/* -------------------------------------------------
-   INSTALL CHECK
--------------------------------------------------- */
-
-$installLock = LOG_PATH . '/install.lock';
-
-if (!file_exists($installLock)) {
-
-    try {
-
-        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-        if ($mysqli->connect_errno) {
-            throw new Exception();
-        }
-
-    } catch (Exception $e) {
-
-        require_once APPROOT . '/controllers/install.php';
-        (new install())->index();
-        exit;
-
-    }
-
-}
-
 
 /**
  * Debug
@@ -51,13 +25,18 @@ if (!file_exists($installLock)) {
 $debug = true;
 
 if ($debug) {
-
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    ini_set('log_errors', 1);
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    ini_set('log_errors', '1');
     ini_set('error_log', LOG_PATH . '/site_errors');
     error_reporting(E_ALL);
 }
+
+
+/**
+ * Config
+ */
+require_once APPROOT . '/core/config.php';
 
 
 /**
@@ -69,7 +48,7 @@ spl_autoload_register(function ($class) {
         APPROOT . '/core/' . $class . '.php',
         APPROOT . '/controllers/' . $class . '.php',
         APPROOT . '/models/' . $class . '.php',
-        APPROOT . '/lib/' . $class . '.php'
+        APPROOT . '/lib/' . $class . '.php',
     ];
 
     foreach ($paths as $file) {
@@ -79,3 +58,24 @@ spl_autoload_register(function ($class) {
         }
     }
 });
+
+
+/* -------------------------------------------------
+   INSTALL CHECK
+-------------------------------------------------- */
+
+$installLock = LOG_PATH . '/install.lock';
+
+if (!file_exists($installLock)) {
+    try {
+        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+        if ($mysqli->connect_errno) {
+            throw new Exception('Database connection failed');
+        }
+    } catch (Exception $e) {
+        require_once APPROOT . '/controllers/install.php';
+        (new install())->index();
+        exit;
+    }
+}
