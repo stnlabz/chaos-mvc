@@ -10,6 +10,12 @@
       <p>
         <a class="btn btn-primary" href="/github" role="button">Get Started</a>
       </p>
+      <h2>Minimal Core Philosophy</h2>
+      <p>Chaos MVC intentionally maintains a very small footprint.</p>
+      <p>The framework provides only the essential components required to operate an MVC architecture.</p>
+      <p>Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.</p>
+      <p>This approach keeps the framework fast, understandable, and maintainable over time.</p>
+      <hr>
 
       <p>
         Chaos MVC is a lightweight PHP MVC framework built around discipline,

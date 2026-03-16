@@ -18,6 +18,32 @@ define('PUBROOT', $ROOT . '/public');
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 define('URLROOT', $scheme . '://' . $_SERVER['HTTP_HOST']);
 
+/* -------------------------------------------------
+   INSTALL CHECK
+-------------------------------------------------- */
+
+$installLock = LOG_PATH . '/install.lock';
+
+if (!file_exists($installLock)) {
+
+    try {
+
+        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+        if ($mysqli->connect_errno) {
+            throw new Exception();
+        }
+
+    } catch (Exception $e) {
+
+        require_once APPROOT . '/controllers/install.php';
+        (new install())->index();
+        exit;
+
+    }
+
+}
+
 
 /**
  * Debug
@@ -29,9 +55,7 @@ if ($debug) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     ini_set('log_errors', 1);
-
     ini_set('error_log', LOG_PATH . '/site_errors');
-
     error_reporting(E_ALL);
 }
 
