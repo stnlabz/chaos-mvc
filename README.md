@@ -20,6 +20,18 @@ Chaos MVC emphasizes:
 
 ---
 
+## Minimal Core Philosophy
+
+Chaos MVC intentionally maintains a very small core footprint.
+
+The framework provides only the essential components required to operate an MVC architecture.
+
+Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.
+
+This approach keeps the framework fast, understandable, and maintainable over time.
+
+---
+
 # Why Chaos MVC Exists
 
 Chaos MVC was created to solve a simple problem:

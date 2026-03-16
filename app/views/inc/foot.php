@@ -14,6 +14,7 @@
 
     <div style="flex: 1; text-align: right;">
         <a href="/" style="text-decoration: none; color: inherit; margin-left: 10px;">Home</a>
+        <a href="/posts" style="text-decoration: none; color: inherit; margin-left: 10px;">Updates</a>
         <a href="/legal/terms" style="text-decoration: none; color: inherit; margin-left: 10px;">Terms</a>
         <a href="/legal/privacy" style="text-decoration: none; color: inherit; margin-left: 10px;">Privacy</a>
         <a href="/security" style="text-decoration: none; color: inherit; margin-left: 10px; margin-right: 20px;">Security</a>
