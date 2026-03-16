@@ -59,3 +59,12 @@ CREATE TABLE `posts` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `comments` (
+  `id` int(11) NOT NULL,
+  `post_id` int(11) NOT NULL,
+  `author_name` varchar(100) NOT NULL,
+  `body` text NOT NULL,
+  `is_approved` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
