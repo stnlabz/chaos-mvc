@@ -16,7 +16,39 @@
       <p>Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.</p>
       <p>This approach keeps the framework fast, understandable, and maintainable over time.</p>
       <hr>
+  </div>
+  <div class="row">
 
+  <?php 
+  // Announcements
+  if(isset($data['featured_announcement']) && $data['featured_announcement'] !== false) : 
+      $post = $data['featured_announcement']; 
+  ?>
+
+    <section id="latest-announcement">
+
+      <div class="announcement-content">
+
+        <h3><?= htmlspecialchars($post['title']); ?></h3>
+
+        <p>
+          <?= nl2br(htmlspecialchars($post['body'])); ?>
+        </p>
+
+        <small>
+          Posted: <?= date('Y.m.d', strtotime($post['created_at'])); ?>
+        </small>
+
+      </div>
+
+    </section>
+
+  <?php endif; ?>
+
+  </div>
+
+</div>
+<div class="row">
       <p>
         Chaos MVC is a lightweight PHP MVC framework built around discipline,
         traceability, and architectural simplicity.
@@ -58,37 +90,6 @@
       </ul>
 
     </section>
-  </div>
-
-
-  <div class="row">
-
-  <?php 
-  // Announcements
-  if(isset($data['featured_announcement']) && $data['featured_announcement'] !== false) : 
-      $post = $data['featured_announcement']; 
-  ?>
-
-    <section id="latest-announcement">
-
-      <div class="announcement-content">
-
-        <h3><?= htmlspecialchars($post['title']); ?></h3>
-
-        <p>
-          <?= nl2br(htmlspecialchars($post['body'])); ?>
-        </p>
-
-        <small>
-          Posted: <?= date('Y.m.d', strtotime($post['created_at'])); ?>
-        </small>
-
-      </div>
-
-    </section>
-
-  <?php endif; ?>
-
   </div>
 
 </div>
