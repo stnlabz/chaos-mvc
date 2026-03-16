@@ -121,6 +121,7 @@ This rule exists to ensure filesystem consistency and predictable behavior acros
 Chaos MVC does not hide system behavior behind framework magic.
 
 Instead, it exposes the architecture clearly so developers can understand exactly how the application works.
+
 ---
 
 # Architecture
