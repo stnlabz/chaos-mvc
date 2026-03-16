@@ -1,4 +1,5 @@
 # Chaos MVC
+*A disciplined PHP framework built for clarity and control.*
 
 ![PHP](https://img.shields.io/badge/PHP-8%2B-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-MVC-darkgreen)
@@ -15,6 +16,34 @@ Chaos MVC emphasizes:
 - strict development practices  
 - transparent code flow  
 - minimal framework overhead  
+
+---
+
+# Why Chaos MVC Exists
+
+Chaos MVC was created to solve a simple problem:
+
+Modern PHP frameworks often grow into complex ecosystems that hide core application behavior behind layers of abstraction.
+
+Chaos MVC takes a different approach.
+
+It focuses on:
+
+- **Clarity** – Every request path should be understandable.
+- **Control** – Developers should know exactly what their system is doing.
+- **Traceability** – Code changes must be attributable and documented.
+- **Discipline** – Development rules exist to keep the framework stable long-term.
+
+Chaos MVC avoids unnecessary framework magic and instead provides a predictable environment where developers can build applications without fighting the framework itself.
+
+If you prefer:
+
+- clear architecture
+- simple routing
+- minimal dependencies
+- transparent execution flow
+
+then the Chaos MVC may be the framework you are looking for.
 
 ---
 
