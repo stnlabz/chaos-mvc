@@ -104,6 +104,7 @@ User authentication system providing:
 - Login
 - Signup
 - Logout
+- Forgotten Password
 - Password reset
 
 ---
