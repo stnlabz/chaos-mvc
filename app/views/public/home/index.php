@@ -6,6 +6,10 @@
     <section>
 
       <h1>Chaos MVC</h1>
+      <em>A disciplined PHP MVC framework built for clarity and control</em>.
+      <p>
+        <a class="btn btn-primary" href="/github" role="button">Get Started</a>
+      </p>
 
       <p>
         Chaos MVC is a lightweight PHP MVC framework built around discipline,

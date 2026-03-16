@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://www.chaos-mvc.org/sitemap.xml
+Sitemap: https://www.chaos-mvc.org/ror.xml
+Sitemap: https://www.chaos-mvc.org/llms.txt
