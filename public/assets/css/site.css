@@ -1,0 +1,230 @@
+/* --------------------------------------------------
+   Chaos MVC Base Styles
+   Lightweight Framework Styling
+-------------------------------------------------- */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #fafafa;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+
+/* --------------------------------------------------
+   Layout
+-------------------------------------------------- */
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+.row {
+    margin-bottom: 30px;
+}
+
+section {
+    width: 100%;
+}
+
+
+/* --------------------------------------------------
+   Typography
+-------------------------------------------------- */
+
+h1 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+}
+
+h2 {
+    margin-top: 30px;
+}
+
+h3 {
+    margin-top: 20px;
+}
+
+p {
+    margin: 10px 0;
+}
+
+small {
+    color: #666;
+}
+
+
+/* --------------------------------------------------
+   Links
+-------------------------------------------------- */
+
+a {
+    color: #4f46e5;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
+/* --------------------------------------------------
+   Navigation
+-------------------------------------------------- */
+
+nav {
+    background: #ffffff;
+    border-bottom: 1px solid #e4e4e4;
+}
+
+nav .nav-container {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    padding: 0;
+    margin: 0;
+}
+
+nav li {
+    display: inline-block;
+}
+
+nav a {
+    font-weight: 500;
+}
+
+
+/* --------------------------------------------------
+   Buttons
+-------------------------------------------------- */
+
+.button {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 6px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.button:hover {
+    background: #4338ca;
+}
+
+
+/* --------------------------------------------------
+   Announcements
+-------------------------------------------------- */
+
+#latest-announcement {
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 6px;
+}
+
+.announcement-content h3 {
+    margin-top: 0;
+}
+
+.announcement-content p {
+    margin: 12px 0;
+}
+
+
+/* --------------------------------------------------
+   Developer Documentation Layout
+-------------------------------------------------- */
+
+.developer-docs {
+    display: flex;
+    gap: 40px;
+}
+
+.developer-nav {
+    width: 220px;
+    border-right: 1px solid #e5e5e5;
+    padding-right: 20px;
+}
+
+.developer-nav h3 {
+    margin-top: 0;
+}
+
+.developer-nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.developer-nav li {
+    margin-bottom: 10px;
+}
+
+.developer-nav a {
+    font-size: 0.95rem;
+}
+
+.developer-nav li.active a {
+    font-weight: bold;
+}
+
+.developer-content {
+    flex: 1;
+}
+
+
+/* --------------------------------------------------
+   Code Blocks
+-------------------------------------------------- */
+
+pre {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+}
+
+
+/* --------------------------------------------------
+   Lists
+-------------------------------------------------- */
+
+ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+li {
+    margin-bottom: 5px;
+}
+
+
+/* --------------------------------------------------
+   Footer
+-------------------------------------------------- */
+
+footer {
+    border-top: 1px solid #e5e5e5;
+    padding: 20px;
+    margin-top: 40px;
+    font-size: 0.9rem;
+    color: #777;
+}

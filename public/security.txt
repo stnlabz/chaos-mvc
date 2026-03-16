@@ -1,0 +1,7 @@
+# Chaos-MVC policies
+contact: mailto:security@chaos-mvc.org
+encryption: https://chaos-mvc.org/pgp_key
+canonical: https://chaos-mvc.org/.well-known/security.txt
+policy: https://chaos-mvc.org/security
+hiring: https://chaos-mvc.org/jobs
+expires: 2030-01-01t00:00:00.000z
