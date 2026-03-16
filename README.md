@@ -336,6 +336,60 @@ while still providing the tools necessary to build modern applications.
 
 ---
 
+---
+
+# Contributing
+
+Chaos MVC welcomes contributions from developers who respect the architectural discipline of the project.
+
+Because this framework prioritizes stability and traceability, contributions must follow the established development rules.
+
+### Requirements
+
+All contributions must follow the Chaos MVC development standards:
+
+- PSR-12 compliant code formatting
+- Proper DocBlock documentation
+- Lowercase file and class naming
+- No modification of core files without approval
+- AI generated code must include annotation markers
+- All core changes must be reviewed before merge
+
+***Example annotation format***:
+
+```php
+/* [AI:MODEL_NAME | YYYY-MM-DD HH:MM:SS UTC] */
+/* modified code */
+/* [End AI:MODEL_NAME] */
+```
+### Core File Protection
+
+Files located in:
+ - `/app/core`
+ - `/app/controllers`
+ - `/app/models`
+ - `/app/views/admin`
+ - `/app/views/auth`
+
+are considered protected infrastructure.
+
+Changes to these files require explicit approval through repository commits and code review.
+
+### Development Workflow
+
+***Typical contribution workflow***:
+
+1. fork repository
+2. create feature branch
+3. commit annotated code
+4. submit pull request
+5. maintainer review
+6. merge
+
+### Code of Conduct
+
+Chaos MVC expects contributors to maintain professional communication and respect project structure and development standards.
+
 # License
 
 To be determined.
