@@ -4,7 +4,6 @@
 
   <div class="row">
     <section>
-
       <h1>Chaos MVC</h1>
       <em>A disciplined PHP MVC framework built for clarity and control</em>.
       <p>
@@ -15,10 +14,11 @@
       <p>The framework provides only the essential components required to operate an MVC architecture.</p>
       <p>Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.</p>
       <p>This approach keeps the framework fast, understandable, and maintainable over time.</p>
+    </section>
       <hr>
   </div>
+  
   <div class="row">
-
   <?php 
   // Announcements
   if(isset($data['featured_announcement']) && $data['featured_announcement'] !== false) : 
@@ -47,7 +47,6 @@
 
   </div>
 
-</div>
 <div class="row">
       <p>
         Chaos MVC is a lightweight PHP MVC framework built around discipline,
@@ -88,10 +87,6 @@
         <li><a href="/developer/example">Example Module</a></li>
         <li><a href="/developer/rules">Development Rules</a></li>
       </ul>
-
-    </section>
-  </div>
-
 </div>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>

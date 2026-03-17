@@ -124,10 +124,12 @@ class render_md
     $html = preg_replace(
         '/\[([^\]]+)\]\(([^)]+)\)/', 
         '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>', 
-        $html
-    );
+        $html);
+        
+    // 13 Hard Rule -- ** = <hr>
+    $html = preg_replace('/^(?:---|\*\*\*|___)\s*$/m', '<hr>', $html);
 
-    // 13) Newlines outside <pre>
+    // 14) Newlines outside <pre>
     $parts = preg_split('/(<pre><code.*?<\/code><\/pre>)/s', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
     if ($parts === false) return nl2br($html);
 

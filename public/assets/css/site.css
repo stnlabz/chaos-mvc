@@ -68,7 +68,7 @@ small {
 -------------------------------------------------- */
 
 a {
-    color: #4f46e5;
+    color: #000;
     text-decoration: none;
 }
 
@@ -100,6 +100,7 @@ nav ul {
     gap: 20px;
     padding: 0;
     margin: 0;
+    float: right;
 }
 
 nav li {

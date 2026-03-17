@@ -15,7 +15,7 @@ define('DB_USER', 'username');
 define('DB_PASS', 'password');
 define('DB_NAME', 'database');
 ```
- - Import the database schema `install.sql` via `phpmyadmin`
+ - Import the database schema `/app/install/schema.sql` via `phpmyadmin` or `MySQL` shell.
  - Setup first user with `password_hash()` password_hash & set `user_level` to 9
  - Log in
 ";

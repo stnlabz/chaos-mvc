@@ -72,7 +72,7 @@ and views render the final output presented to the user.
 <h2>System Status</h2>
 
 <ul>
-    <li><b>MVC Version</b>: v1.1.5</li>
+    <li><b>MVC Version</b>: v1.1.6</li>
     <li><b>Router Status</b>: Locked</li>
     <li><b>Core Protection</b>: Active</li>
     <li><b>Annotation Policy</b>: Enforced</li>
