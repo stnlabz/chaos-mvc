@@ -19,7 +19,11 @@ Chaos MVC emphasizes:
 - clean architecture  
 - strict development practices  
 - transparent code flow  
-- minimal framework overhead  
+- minimal framework overhead
+
+## Become Chaos Certified
+Become a Chaos Certified Developer via our **Developers Portal** and 3 Levels of **Certification**
+[Chaos Certified](https://www.chaos-mvc.org/certification)
 
 ---
 
