@@ -43,7 +43,10 @@ class render_md
         },
         $html
     );
-
+    /*
+     * [Human: Mei 2026-03-16 21:16:00 UTC]
+     * Adding Horizontal Rule --- or *** -> <hr>
+    */
     // 3) Horizontal Rule
     $html = preg_replace('/^(?:---|\*\*\*)$/m', '<hr>', $html);
 
