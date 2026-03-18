@@ -94,8 +94,16 @@ $this->view('public/example/index', $data);
 <?= dev_code(APPROOT . '/views/public/home/example_index.php'); ?>
 </pre>
 <hr>
+
+<h2>Java Script</h2>
+<code>public/assets/js/site.js</code>
+<p>A front-end developer should be well rounded, including some knowledge in <code>JavaScript</code>.</p>
+<pre>
+<?= dev_code(PUBROOT . '/assets/js/site.js'); ?>
+</pre>
+</p>
 <p>
-Learning to theme your site is one of the most important aspects of development cause without it, your site will fail.
+Learning to theme your site is one of the most important aspects of development cause without it, your site will not last more than 5 seconds for the average person cruising the web.
 </p>
 
 <?php
