@@ -27,6 +27,10 @@ $current = $_SERVER['REQUEST_URI'] ?? '';
 <a href="/developer/markdown">Markdown Renderer</a>
 </li>
 
+<li class="<?= (strpos($current, '/developer/theme') !== false) ? 'active' : '' ?>">
+<a href="/developer/theme">The View</a>
+</li>
+
 <li class="<?= (strpos($current, '/developer/rules') !== false) ? 'active' : '' ?>">
 <a href="/developer/rules">Development Rules</a>
 </li>

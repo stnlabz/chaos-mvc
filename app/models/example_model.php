@@ -12,7 +12,7 @@ class example_model extends model
         // Run the query
         $sql = "SELECT message FROM example LIMIT 1";
         
-        // Get the reult
+        // Get the result
         $result = $this->fetch($sql);
         
         // return the result or a default message
@@ -20,6 +20,6 @@ class example_model extends model
         if(!$result) {
             return 'ERROR: Result was empty';
         }
-        return $result['message'] ?? 'Hello from Chaos MVC Example Module';
+        return $result['message'] ?? 'Hello from the Chaos MVC Example Module';
     }
 }

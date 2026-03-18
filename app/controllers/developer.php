@@ -55,6 +55,15 @@ class developer extends controller
 
         $this->view('public/developer/markdown', $data);
     }
+    
+    public function theme()
+    {
+        $data = [
+            'title' => 'MVC View'
+        ];
+
+        $this->view('public/developer/theme', $data);
+    }
 
     public function rules()
     {
