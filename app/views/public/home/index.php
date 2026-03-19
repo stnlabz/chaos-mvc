@@ -1,7 +1,8 @@
-<?php require APPROOT . '/views/inc/head.php'; ?>
+<?php require APPROOT . '/views/inc/head.php'; 
+require APPROOT . '/lib/render_md.php';
+?>
 
 <div class="container">
-
   <div class="row">
     <section>
       <h1>Chaos MVC</h1>
@@ -9,16 +10,11 @@
       <p>
         <a class="btn btn-primary" href="/github" role="button">Get Started</a>
       </p>
-      <h2>Minimal Core Philosophy</h2>
-      <p>Chaos MVC intentionally maintains a very small footprint.</p>
-      <p>The framework provides only the essential components required to operate an MVC architecture.</p>
-      <p>Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.</p>
-      <p>This approach keeps the framework fast, understandable, and maintainable over time.</p>
     </section>
-      <hr>
   </div>
-  
-  <div class="row">
+  <hr>
+   <div class="row">
+   <h2>Announcements</h2>
   <?php 
   // Announcements
   if(isset($data['featured_announcement']) && $data['featured_announcement'] !== false) : 
@@ -45,6 +41,50 @@
 
   <?php endif; ?>
 
+  </div>
+  <hr>
+  <div class="row mt-5">
+    <h3>Built with Chaos MVC</h3>
+    <p class="text-muted">
+        Real-world systems running on Chaos. No theory — active deployments.
+    </p>
+
+    <ul>
+        <li><a href="https://indiciainstitute.org" target="_blank">Indicia Institute</a></li>
+        <li><a href="https://poemei.com" target="_blank">Poe Mei</a></li>
+        <li>Chaos MVC (This site)</li>
+    </ul>
+
+    <p>
+        <a href="/usage_sites">View all usage sites →</a>
+    </p>
+    <p align="center">Got the Chaos MVC installed? <strong>Link to us?</strong>
+    <?php
+    $text = "
+    ```bash
+    Built with <a href=\"https://www.chaos-mvc.org\" target=\"_blank\">Chaos MVC</a>
+    ```
+    ";
+    ?>
+    <pre>
+    <?php
+    $render = new render_md();
+    echo $render->markdown($text);
+    ?>
+    </pre>
+    <small>A site submit will be available soon...</small>
+    </p>
+</div>
+<hr>
+  <div class="row">
+    <section>
+      <h2>Minimal Core Philosophy</h2>
+      <p>Chaos MVC intentionally maintains a very small footprint.</p>
+      <p>The framework provides only the essential components required to operate an MVC architecture.</p>
+      <p>Developers are encouraged to extend their applications through modules or project-specific code rather than expanding the core framework itself.</p>
+      <p>This approach keeps the framework fast, understandable, and maintainable over time.</p>
+    </section>
+      <hr>
   </div>
 
 <div class="row">
@@ -85,6 +125,7 @@
         <li><a href="/developer">Developer Portal</a></li>
         <li><a href="/developer/flow">MVC Architecture</a></li>
         <li><a href="/developer/example">Example Module</a></li>
+        <li><a href="/developer/theme">View Development</a></li>
         <li><a href="/developer/rules">Development Rules</a></li>
       </ul>
 </div>

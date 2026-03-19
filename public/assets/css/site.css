@@ -111,6 +111,46 @@ nav a {
     font-weight: 500;
 }
 
+/* -------------------------------------------------
+   DROP DOWN
+-------------------------------------------------- */
+/* Container for the dropdown */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* The actual dropdown menu (Hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  /*background-color: #1a1a1a; /* Match your theme color */
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1000;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Individual links inside the dropdown */
+.dropdown-content li a {
+  padding: 12px 16px;
+  display: block;
+  text-decoration: none;
+  color: #000;
+}
+
+/* Show the menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Highlight items on hover */
+.dropdown-content li a:hover {
+  text-decoration: underline;
+}
+
 
 /* --------------------------------------------------
    Buttons
@@ -228,4 +268,23 @@ footer {
     margin-top: 40px;
     font-size: 0.9rem;
     color: #777;
+}
+
+/* SIMPLE TRUTH PROGRESS BARS */
+
+.progress-simple {
+    width: 100%;
+    height: 26px;
+    background: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar-simple {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    border-radius: 6px;
 }

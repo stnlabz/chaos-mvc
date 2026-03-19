@@ -12,6 +12,11 @@
 
 <h2>The Certification Process</h2>
 <p>To become certified, you must follow the steps provided below.</p>
+<p>
+All certification standards, examples, and required structure are defined within the Developers Portal.<br>
+If your work does not align with those standards, it will not be accepted.<br>
+Refer to the <a href="/developer">Developers Portal</a> before beginning any certification work.
+</p>
 <p>It is recommended that each potential candidate, install the <b>Chaos MVC</b> and build on their domain as their sandbox as we will <b>NOT</b> provide a sandbox environment for anyone.</p>
 <h3>Levels of Certification</h3>
 <p>
@@ -29,10 +34,18 @@
 <hr>
 
 <h3>The Requirement</h3>
-<em>That's written in stone.</em>
-<p>Every module is cryptographically bound to a developer's GPG Key and a static IP address. If any deviation gets detected, the key and IP are permanently revoked by Sentinel.</p>
+<p>These standards are non-negotiable and enforced across the Chaos MVC ecosystem.</p>
+<p>Every module is cryptographically bound to a developer's GPG Key.</p>
 
-<p>Refer to the <strong><a href="/developer">Developers Portal</b></strong> to view the <b>Example Module</b>. If your code does not mirror that DNA, it will be rejected without appeal.</p>
+<p>Refer to the <strong><a href="/developer">Developers Portal</a></strong> to view the <b>Example Module</b>. Submissions that do not meet these standards will be rejected. Candidates are expected to revise and resubmit in alignment with the framework's structure.</p>
 <p align="center">The Symbol of Choas Excellence<br><img alt="Chaos Certified Program" src="/assets/img/chaos_certified.png" height="300" width="300"></p>
+
+<h3>Marketplace Access</h3>
+<p>The Chaos MVC marketplace will only accept themes, modules, and extensions developed by certified Chaos developers.</p>
+<p>Certification is required to distribute within the ecosystem.</p>
+
+<h3>Why This Exists</h3>
+<p>This standard ensures that all distributed components follow the architecture, maintain quality, and remain compatible across the system.</p>
+<p>No un certified code will be accepted.</p>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>

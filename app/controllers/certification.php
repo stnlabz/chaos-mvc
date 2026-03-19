@@ -13,7 +13,7 @@ class certification extends controller {
             'version_standard' => '1.1.6',
             'requirements' => [
                 'Lowercase convention for all files/classes',
-                'PGP Signature verified against registered Key/IP',
+                'PGP Signature verified',
                 'Zero-Bloat and No-Magic architectural compliance',
                 'Full documentation and AI-model attribution',
                 'Intrinsic understanding of the MVC Flow from Controller->Model->Database->Controller->View',
