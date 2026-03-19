@@ -58,21 +58,20 @@ require APPROOT . '/lib/render_md.php';
     <p>
         <a href="/usage_sites">View all usage sites →</a>
     </p>
-    <p align="center">Got the Chaos MVC installed? <strong>Link to us?</strong>
+    <p align="center">Got the Chaos MVC installed? <strong>Link back</strong></p>
+    <h3>HTML</h3>
+    <p>
     <?php
     $text = "
-    ```bash
-    Built with <a href=\"https://www.chaos-mvc.org\" target=\"_blank\">Chaos MVC</a>
-    ```
+    `Built with <a href=\"https://www.chaos-mvc.org\" target=\"_blank\" rel=\"noopener\">Chaos MVC</a>`
     ";
-    ?>
-    <pre>
-    <?php
     $render = new render_md();
     echo $render->markdown($text);
     ?>
-    </pre>
-    <small>A site submit will be available soon...</small>
+    </p>
+    <h3>Markdown</h3>
+     <p><code>[Built with Chaos MVC](https://www.chaos-mvc.org)</code></p>
+    <p><small>A site submit will be available soon...</small>
     </p>
 </div>
 <hr>
