@@ -1,5 +1,15 @@
 [
     {
+        "name": "Ars Rosaic",
+        "url": "https://arsrosaic.org",
+        "description": "Structured content system demonstrating MVC data flow and modular design.",
+        "highlights": [
+            "Database-driven content",
+            "Modular structure system",
+            "Strict MVC separation"
+        ]
+    },
+    {
         "name": "Indicia Institute",
         "url": "https://indicia-institute.org",
         "description": "Structured content system demonstrating MVC data flow and modular design.",

@@ -1,62 +1,89 @@
 <?php
 // path: /app/core/controller.php
+
 class controller {
 
     protected $render_md;
-    protected $trash_filter; // Patch: Explicitly declare property
+    protected $trash_filter;
 
-    public function __construct() {
+    /**
+     * Core Modules (System Protected)
+     */
+    protected const CORE_MODULES = [
+        'traffic',
+        'posts',
+        'media',
+        'accounts',
+        'health',
+        'modules'
+    ];
+
+    /**
+     * Check if module is core
+     */
+    protected function isCore(string $module): bool
+    {
+        return in_array($module, self::CORE_MODULES, true);
+    }
+
+    public function __construct() 
+    {
         $this->render_md = new render_md();
-        
-        // Load the filter library
+
+        // Load optional filter
         if (file_exists(APPROOT . '/lib/trash_filter.php')) {
             require_once APPROOT . '/lib/trash_filter.php';
             $this->trash_filter = new trash_filter();
         }
     }
-    
-    /* * [Gemini] 
- * [2026-03-14 16:15:00 PDT]
- * Fix: Array to string conversion in view error reporting.
- */
-public function view($view, $data = []) {
-    // If the router passed an array, extract the first element as the view name
-    if (is_array($view)) {
-        $view = reset($view);
-    }
 
-    $file = APPROOT . '/views/' . $view . '.php';
-    if (file_exists($file)) {
-        $render_md = $this->render_md;
-        extract($data);
-        require_once $file;
-    } else {
-        // Now $view is guaranteed to be a string, preventing the warning
-        $this->error_page("View '$view' is currently broken.");
-    }
-}
     /**
-    public function view($view, $data = []) {
+     * Render View
+     */
+    public function view($view, $data = []) 
+    {
+        // Router safety (array → string)
+        if (is_array($view)) {
+            $view = reset($view);
+        }
+
         $file = APPROOT . '/views/' . $view . '.php';
+
         if (file_exists($file)) {
             $render_md = $this->render_md;
-            extract($data);
+
+            if (is_array($data)) {
+                extract($data);
+            }
+
             require_once $file;
-        } else {
-            $this->error_page("View '$view' is currently broken.");
+            return;
         }
-    }
-    */
-    public function model($model) {
-        if (file_exists(APPROOT . '/models/' . $model . '.php')) {
-            require_once APPROOT . '/models/' . $model . '.php';
-            return new $model();
-        }
-        die("Model $model not found.");
+
+        $this->error_page("View '{$view}' is currently broken.");
     }
 
-    public function error_page($message) {
-        $data['message'] = $message;
+    /**
+     * Load Model
+     */
+    public function model($model) 
+    {
+        $file = APPROOT . '/models/' . $model . '.php';
+
+        if (file_exists($file)) {
+            require_once $file;
+            return new $model();
+        }
+
+        die("Model {$model} not found.");
+    }
+
+    /**
+     * Error Page
+     */
+    public function error_page($message) 
+    {
+        $data = ['message' => $message];
         $this->view('errors/error_page', $data);
         exit;
     }

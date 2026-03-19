@@ -79,3 +79,19 @@ if (!file_exists($installLock)) {
         exit;
     }
 }
+
+/**
+ * Sentinel
+ * For Chaos MVC Only
+*/
+$sentinel_inspect = new sentinel();
+$sentinel_inspect->inspect();
+
+/**
+ * Traffic
+ * Comes with the Chaos MVC.
+ * Tracks traffic to your domain
+*/
+$trafficEngine = new traffic();
+$trafficEngine->collect();
+

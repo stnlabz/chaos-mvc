@@ -1,2 +1,3 @@
 <?php
-1.1.6
+
+define('CHAOS_VERSION', '1.8.1');
