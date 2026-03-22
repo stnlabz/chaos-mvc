@@ -32,7 +32,7 @@
             <div class="card h-100 border">
                 <div class="card-body d-flex flex-column">
 
-                    <h5 class="fw-bold"><?= htmlspecialchars($module['slug']); ?></h5>
+                    <h5 class="fw-bold"><?= ucfirst(htmlspecialchars($module['slug'])); ?></h5>
                     <p class="small text-muted">Core Module</p>
 
                     <p><small>Version: <strong><?= $systemVersion; ?></strong></small></p>
@@ -63,14 +63,23 @@
 
             $configPath = APPROOT . '/data/modules/' . $module['slug'] . '.json';
             $version = '0.0.0';
+            $desc = '';
+            $author = '';
+            $domain = '';
+            $certified = '';
             $hasUpdate = false;
 
             if (file_exists($configPath)) {
                 $config = json_decode(file_get_contents($configPath), true);
                 $version = $config['version'] ?? '0.0.0';
+                $desc = $config['description'];
+                $author = $config['creator'];
+                $domain = $config['domain'] ?? '';
+                $certified = $config['certified'] ?? '';
 
                 if (!empty($config['update_url'])) {
-                    $remote = @file_get_contents($config['update_url']);
+                    //$remote = @file_get_contents($config['update_url']);
+                    $remote = @file_get_contents($config['update_url'] . '?t=' . time());
                     if ($remote) {
                         $remote = json_decode($remote, true);
                         $remoteVersion = $remote['version'] ?? $version;
@@ -87,10 +96,22 @@
             <div class="card h-100 border">
                 <div class="card-body d-flex flex-column">
 
-                    <h5 class="fw-bold"><?= htmlspecialchars($module['slug']); ?></h5>
-                    <p class="small text-muted">Addon Module</p>
+                    <h5 class="fw-bold"><?= ucfirst(htmlspecialchars($module['slug'])); ?></h5>
 
                     <p><small>Version: <strong><?= $version; ?></strong></small></p>
+                    <p><small><strong>Description</strong>: <?= $desc; ?></small></p>
+                    <p><small><strong>Author</strong>: <?= $author; ?></small></p>
+                    <p><small><strong>Domain</strong>: <a href="https://<?= $domain; ?>"><?= $domain; ?></a></small></p>
+                    <p><small>
+                    <?php
+                    if($certified == '') {
+                         $certified = 'No';
+                    }
+                    $certified = 'Yes';
+                    ?>
+                    <strong>Certified</strong>: <?= $certified; ?>
+                    </small>
+                    </p>
 
                     <div class="mt-auto">
 
