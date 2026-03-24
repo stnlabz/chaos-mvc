@@ -13,7 +13,7 @@ class llms extends controller {
         $pages = $this->model('modules_model')->get_all();
         $host = "https://" . $_SERVER['HTTP_HOST'];
 
-        $excluded = ['admin.php', 'auth.php', 'health.php', 'sentinel.php', 'modules.php', 'ror.php', 'llms.php', 'sitemap.php', 'error_handler.php', 'media.php', 'accounts.php'];
+        $excluded = ['admin.php', 'auth.php', 'health.php', 'sentinel.php', 'modules.php', 'ror.php', 'llms.php', 'sitemap.php', 'error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
         /* [Human:Mei | 2026-03-11 02:20:00 UTC] */
         //$controllers = array_diff(scandir(APPROOT . '/controllers'), array_merge(['.', '..'], $excluded));
         /* Force lowercase */

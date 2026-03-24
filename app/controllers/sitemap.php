@@ -20,7 +20,7 @@ class sitemap extends controller
         $pages = $this->model('modules_model')->get_all();
         $host = "https://" . $_SERVER['HTTP_HOST'];
 
-        $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php'];
+        $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
 
         /* Force lowercase */
         $files = array_map('strtolower', scandir(APPROOT . '/controllers'));
