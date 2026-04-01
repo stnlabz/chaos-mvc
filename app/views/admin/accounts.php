@@ -15,6 +15,7 @@
 <th>ID</th>
 <th>Username</th>
 <th>Name</th>
+<th>Email</th>
 <th>Level</th>
 <th>Password</th>
 <th>Delete</th>
@@ -31,13 +32,23 @@
 
 <td><?php echo htmlspecialchars($a['username']); ?></td>
 
+
 <td><?php echo htmlspecialchars($a['display_name']); ?></td>
 
-<td><?php echo $a['user_level']; ?></td>
+<td><!--<?php echo htmlspecialchars($a['email_address']); ?>-->
+
+<form method="POST" action="<?php echo URLROOT; ?>/accounts/email/<?php echo $a['id']; ?>">
+<input type="email" name="email_address" placeholder="<?= htmlspecialchars($a['email_address'])?>" required>
+<button type="submit">change</button>
+</form>
+
+</td>
+
+<td><?php echo $a['user_level']; ?> - <?php echo $a['role']; ?></td>
 
 <td>
 
-<form method="POST" action="<?php echo URLROOT; ?>/admin_accounts/password/<?php echo $a['id']; ?>">
+<form method="POST" action="<?php echo URLROOT; ?>/accounts/password/<?php echo $a['id']; ?>">
 <input type="password" name="password" placeholder="new password" required>
 <button type="submit">change</button>
 </form>
@@ -68,7 +79,7 @@
 
 <h3>Create Account</h3>
 
-<form method="POST" action="<?php echo URLROOT; ?>/admin/accounts/create">
+<form method="POST" action="<?php echo URLROOT; ?>/accounts/create">
 
 <div class="mb-2">
 <label>Username</label>
@@ -81,13 +92,24 @@
 </div>
 
 <div class="mb-2">
+<label>Email</label>
+<input type="email" name="email_address" class="form-control" required>
+</div>
+
+<div class="mb-2">
 <label>Name</label>
 <input type="text" name="display_name" class="form-control">
 </div>
 
 <div class="mb-3">
 <label>User Level</label>
+<select name="user_level" class="form-control">
+<option value="1">1 - User</option>
+<option value="9">9 - Admin</option>
+</select>
+<!--
 <input type="number" name="user_level" class="form-control" value="1">
+-->
 </div>
 
 <button type="submit" class="btn btn-primary">Create Account</button>

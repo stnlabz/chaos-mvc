@@ -1,51 +1,51 @@
 <?php
 
+/**
+ * Accounts Controller
+ *
+ * Handles all account-related admin operations.
+ */
 class accounts extends controller
 {
-    // Designation as a Core Module prevents deletion from the site/DB
+    /**
+     * Core module protection flag
+     *
+     * @var bool
+     */
     public static $is_core = true;
-    
+
+    /**
+     * Display all accounts
+     *
+     * @return void
+     */
     public function index()
     {
         $model = $this->model('accounts_model');
 
-        $data['accounts'] = $model->get_all();
+        $data = [
+            'accounts' => $model->get_all()
+        ];
 
         $this->view('admin/accounts', $data);
     }
-    
+
     /**
      * Admin entry point
-     * Required so the admin index can see the module
+     *
+     * @return void
      */
     public function admin()
     {
         $this->index();
     }
 
-    
+    /**
+     * Create a new account
+     *
+     * @return void
+     */
     public function create()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . URLROOT . '/admin_accounts');
-            exit;
-        }
-
-        $model = $this->model('accounts_model');
-
-        $model->create([
-            'username'     => trim($_POST['username']),
-            'password'     => $_POST['password'],
-            'display_name' => trim($_POST['display_name']),
-            'user_level'   => (int)$_POST['user_level'],
-            'is_active'    => isset($_POST['is_active']) ? 1 : 0
-        ]);
-
-        header('Location: ' . URLROOT . '/admin/accounts');
-        exit;
-    }
-
-    public function update($id)
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . URLROOT . '/admin/accounts');
@@ -54,31 +54,89 @@ class accounts extends controller
 
         $model = $this->model('accounts_model');
 
-        $model->update(
-    'accounts',
-    [
-        'username' => trim($_POST['username']),
-        'display_name' => trim($_POST['display_name']),
-        'user_level' => (int)$_POST['user_level'],
-        'is_active' => isset($_POST['is_active']) ? 1 : 0
-    ],
-    'id = :id',
-    ['id' => $id]
-);
+        $data = [
+            'username'      => trim($_POST['username'] ?? ''),
+            'password'      => $_POST['password'] ?? '',
+            'display_name'  => trim($_POST['display_name'] ?? ''),
+            'email_address' => trim($_POST['email_address'] ?? ''),
+            'user_level'    => (int)($_POST['user_level'] ?? 1)
+        ];
 
-        if (!empty($_POST['password'])) {
-            $model->change_password($id, $_POST['password']);
+        if (
+            empty($data['username']) ||
+            empty($data['password']) ||
+            empty($data['email_address'])
+        ) {
+            $_SESSION['msg'] = 'Missing required fields';
+            $_SESSION['msg_type'] = 'danger';
+
+            header('Location: ' . URLROOT . '/admin/accounts');
+            exit;
         }
+
+        $result = $model->create($data);
+
+        $_SESSION['msg'] = $result
+            ? 'Account created successfully'
+            : 'Account creation failed';
+
+        $_SESSION['msg_type'] = $result ? 'success' : 'danger';
 
         header('Location: ' . URLROOT . '/admin/accounts');
         exit;
     }
 
+    /**
+     * Delete an account
+     *
+     * @param int $id
+     * @return void
+     */
     public function delete($id)
     {
         $model = $this->model('accounts_model');
 
-        $model->delete($id);
+        $model->delete((int)$id);
+
+        header('Location: ' . URLROOT . '/admin/accounts');
+        exit;
+    }
+
+    /**
+     * Update account email address
+     *
+     * @param array|int $params
+     * @return void
+     */
+    public function email($params = [])
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . URLROOT . '/admin/accounts');
+            exit;
+        }
+
+        $id = is_array($params) ? ($params[0] ?? null) : $params;
+
+        if (!$id || empty($_POST['email_address'])) {
+            $_SESSION['msg'] = 'Invalid email update request';
+            $_SESSION['msg_type'] = 'danger';
+
+            header('Location: ' . URLROOT . '/admin/accounts');
+            exit;
+        }
+
+        $model = $this->model('accounts_model');
+
+        $result = $model->update_email(
+            (int)$id,
+            trim($_POST['email_address'])
+        );
+
+        $_SESSION['msg'] = $result
+            ? 'Email updated successfully'
+            : 'Email update failed';
+
+        $_SESSION['msg_type'] = $result ? 'success' : 'danger';
 
         header('Location: ' . URLROOT . '/admin/accounts');
         exit;
