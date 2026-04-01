@@ -4,7 +4,7 @@
     <?php if(isset($data['error'])): ?>
         <div class="alert alert-danger"><?= $data['error'] ?></div>
     <?php endif; ?>
-    <form action="/auth/signup" method="POST">
+    <form action="/auth/register" method="POST">
         <div class="form-group">
             <label>Username</label>
             <input type="text" name="username" class="form-control" required>
