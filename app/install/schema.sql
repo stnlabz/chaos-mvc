@@ -1,4 +1,8 @@
-/* [AI:GPT-5.6 Sol | 2026-08-25 02:19:00 UTC] */
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
+
+--
+-- Table structure for table `accounts`
+--
 
 CREATE TABLE `accounts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -80,5 +84,38 @@ CREATE TABLE `comments` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `traffic`
+--
+
+CREATE TABLE `traffic` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `host` varchar(190) NOT NULL,
+  `uri` varchar(500) NOT NULL,
+  `method` varchar(10) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `referer` varchar(255) DEFAULT NULL,
+  `user_id` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT utc_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /* [End AI:GPT-5.6 Sol] */
