@@ -16,8 +16,15 @@ define('PUBROOT', $ROOT . '/public');
 
 /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 // Core maintenance is enforced before configuration, database, or routing loads.
-require_once APPROOT . '/core/core_maintenance.php';
-(new core_maintenance($ROOT . '/.chaos-update'))->enforceWebRequest($_SESSION ?? []);
+$coreMaintenancePath = APPROOT . '/core/core_maintenance.php';
+
+if (is_file($coreMaintenancePath)) {
+    require_once $coreMaintenancePath;
+}
+
+if (class_exists('core_maintenance', false)) {
+    (new core_maintenance($ROOT . '/.chaos-update'))->enforceWebRequest($_SESSION ?? []);
+}
 /* [End AI:GPT-5.6 Sol] */
 
 /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
