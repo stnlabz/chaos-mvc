@@ -4,7 +4,6 @@
 ![PHP](https://img.shields.io/badge/PHP-8%2B-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-MVC-darkgreen)
 ![Status](https://img.shields.io/badge/Status-Active%20Development-orange)
-![License](https://img.shields.io/badge/License-ChAoS-MVC-lightgrey)
 ![Sponsored](https://img.shields.io/badge/Sponsored-STN_Labz-blue)
 
 Chaos MVC is a lightweight PHP MVC framework focused on **discipline, traceability, and architectural simplicity**.
