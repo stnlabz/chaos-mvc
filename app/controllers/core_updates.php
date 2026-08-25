@@ -32,11 +32,27 @@ class core_updates extends controller
             return;
         }
 
+        if ($action === 'install') {
+            $this->install();
+            return;
+        }
+
+        if ($action === 'recover') {
+            $this->recover();
+            return;
+        }
+
         require_once APPROOT . '/core/version.php';
+        $root = dirname(APPROOT);
+        $backupManager = new core_backup_manager($root, $root . '/.chaos-update');
         $this->view('admin/core_updates', [
             'installed_version' => defined('CHAOS_VERSION') ? CHAOS_VERSION : '0.0.0',
             'result' => $_SESSION['core_update_result'] ?? null,
-            'offer' => $_SESSION['core_update_offer'] ?? null
+            'offer' => $_SESSION['core_update_offer'] ?? null,
+            'stage' => $_SESSION['core_update_stage'] ?? null,
+            'maintenance' => (new core_maintenance($root . '/.chaos-update'))->read(),
+            'lock' => (new core_update_lock($root . '/.chaos-update'))->read(),
+            'rollback' => $backupManager->retainedManifest()
         ]);
         unset($_SESSION['core_update_result']);
     }
@@ -97,9 +113,92 @@ class core_updates extends controller
         $_SESSION['core_update_result'] = $result;
 
         if (($result['outcome'] ?? null) === 'package_staged') {
+            $_SESSION['core_update_stage'] = [
+                'operation_id' => $result['operation_id'],
+                'target_version' => $result['target_version']
+            ];
             unset($_SESSION['core_update_offer']);
         }
 
+        header('Location: /admin/core_updates');
+        exit;
+    }
+
+    private function install(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            $this->error_page('POST required.');
+        }
+
+        $this->verify_csrf();
+        $stage = $_SESSION['core_update_stage'] ?? null;
+
+        if (!is_array($stage) || !is_string($stage['operation_id'] ?? null)) {
+            $_SESSION['core_update_result'] = [
+                'success' => false,
+                'outcome' => 'failed_unchanged',
+                'error_code' => 'core_stage_missing',
+                'message' => 'Validate a Core package before installation.'
+            ];
+            header('Location: /admin/core_updates');
+            exit;
+        }
+
+        try {
+            if (!extension_loaded('pdo_mysql')) {
+                throw new RuntimeException('The PHP PDO MySQL extension is required for Core installation.');
+            }
+
+            $database = new PDO(
+                'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+                DB_USER,
+                DB_PASS,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false
+                ]
+            );
+            $root = dirname(APPROOT);
+            $engine = new core_update_engine(
+                $root,
+                $root . '/.chaos-update',
+                new pdo_core_migration_database($database)
+            );
+            $result = $engine->install($stage['operation_id']);
+        } catch (Throwable $exception) {
+            $result = [
+                'success' => false,
+                'outcome' => 'failed_unchanged',
+                'phase' => 'preflight',
+                'error_code' => 'core_database_unavailable',
+                'message' => $exception->getMessage()
+            ];
+        }
+
+        $_SESSION['core_update_result'] = $result;
+
+        if (($result['outcome'] ?? null) === 'updated') {
+            unset($_SESSION['core_update_stage']);
+        }
+
+        header('Location: /admin/core_updates');
+        exit;
+    }
+
+    private function recover(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            $this->error_page('POST required.');
+        }
+
+        $this->verify_csrf();
+        $root = dirname(APPROOT);
+        $service = new core_recovery_service($root, $root . '/.chaos-update');
+        $_SESSION['core_update_result'] = $service->recover();
+        unset($_SESSION['core_update_stage'], $_SESSION['core_update_offer']);
         header('Location: /admin/core_updates');
         exit;
     }

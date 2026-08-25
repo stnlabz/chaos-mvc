@@ -11,6 +11,8 @@
 - Added CSRF protection and POST-only state changes.
 - Added isolated, signed Core update discovery and Core-only filesystem locks.
 - Added signed-manifest Core package staging and protected-path validation.
+- Added verified Core backups, hash-chained operation journals, and one-version rollback retention.
+- Added atomic Core installation, ordered migrations, mandatory health verification, maintenance mode, and administrator/CLI recovery.
 - Enforced administrator authorization on directly routed controllers.
 - Restricted media uploads by MIME type, size, and generated filename.
 - Added signed module metadata, package checksums, and safe ZIP extraction.
@@ -30,6 +32,7 @@
 
 - Defined the separate v1.1.9 Core Updater release-gate contract.
 - Added Core package checksum, archive-shape, staging, and preflight checks.
+- Added deterministic Core release/ownership manifests and signed release build tooling.
 - Validated SQL identifiers and simple helper conditions.
 - Added the existing-installation `1.1.9` migration.
 - Added dependency, signature, renderer, schema, and syntax regression checks.
