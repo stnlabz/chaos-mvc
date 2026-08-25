@@ -411,7 +411,7 @@ Changes to these files require explicit approval through repository commits and 
 Chaos MVC expects contributors to maintain professional communication and respect project structure and development standards.
 
 # documentation
-[/docs/CHANGELOG.md](CHANGELOG)
+[CHANGELOG](docs/CHANGELOG.md)
 
 # License
 
