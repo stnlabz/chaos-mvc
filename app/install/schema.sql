@@ -9,8 +9,24 @@ CREATE TABLE `accounts` (
   `user_level` int(11) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `display_name` varchar(150) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `accounts_username_unique` (`username`),
+  UNIQUE KEY `accounts_email_unique` (`email_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `token` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `password_resets_token_unique` (`token`),
+  KEY `password_resets_email_index` (`email`),
+  KEY `password_resets_expiry_index` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -24,7 +40,8 @@ CREATE TABLE `media` (
   `file_type` varchar(50) DEFAULT NULL,
   `file_path` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `modules_slug_unique` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -44,7 +61,8 @@ CREATE TABLE `modules` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_core` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `posts_slug_unique` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -78,7 +96,8 @@ CREATE TABLE `comments` (
   `body` text NOT NULL,
   `is_approved` tinyint(1) DEFAULT 0,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  PRIMARY KEY (`id`),
+  KEY `comments_post_approval_index` (`post_id`, `is_approved`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /* [End AI:GPT-5.6 Sol] */

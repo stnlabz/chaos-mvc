@@ -3,7 +3,7 @@
     <h2 style="margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px;">Website Access</h2>
     
     <?php if (isset($error)): ?>
-        <p style="color: #d32f2f; background: #fdecea; padding: 10px; border-radius: 4px;"><?= $error ?></p>
+        <p style="color: #d32f2f; background: #fdecea; padding: 10px; border-radius: 4px;"><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
     <?php if (isset($_GET['signup']) && $_GET['signup'] == 'success'): ?>
@@ -15,6 +15,7 @@
     <?php endif; ?>
 
     <form action="/auth/login" method="POST">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <div style="margin-bottom: 15px;">
             <label for="username" style="font-weight: bold;">Username:</label><br>
             <input type="text" name="username" id="username" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">

@@ -13,10 +13,10 @@
     <meta name="application-name" content="Your Sites Name">
 
     <!-- Site CSS -->
-    <link rel="stylesheet" href="<?= URLROOT ?>/assets/css/site.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/css/site.css">
     
     <!-- Site Icon -->
-    <link rel="icon" type="image/x-icon" href="<?= URLROOT ?>/assets/icons/icon.png">
+    <link rel="icon" type="image/x-icon" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/icons/icon.png">
 </head>
 <body>
 <div class="container">

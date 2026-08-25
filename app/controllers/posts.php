@@ -26,9 +26,6 @@ class posts extends controller {
 
     $comments = $model->get_comments_by_post($post['id']);
 
-    // render markdown
-    $post['body'] = $this->render_md->markdown($post['body']);
-
     $postUrl = URLROOT . "/posts/" . ($post['slug'] ?? $post['id']);
     
     $image = $post['image_path'] ?? '';
@@ -62,11 +59,7 @@ class posts extends controller {
 }
 
     public function admin($params = []) {
-        // GATED: Redirect to login if no session
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit;
-        }
+        $this->require_admin(7);
 
         $model = $this->model('posts_model');
         $action = $params[1] ?? null;
@@ -74,12 +67,19 @@ class posts extends controller {
 
         // Use the core model archive helper instead of hard delete
         if ($action === 'delete' && $id) {
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+                http_response_code(405);
+                $this->error_page('Post deletion requires POST.');
+            }
+
+            $this->verify_csrf();
             $model->archive('posts', "id = :id", ['id' => (int)$id]);
             header("Location: /admin/posts");
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
+            $this->verify_csrf();
             $payload = [
                 'title'             => $_POST['title'],
                 'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($_POST['title']))), '-'),
@@ -106,11 +106,19 @@ class posts extends controller {
     
     public function reply() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
+        $this->verify_csrf();
         $model = $this->model('posts_model');
+        $postId = (int) ($_POST['post_id'] ?? 0);
+        $body = trim((string) ($_POST['body'] ?? ''));
+        $post = $postId > 0 ? $model->get_by_id($postId) : false;
+
+        if (!$post || $body === '') {
+            $this->error_page('Invalid comment submission.');
+        }
 
         $payload = [
-            'post_id'     => (int)$_POST['post_id'],
-            'body'        => trim($_POST['body']),
+            'post_id'     => $postId,
+            'body'        => $body,
             'author_name' => $_SESSION['username'], // Matches your 'author_name' column
             'is_approved' => 1
         ];
@@ -123,8 +131,7 @@ class posts extends controller {
                 $mail->Subject = "New Comment";
                 $mail->Body = "Hey Poe, a new comment has been posted on something you posted.";
                 $mail->send();
-            $redirect = $_SERVER['HTTP_REFERER'] ?? '/';
-            header("Location: " . $redirect);
+            header('Location: /posts/' . rawurlencode((string) $post['slug']));
             exit;
         }
     }

@@ -18,6 +18,33 @@ class controller {
         'modules'
     ];
 
+    public function csrf_token(): string
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        return (string) $_SESSION['csrf_token'];
+    }
+
+    protected function verify_csrf(): void
+    {
+        $token = $_POST['csrf_token'] ?? '';
+
+        if (!is_string($token) || !hash_equals($this->csrf_token(), $token)) {
+            http_response_code(403);
+            $this->error_page('The request could not be verified. Please try again.');
+        }
+    }
+
+    protected function require_admin(int $level = 7): void
+    {
+        if ((int) ($_SESSION['user_level'] ?? 0) < $level) {
+            header('Location: /login');
+            exit;
+        }
+    }
+
     /**
      * Check if module is core
      */

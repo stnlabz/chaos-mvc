@@ -27,6 +27,12 @@ class router
     {
         $url = $this->parseUrl();
 
+        foreach ($url as $segment) {
+            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $segment)) {
+                (new error_handler())->not_found();
+                return;
+            }
+        }
 
         /* -------------------------------------------------
            CLEAN URL ALIASES
@@ -50,9 +56,7 @@ class router
             if (isset($aliases[$url[0]])) {
 
                 $map = $aliases[$url[0]];
-
-                $url[0] = $map[0];
-                $url[1] = $map[1];
+                $url = array_merge([$map[0], $map[1]], array_slice($url, 1));
             }
         }
 
@@ -126,7 +130,7 @@ class router
 
         if (isset($url[1])) {
 
-            if (method_exists($this->controller, $url[1])) {
+            if (is_callable([$this->controller, $url[1]])) {
                 $this->method = $url[1];
                 unset($url[1]);
             }
@@ -161,7 +165,7 @@ class router
            FINAL DISPATCH
         --------------------------------------------------*/
 
-        if (!method_exists($this->controller, $this->method)) {
+        if (!is_callable([$this->controller, $this->method])) {
             /** 
              * Setting the proper error handler
              * [Human:Mei | 2026-03-13 03:35:00 UTC]

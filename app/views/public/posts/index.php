@@ -10,8 +10,8 @@
                 
                 <?php if(!empty($item['image_path'])): ?>
                     <div style="width: 100%; height: 200px; overflow: hidden; background: #f6f8fa;">
-                        <img src="<?= $item['image_path'] ?>" 
-                             alt="<?= $item['title'] ?>" 
+                        <img src="<?= htmlspecialchars((string) $item['image_path'], ENT_QUOTES, 'UTF-8') ?>"
+                             alt="<?= htmlspecialchars((string) $item['title'], ENT_QUOTES, 'UTF-8') ?>"
                              style="width: 100%; height: 100%; object-fit: cover; display: block;">
                     </div>
                 <?php else: ?>
@@ -21,11 +21,11 @@
                 <?php endif; ?>
                 
                 <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column;">
-                    <h2 style="font-size: 1.5rem; margin-bottom: 10px; color: #1a1a1a;"><?= $item['title'] ?></h2>
+                    <h2 style="font-size: 1.5rem; margin-bottom: 10px; color: #1a1a1a;"><?= htmlspecialchars((string) $item['title'], ENT_QUOTES, 'UTF-8') ?></h2>
                     <p style="color: #4a5568; line-height: 1.5; margin-bottom: 20px; flex-grow: 1;">
-                        <?= substr(strip_tags($item['body']), 0, 120) ?>...
+                        <?= htmlspecialchars(substr(strip_tags((string) $item['body']), 0, 120), ENT_QUOTES, 'UTF-8') ?>...
                     </p>
-                    <a href="/posts/<?= $item['slug'] ?>" 
+                    <a href="/posts/<?= rawurlencode((string) $item['slug']) ?>"
                        style="display: inline-block; text-decoration: none; color: #0366d6; font-weight: 600;">
                        Read More &rarr;
                     </a>

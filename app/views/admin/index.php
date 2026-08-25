@@ -57,8 +57,8 @@
                         <div class="card h-100 border-0 shadow-sm p-3">
                             <div class="card-body">
                                 <i class="bi bi-gear h1 d-block mb-3 text-primary"></i>
-                                <h6 class="fw-bold text-capitalize"><?= $name; ?></h6>
-                                <a href="/admin/<?= $name; ?>" class="btn btn-outline-primary btn-sm w-100 mt-2">Manage</a>
+                                <h6 class="fw-bold text-capitalize"><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></h6>
+                                <a href="/admin/<?= rawurlencode($name); ?>" class="btn btn-outline-primary btn-sm w-100 mt-2">Manage</a>
                             </div>
                         </div>
                     </div>
@@ -81,5 +81,8 @@
         </div>
     </div>
 </div>
-<p><small><a href="/logout">Logout</a></small></p>
+<form action="/logout" method="POST">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+    <button type="submit" class="btn btn-link btn-sm p-0">Logout</button>
+</form>
 <?php require APPROOT . '/views/inc/foot.php'; ?>

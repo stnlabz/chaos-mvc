@@ -7,7 +7,8 @@
 
     <div class="cl-card" style="border: 2px dashed #d1d5da; text-align: center; padding: 40px;">
         <form action="/admin/media" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" required>
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+            <input type="file" name="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
             <button type="submit" class="btn btn-primary">Upload Asset</button>
         </form>
     </div>
@@ -16,12 +17,15 @@
         <?php foreach ($data['items'] as $item): ?>
             <div class="cl-card" style="padding: 10px; text-align: center;">
                 <div style="height: 120px; display: flex; align-items: center; justify-content: center; background: #f6f8fa; margin-bottom: 10px;">
-                    <img src="<?= $item['file_path'] ?>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    <img src="<?= htmlspecialchars((string) $item['file_path'], ENT_QUOTES, 'UTF-8') ?>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                 </div>
-                <small style="display: block; margin-bottom: 8px; color: #6a737d;"><?= $item['filename'] ?></small>
+                <small style="display: block; margin-bottom: 8px; color: #6a737d;"><?= htmlspecialchars((string) $item['filename'], ENT_QUOTES, 'UTF-8') ?></small>
                 <div style="display: flex; justify-content: space-between;">
-                    <button class="btn-edit" onclick="navigator.clipboard.writeText('<?= $item['file_path'] ?>'); alert('Copied!');">URL</button>
-                    <a href="/admin/media/delete/<?= $item['id'] ?>" class="btn-danger" onclick="return confirm('Delete permanently?')">Delete</a>
+                    <button class="btn-edit" data-path="<?= htmlspecialchars((string) $item['file_path'], ENT_QUOTES, 'UTF-8') ?>" onclick="navigator.clipboard.writeText(this.dataset.path); alert('Copied!');">URL</button>
+                    <form action="/admin/media/delete/<?= (int) $item['id'] ?>" method="POST" onsubmit="return confirm('Delete permanently?')">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
                 </div>
             </div>
         <?php endforeach; ?>

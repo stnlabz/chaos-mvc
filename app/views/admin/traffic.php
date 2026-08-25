@@ -15,11 +15,11 @@
     <tbody>
         <?php foreach ($data['logs'] as $log): ?>
         <tr>
-            <td><?= $log['created_at'] ?></td>
-            <td><code><?= $log['ip'] ?></code></td>
-            <td><span class="badge bg-secondary"><?= $log['method'] ?></span></td>
-            <td><?= htmlspecialchars($log['uri']) ?></td>
-            <td class="small text-truncate" style="max-width: 200px;"><?= htmlspecialchars($log['user_agent']) ?></td>
+            <td><?= htmlspecialchars((string) $log['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+            <td><code><?= htmlspecialchars((string) $log['ip'], ENT_QUOTES, 'UTF-8') ?></code></td>
+            <td><span class="badge bg-secondary"><?= htmlspecialchars((string) $log['method'], ENT_QUOTES, 'UTF-8') ?></span></td>
+            <td><?= htmlspecialchars((string) $log['uri'], ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="small text-truncate" style="max-width: 200px;"><?= htmlspecialchars((string) ($log['user_agent'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>

@@ -23,7 +23,7 @@ class posts_model extends model {
             SELECT p.*, m.file_path AS image_path
             FROM posts p
             LEFT JOIN media m ON m.id = p.featured_image_id
-            WHERE p.slug = ?
+            WHERE p.slug = ? AND p.published = 1
             LIMIT 1
         ";
 
@@ -46,7 +46,7 @@ class posts_model extends model {
         $sql = "
             SELECT *
             FROM comments
-            WHERE post_id = ?
+            WHERE post_id = ? AND is_approved = 1
             ORDER BY created_at ASC
         ";
 

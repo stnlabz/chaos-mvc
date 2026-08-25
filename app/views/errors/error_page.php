@@ -4,21 +4,21 @@
     <div class="text-center">
 
         <h1 class="display-1 fw-bold text-secondary">
-            <?= $data['code'] ?? 'Error' ?>
+            <?= htmlspecialchars((string) ($data['code'] ?? 'Error'), ENT_QUOTES, 'UTF-8') ?>
         </h1>
 
         <h2 class="fs-3">
-            <?= $data['title'] ?? 'Something went wrong' ?>
+            <?= htmlspecialchars((string) ($data['title'] ?? 'Something went wrong'), ENT_QUOTES, 'UTF-8') ?>
         </h2>
 
         <p class="lead text-muted">
-            <?= $data['msg'] ?? 'The system encountered an unexpected issue.' ?>
+            <?= htmlspecialchars((string) ($data['msg'] ?? $data['message'] ?? 'The system encountered an unexpected issue.'), ENT_QUOTES, 'UTF-8') ?>
         </p>
 
         <hr class="my-4">
 
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <a href="<?= URLROOT; ?>" class="btn btn-primary btn-lg px-4 gap-3">
+            <a href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary btn-lg px-4 gap-3">
                 Return to Home
             </a>
         </div>

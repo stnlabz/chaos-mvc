@@ -17,8 +17,8 @@ class media_model extends model {
      * Standard Delete Method
      * Matches the pattern used in your announcements and admin controllers
      */
-    public function delete($table, $where) {
-        $sql = "DELETE FROM $table WHERE $where";
-        return $this->db->query($sql);
+    public function delete_by_id(int $id): bool {
+        $statement = $this->db->prepare("DELETE FROM {$this->table} WHERE id = ?");
+        return $statement->execute([$id]);
     }
 }
