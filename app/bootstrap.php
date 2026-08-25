@@ -15,12 +15,6 @@ define('APPROOT', $ROOT . '/app');
 define('PUBROOT', $ROOT . '/public');
 
 /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
-// Core maintenance is enforced before configuration, database, or routing loads.
-require_once APPROOT . '/core/core_maintenance.php';
-(new core_maintenance($ROOT . '/.chaos-update'))->enforceWebRequest($_SESSION ?? []);
-/* [End AI:GPT-5.6 Sol] */
-
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 // URL detection. APP_URL is recommended in production.
 $configuredUrl = trim((string) getenv('APP_URL'));
 
@@ -99,10 +93,6 @@ spl_autoload_register(function ($class) {
         }
     }
 });
-
-if (getenv('CHAOS_CORE_HEALTH_CHECK') === '1') {
-    return;
-}
 
 
 /* -------------------------------------------------

@@ -1,15 +1,5 @@
 /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 
-CREATE TABLE `core_migrations` (
-  `migration_id` varchar(100) NOT NULL,
-  `core_version` varchar(30) NOT NULL,
-  `checksum` char(64) NOT NULL,
-  `applied_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`migration_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
 --
 -- Table structure for table `accounts`
 --

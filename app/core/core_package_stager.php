@@ -226,30 +226,6 @@ final class core_package_stager
                 }
             }
 
-            $migrations = $manifest['migrations'] ?? [];
-
-            if (!is_array($migrations)) {
-                throw new RuntimeException('core_manifest_migrations_invalid|The Core migration manifest is invalid.');
-            }
-
-            $migrationIds = [];
-
-            foreach ($migrations as $migration) {
-                $id = is_array($migration) ? ($migration['id'] ?? null) : null;
-                $path = is_array($migration) ? ($migration['path'] ?? null) : null;
-                $checksum = is_array($migration) ? strtolower((string) ($migration['sha256'] ?? '')) : '';
-
-                if (
-                    !is_string($id) || !preg_match('/^[a-z0-9][a-z0-9._-]*$/', $id) || isset($migrationIds[$id]) ||
-                    !is_string($path) || !preg_match('~^app/install/migrations/[a-z0-9._-]+\.sql$~', $path) ||
-                    !isset($fileMap[$path]) || !hash_equals($fileMap[$path]['sha256'], $checksum)
-                ) {
-                    throw new RuntimeException('core_manifest_migrations_invalid|The Core migration manifest is invalid.');
-                }
-
-                $migrationIds[$id] = true;
-            }
-
             $seen = [];
 
             for ($index = 0; $index < $zip->numFiles; $index++) {
@@ -328,26 +304,6 @@ final class core_package_stager
      */
     private function preflight(array $manifest, int $expandedSize): array
     {
-        foreach (['zip', 'openssl', 'PDO', 'pdo_mysql'] as $extension) {
-            if (!extension_loaded($extension)) {
-                return $this->failure(
-                    'preflight',
-                    'core_extension_missing',
-                    "Required PHP extension is unavailable: {$extension}."
-                );
-            }
-        }
-
-        $configPath = $this->installationRoot . '/app/core/config.php';
-
-        if (!is_file($configPath) || !is_readable($configPath)) {
-            return $this->failure(
-                'preflight',
-                'core_config_unavailable',
-                'Protected Core configuration is unavailable.'
-            );
-        }
-
         $requiredSpace = ($expandedSize * 2) + 1048576;
         $freeSpace = @disk_free_space($this->stateDirectory);
 

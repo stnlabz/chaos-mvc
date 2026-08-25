@@ -12,35 +12,13 @@ The Core Updater is distinct from the independently versioned module updater;
 neither updater's authority, state, package, backup, or installation model
 defines the other.
 
-The implementation provides authenticated Core release checking, complete
-signed-package staging, verified backup and installation, ordered migrations,
-mandatory pre- and post-commit verification, public maintenance mode, and
-administrator and standalone command-line recovery. The fixed Core signing
-public key is embedded at `app/core/core_update_public_key.pem`; the
-corresponding private release-signing key must remain outside the repository
-and web server.
-
-Validated Core operations use `/.chaos-update/` for isolated staging, locks,
-hash-chained journals, temporary backups, and the single retained rollback.
-The installed ownership manifest is retained separately at
-`/.chaos-core-manifest.json`. Neither path is owned by a Core package or the
-module updater, and both must be denied direct web access.
-
-The administration workflow is **Check for Core update**, **Validate and
-stage package**, then **Install staged Core update**. Public requests receive
-HTTP 503 only while live Core changes or recovery are active; administrators
-at user level 9 remain available.
-
-If the application cannot bootstrap, run the standalone recovery utility from
-outside the web server:
-
-```text
-php tools/core-recover.php --root=/path/to/chaos-mvc --confirm
-```
-
-Release maintainers can produce the complete ZIP and signed metadata with
-`tools/build-core-release.php`. The private PEM is an external input and is
-never part of Core ownership or package contents.
+The first implementation slice provides read-only authenticated Core release
+checking, a dedicated administration screen, and isolated filesystem lock
+state. Core installation remains disabled until the package, backup,
+installation, verification, maintenance, and recovery stages are implemented
+and pass the release-gate fixtures. The fixed Core signing public key is
+embedded at `app/core/core_update_public_key.pem`; the corresponding private
+release-signing key must remain outside the repository and update server.
 
 ## Existing installations
 

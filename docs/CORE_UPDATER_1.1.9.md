@@ -271,30 +271,11 @@ installed manifest and version record, a verification copy of
 `app/core/config.php`, and the operation journal. The configuration copy is for
 verification and must not be installed as package content.
 
-The successfully installed signed manifest is retained at
-`/.chaos-core-manifest.json`. It is Core ownership metadata written by the
-updater after final verification, not a package-owned file. The next update
-uses it to determine the exact previous Core backup and obsolete-file boundary.
-The manifest must remain schema-valid and must include path, digest, and size
-for every owned file. Backup preserves the actual installed bytes and records
-their backup digests; local edits to Core remain unsupported and are replaced
-by the next complete release.
-
-Each operation has an append-only, hash-chained journal at
-`/.chaos-update/operations/{operation-id}/journal.jsonl`. A malformed or
-hash-invalid journal cannot accept new events and blocks promotion or recovery
-until it is inspected.
-
 The updater retains exactly one completed previous-Core backup for rollback.
 After a later update succeeds, its pre-update backup replaces the older one.
 Temporary material for an unresolved failure may remain until recovery is
 complete, but it must not become a second retained rollback version. Recovery
 never replaces `/public`, module state, or unrelated installation data.
-
-Temporary backups remain beneath the owning operation until the new Core is
-verified. Only then may the verified temporary backup atomically replace
-`/.chaos-update/rollback`. The older rollback is deleted only after the new
-rollback verifies in its retained location.
 
 ## Installation and migrations
 

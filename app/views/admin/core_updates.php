@@ -54,56 +54,11 @@
                     </button>
                 </form>
             <?php endif; ?>
-
-            <?php if (is_array($stage)): ?>
-                <div class="border rounded p-3 mt-3">
-                    <strong>Validated Core package</strong>
-                    <div class="small text-muted mb-3">
-                        Target version:
-                        <?= htmlspecialchars((string) ($stage['target_version'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                    </div>
-                    <form action="/admin/core_updates/install" method="POST">
-                        <input type="hidden" name="csrf_token"
-                               value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                        <button type="submit" class="btn btn-danger">
-                            Update Chaos MVC to
-                            <?= htmlspecialchars((string) ($stage['target_version'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                        </button>
-                    </form>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 
-    <?php if (($maintenance['active'] ?? false) === true || is_array($rollback)): ?>
-        <div class="card border-warning mt-4">
-            <div class="card-body p-4">
-                <h2 class="h5">Core recovery</h2>
-                <?php if (($maintenance['active'] ?? false) === true): ?>
-                    <p class="text-warning-emphasis">
-                        Maintenance is active during phase
-                        <strong><?= htmlspecialchars((string) ($maintenance['phase'] ?? 'unknown'), ENT_QUOTES, 'UTF-8') ?></strong>.
-                    </p>
-                <?php endif; ?>
-                <?php if (is_array($rollback)): ?>
-                    <p class="small text-muted">
-                        Verified previous Core:
-                        <?= htmlspecialchars((string) ($rollback['version'] ?? 'unknown'), ENT_QUOTES, 'UTF-8') ?>
-                    </p>
-                <?php endif; ?>
-                <form action="/admin/core_updates/recover" method="POST">
-                    <input type="hidden" name="csrf_token"
-                           value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit" class="btn btn-outline-warning">
-                        Restore previous Core
-                    </button>
-                </form>
-            </div>
-        </div>
-    <?php endif; ?>
-
     <p class="text-muted small mt-3 mb-0">
-        Core installation replaces all signed-manifest Core files. `/public` and local configuration remain protected.
+        Package validation and preflight do not change live Core files. Core installation remains disabled.
     </p>
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
