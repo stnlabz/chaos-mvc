@@ -39,8 +39,8 @@
         },
         {
             "path": "app/controllers/core_updates.php",
-            "sha256": "91ac64a4848f0a51bab79a28cad44e80cc407d0c2ce5a726cffcf38fff75d758",
-            "size": 7318
+            "sha256": "94128b0f2e0850c40e1104d32ce964756b8bb446f041ec4f87b36ca400d21b8e",
+            "size": 7667
         },
         {
             "path": "app/controllers/developer.php",
@@ -319,8 +319,8 @@
         },
         {
             "path": "app/views/admin/core_updates.php",
-            "sha256": "a501ae119fcb75bc842dad4500bd13591c73bb37558e9e8c9551aec177a7b405",
-            "size": 5693
+            "sha256": "c536e1279e31cfc9d98f2724273a9660dd8506d4c546cad80c98e4f97d91d33d",
+            "size": 5684
         },
         {
             "path": "app/views/admin/health.php",

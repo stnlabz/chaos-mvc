@@ -87,7 +87,7 @@
                 <?php endif; ?>
                 <?php if (is_array($rollback)): ?>
                     <p class="small text-muted">
-                        Previous Core recovery material:
+                        Verified previous Core:
                         <?= htmlspecialchars((string) ($rollback['version'] ?? 'unknown'), ENT_QUOTES, 'UTF-8') ?>
                     </p>
                 <?php endif; ?>
