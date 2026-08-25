@@ -38,10 +38,10 @@ outside the web server:
 php app/tools/core-recover.php --root=/path/to/chaos-mvc --confirm
 ```
 
-Release construction, signing, publishing, and the update-service API are
-private `chaos-mvc.org` infrastructure. They are not distributed with Chaos
-MVC. The private PEM is never part of this repository, Core ownership, or
-package contents.
+Release maintainers can produce the complete ZIP and signed metadata with
+`app/tools/build-core-release.php`. Its release-service implementation lives
+under `app/api/`. The private PEM is an external input and is
+never part of Core ownership or package contents.
 
 ## Existing installations
 

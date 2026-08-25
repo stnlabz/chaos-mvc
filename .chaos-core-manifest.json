@@ -13,6 +13,11 @@
             "size": 9927
         },
         {
+            "path": "app/api/core_release_builder.php",
+            "sha256": "1e4452ba7687db4dde6952d1c63ded951dc728218484c8de3dd4fabe0bc556d3",
+            "size": 7919
+        },
+        {
             "path": "app/bootstrap.php",
             "sha256": "0f85bb16a8bc85f6768d62f1c7e2fc051100171aa564080b2b374b69bf0c5580",
             "size": 3223
@@ -303,6 +308,11 @@
             "size": 1086
         },
         {
+            "path": "app/tools/build-core-release.php",
+            "sha256": "a062f045613599af57da17a5f1882eea076c0fa00dfbaed0cdb548a81472f032",
+            "size": 1332
+        },
+        {
             "path": "app/tools/core-recover.php",
             "sha256": "90b05ae2168244f047825932c2900928934600d94d2f164088bcdc17471c428d",
             "size": 7294
@@ -479,8 +489,8 @@
         },
         {
             "path": "docs/CHANGELOG.md",
-            "sha256": "c987f565d01609b5a1fcbb9a917add996d03025e5396d64cd019b8f22268158f",
-            "size": 4574
+            "sha256": "6f0709d58bd0d86f8cfafcf1ab6f982c4b47edcb9261b95f2c76923e81461b5e",
+            "size": 4542
         },
         {
             "path": "docs/CONTRIBUTING.md",
@@ -504,13 +514,13 @@
         },
         {
             "path": "docs/MAINTENANCE_1.1.9.md",
-            "sha256": "14fa9ee920d095cd080c7711b2fc93d4b610b6fa344401b0cd3c9ef5b162faa4",
-            "size": 3841
+            "sha256": "62bde3f17a3cc635c294cb4e2865df8f67ea49835533cab0c87de69d55a9efd5",
+            "size": 3862
         },
         {
             "path": "tests/run.php",
-            "sha256": "b9cb688c330dc4813872ae078a2ff183459511ae6e8b29cdc9269ac2f8ede94c",
-            "size": 40141
+            "sha256": "ce3de3a3596785b338854b501002cdf0a38488594723c6db2110956966633b3d",
+            "size": 42549
         }
     ],
     "migrations": []

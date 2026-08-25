@@ -26,6 +26,7 @@ require_once APPROOT . '/core/core_package_stager.php';
 require_once APPROOT . '/core/core_recovery_service.php';
 require_once APPROOT . '/core/core_updater.php';
 require_once APPROOT . '/controllers/admin.php';
+require_once APPROOT . '/api/core_release_builder.php';
 
 $failures = [];
 
@@ -922,6 +923,80 @@ $check(
     'Standalone Core recovery CLI did not restore a corrupted Core file.'
 );
 
+$releaseFixture = sys_get_temp_dir() . '/chaos-core-release-' . bin2hex(random_bytes(8));
+$releaseOutput = $releaseFixture . '-output';
+mkdir($releaseFixture . '/app/core', 0750, true);
+mkdir($releaseFixture . '/app/install/migrations', 0750, true);
+mkdir($releaseFixture . '/public', 0750, true);
+mkdir($releaseFixture . '/app/tools', 0750, true);
+file_put_contents($releaseFixture . '/app/bootstrap.php', "<?php\n");
+file_put_contents($releaseFixture . '/app/core/version.php', "<?php define('CHAOS_VERSION', '1.1.9');\n");
+file_put_contents($releaseFixture . '/app/core/config.php', "<?php // protected\n");
+file_put_contents($releaseFixture . '/app/install/migrations/1.1.9.sql', "SELECT 1;\n");
+file_put_contents($releaseFixture . '/public/index.php', "<?php // site-owned\n");
+file_put_contents($releaseFixture . '/app/tools/core-recover.php', "<?php\n");
+
+$releaseKeyOptions = ['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA];
+$releaseOpenSslConfig = dirname(PHP_BINARY) . '/extras/ssl/openssl.cnf';
+
+if (is_file($releaseOpenSslConfig)) {
+    $releaseKeyOptions['config'] = $releaseOpenSslConfig;
+}
+
+$releaseKey = openssl_pkey_new($releaseKeyOptions);
+$releasePrivatePem = '';
+$releasePublicPem = '';
+
+if ($releaseKey !== false
+    && openssl_pkey_export($releaseKey, $releasePrivatePem, null, $releaseKeyOptions)) {
+    $releaseKeyDetails = openssl_pkey_get_details($releaseKey);
+    $releasePublicPem = is_array($releaseKeyDetails) ? (string) ($releaseKeyDetails['key'] ?? '') : '';
+}
+
+mkdir($releaseOutput, 0750, true);
+$releasePrivatePath = $releaseOutput . '/core.private.pem';
+file_put_contents($releasePrivatePath, $releasePrivatePem);
+$releasePackagePath = $releaseOutput . '/chaos-mvc-1.1.9.zip';
+$releaseMetadataPath = $releaseOutput . '/1.1.9.json';
+$releaseBuilder = new core_release_builder($releaseFixture);
+$releaseResult = $releaseBuilder->build(
+    '1.1.9',
+    $releasePackagePath,
+    $releaseMetadataPath,
+    'https://chaos-mvc.org/releases/chaos-mvc-1.1.9.zip',
+    $releasePrivatePath,
+    '1.1.8'
+);
+$releasePaths = array_column($releaseResult['manifest']['files'], 'path');
+$check(is_file($releasePackagePath) && is_file($releaseMetadataPath), 'Core release builder produced no artifacts.');
+$check(!in_array('app/core/config.php', $releasePaths, true), 'Core release builder included protected config.');
+$check(!in_array('public/index.php', $releasePaths, true), 'Core release builder included site-owned public files.');
+$check(
+    ($releaseResult['manifest']['migrations'][0]['id'] ?? null) === '1.1.9',
+    'Core release builder did not declare the target migration.'
+);
+$releaseMetadataRaw = (string) file_get_contents($releaseMetadataPath);
+$releaseUpdater = new core_updater(
+    '1.1.8',
+    $releasePublicPem,
+    core_updater::PRODUCTION_ENDPOINT,
+    static fn (): string => $releaseMetadataRaw
+);
+$check(
+    ($releaseUpdater->check()['outcome'] ?? null) === 'update_available',
+    'Core release builder metadata did not pass updater verification.'
+);
+
+$versionMismatchRejected = false;
+
+try {
+    $releaseBuilder->manifest('1.2.0');
+} catch (RuntimeException) {
+    $versionMismatchRejected = true;
+}
+
+$check($versionMismatchRejected, 'Core release builder accepted a mismatched version.php.');
+
 $removeBackupTestTree = static function (string $directory) use (&$removeBackupTestTree): void {
     if (!is_dir($directory)) {
         return;
@@ -944,38 +1019,22 @@ $removeBackupTestTree = static function (string $directory) use (&$removeBackupT
     @rmdir($directory);
 };
 $removeBackupTestTree($backupTestRoot);
+$removeBackupTestTree($releaseFixture);
+$removeBackupTestTree($releaseOutput);
 
 $schema = (string) file_get_contents(APPROOT . '/install/schema.sql');
 $check(str_contains($schema, 'CREATE TABLE `password_resets`'), 'Password reset schema is missing.');
 $check(str_contains($schema, 'CREATE TABLE `traffic`'), 'Traffic schema is missing.');
 $check(str_contains($schema, 'CREATE TABLE `core_migrations`'), 'Core migration registry schema is missing.');
 $check(is_file(APPROOT . '/install/migrations/1.1.9.sql'), '1.1.9 migration is missing.');
+$generatedOwnership = (new core_release_builder(dirname(__DIR__)))->manifest('1.1.8');
 $installedOwnership = json_decode(
     (string) file_get_contents(dirname(__DIR__) . '/.chaos-core-manifest.json'),
     true
 );
-$check(is_array($installedOwnership), 'Installed Core ownership manifest is missing.');
-$ownershipPaths = [];
-
-foreach ($installedOwnership['files'] ?? [] as $ownedFile) {
-    $ownedPath = is_array($ownedFile) ? ($ownedFile['path'] ?? null) : null;
-    $ownedHash = is_array($ownedFile) ? ($ownedFile['sha256'] ?? null) : null;
-    $absoluteOwnedPath = is_string($ownedPath) ? dirname(__DIR__) . '/' . $ownedPath : '';
-    $validOwnedFile = is_string($ownedPath) && is_string($ownedHash)
-        && is_file($absoluteOwnedPath)
-        && hash_equals($ownedHash, (string) hash_file('sha256', $absoluteOwnedPath));
-    $check($validOwnedFile, 'An installed Core ownership entry is missing or stale.');
-
-    if (is_string($ownedPath)) {
-        $ownershipPaths[$ownedPath] = true;
-    }
-}
-
-$check(isset($ownershipPaths['app/tools/core-recover.php']), 'Standalone recovery is absent from Core ownership.');
-$check(!isset($ownershipPaths['app/core/config.php']), 'Protected configuration appears in Core ownership.');
 $check(
-    count(array_filter(array_keys($ownershipPaths), static fn (string $path): bool => str_starts_with($path, 'public/'))) === 0,
-    'Public site files appear in Core ownership.'
+    $installedOwnership === $generatedOwnership,
+    'Installed Core ownership manifest is missing or stale.'
 );
 
 $postsModel = (string) file_get_contents(APPROOT . '/models/posts_model.php');
