@@ -1,10 +1,14 @@
 <?php
+
 /**
  * Bootstrap
- * Pre loads Core
+ *
+ * Preloads Chaos MVC Core services and installation configuration.
  */
 
 declare(strict_types=1);
+
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 
 // Root
 $ROOT = dirname(__DIR__);
@@ -14,71 +18,90 @@ define('LOG_PATH', $ROOT . '/logs');
 define('APPROOT', $ROOT . '/app');
 define('PUBROOT', $ROOT . '/public');
 
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
-// URL detection. APP_URL is recommended in production.
-$configuredUrl = trim((string) getenv('APP_URL'));
+// Site configuration
+$SITE = [
+    'name' => 'Chaos MVC',
+    'copyright_name' => 'Chaos MVC',
+    'author' => 'Chaos MVC',
+    'description' => 'Lightweight Model View Controller',
+    'keywords' => ''
+];
 
-if (
-    $configuredUrl !== '' &&
-    filter_var($configuredUrl, FILTER_VALIDATE_URL) !== false &&
-    in_array(parse_url($configuredUrl, PHP_URL_SCHEME), ['http', 'https'], true)
-) {
-    $urlRoot = rtrim($configuredUrl, '/');
-} else {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        ? 'https'
-        : 'http';
-    $host = $_SERVER['SERVER_NAME'] ?? 'localhost';
+$siteConfigFile = APPROOT . '/data/site.json';
 
-    if (!preg_match('/^[a-z0-9.-]+$/i', $host)) {
-        $host = 'localhost';
+if (is_file($siteConfigFile)) {
+    $siteConfigRaw = file_get_contents($siteConfigFile);
+
+    if ($siteConfigRaw !== false) {
+        $siteConfig = json_decode($siteConfigRaw, true);
+
+        if (is_array($siteConfig)) {
+            $SITE = array_replace($SITE, $siteConfig);
+        }
     }
-
-    $port = (int) ($_SERVER['SERVER_PORT'] ?? 0);
-    $defaultPort = ($scheme === 'https') ? 443 : 80;
-    $portSuffix = ($port > 0 && $port !== $defaultPort) ? ':' . $port : '';
-    $urlRoot = $scheme . '://' . $host . $portSuffix;
 }
 
-define('URLROOT', $urlRoot);
+$GLOBALS['SITE'] = $SITE;
 
+// URL detection
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    ? 'https'
+    : 'http';
+
+$host = (string) ($_SERVER['SERVER_NAME'] ?? 'localhost');
+
+if (
+    !preg_match(
+        '/^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:]+\])$/i',
+        $host
+    )
+) {
+    $host = 'localhost';
+}
+
+$port = (int) ($_SERVER['SERVER_PORT'] ?? 0);
+
+$portSuffix = (
+    $port > 0
+    && !(($scheme === 'https' && $port === 443)
+    || ($scheme === 'http' && $port === 80))
+)
+    ? ':' . $port
+    : '';
+
+define('URLROOT', $scheme . '://' . $host . $portSuffix);
 
 /**
  * Debug
  */
-$debugValue = filter_var(
-    getenv('CHAOS_DEBUG') ?: 'false',
-    FILTER_VALIDATE_BOOLEAN
+$debug = filter_var(
+    getenv('APP_DEBUG') ?: 'false',
+    FILTER_VALIDATE_BOOL
 );
-$debug = $debugValue === true;
-
-if (!is_dir(LOG_PATH)) {
-    @mkdir(LOG_PATH, 0750, true);
-}
-
-ini_set('display_errors', $debug ? '1' : '0');
-ini_set('display_startup_errors', $debug ? '1' : '0');
-ini_set('log_errors', '1');
-ini_set('error_log', LOG_PATH . '/site_errors');
-error_reporting(E_ALL);
 
 if ($debug) {
-    error_log('Chaos MVC debug mode is enabled.');
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    ini_set('log_errors', '1');
+    ini_set('error_log', LOG_PATH . '/site_errors');
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    ini_set('log_errors', '1');
+    ini_set('error_log', LOG_PATH . '/site_errors');
+    error_reporting(E_ALL);
 }
-/* [End AI:GPT-5.6 Sol] */
-
 
 /**
  * Config
  */
 require_once APPROOT . '/core/config.php';
 
-
 /**
  * Autoload
  */
 spl_autoload_register(function ($class) {
-
     $paths = [
         APPROOT . '/core/' . $class . '.php',
         APPROOT . '/controllers/' . $class . '.php',
@@ -94,7 +117,6 @@ spl_autoload_register(function ($class) {
     }
 });
 
-
 /* -------------------------------------------------
    INSTALL CHECK
 -------------------------------------------------- */
@@ -103,24 +125,91 @@ $installLock = LOG_PATH . '/install.lock';
 
 if (!file_exists($installLock)) {
     try {
-        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        $mysqli = new mysqli(
+            DB_HOST,
+            DB_USER,
+            DB_PASS,
+            DB_NAME
+        );
 
         if ($mysqli->connect_errno) {
-            throw new Exception('Database connection failed');
+            throw new Exception(
+                'Database connection failed'
+            );
         }
+
+        $mysqli->close();
     } catch (Exception $e) {
         require_once APPROOT . '/controllers/install.php';
+
         (new install())->index();
+
+        exit;
+    }
+}
+
+/* -------------------------------------------------
+   MAINTENANCE MODE
+-------------------------------------------------- */
+
+$maintenanceFile =
+    APPROOT . '/data/updater/maintenance.lock';
+
+if (is_file($maintenanceFile)) {
+    $requestPath = (string) parse_url(
+        $_SERVER['REQUEST_URI'] ?? '/',
+        PHP_URL_PATH
+    );
+
+    $allowedMaintenanceRoutes = [
+        '/admin',
+        '/updater',
+        '/login',
+        '/auth/login',
+        '/logout',
+        '/auth/logout'
+    ];
+
+    $maintenanceAllowed = false;
+
+    foreach ($allowedMaintenanceRoutes as $allowedRoute) {
+        if (
+            $requestPath === $allowedRoute
+            || str_starts_with(
+                $requestPath,
+                $allowedRoute . '/'
+            )
+        ) {
+            $maintenanceAllowed = true;
+            break;
+        }
+    }
+
+    if (!$maintenanceAllowed) {
+        http_response_code(503);
+
+        header(
+            'Retry-After: 60'
+        );
+
+        header(
+            'Cache-Control: no-store, no-cache, must-revalidate'
+        );
+
+        require APPROOT
+            . '/views/errors/maintenance.php';
+
         exit;
     }
 }
 
 /**
  * Traffic
- * Comes with the Chaos MVC.
- * Tracks traffic to your domain
-*/
-$GLOBALS['CHAOS_TRAFFIC_INTERNAL'] = true;
+ *
+ * Comes with Chaos MVC.
+ * Tracks traffic to the configured site.
+ */
 $trafficEngine = new traffic();
 $trafficEngine->collect();
-unset($GLOBALS['CHAOS_TRAFFIC_INTERNAL']);
+
+/* [End AI:GPT-5.6 Sol] */

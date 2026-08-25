@@ -5,7 +5,6 @@
  *
  * Handles all account-related admin operations.
  */
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class accounts extends controller
 {
     /**
@@ -22,7 +21,6 @@ class accounts extends controller
      */
     public function index()
     {
-        $this->require_admin(9);
         $model = $this->model('accounts_model');
 
         $data = [
@@ -49,14 +47,10 @@ class accounts extends controller
      */
     public function create()
     {
-        $this->require_admin(9);
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . URLROOT . '/admin/accounts');
             exit;
         }
-
-        $this->verify_csrf();
 
         $model = $this->model('accounts_model');
 
@@ -71,10 +65,7 @@ class accounts extends controller
         if (
             empty($data['username']) ||
             empty($data['password']) ||
-            empty($data['email_address']) ||
-            !filter_var($data['email_address'], FILTER_VALIDATE_EMAIL) ||
-            strlen($data['password']) < 12 ||
-            !in_array($data['user_level'], [1, 9], true)
+            empty($data['email_address'])
         ) {
             $_SESSION['msg'] = 'Missing required fields';
             $_SESSION['msg_type'] = 'danger';
@@ -83,11 +74,7 @@ class accounts extends controller
             exit;
         }
 
-        try {
-            $result = $model->create($data);
-        } catch (PDOException $e) {
-            $result = false;
-        }
+        $result = $model->create($data);
 
         $_SESSION['msg'] = $result
             ? 'Account created successfully'
@@ -107,23 +94,6 @@ class accounts extends controller
      */
     public function delete($id)
     {
-        $this->require_admin(9);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . URLROOT . '/admin/accounts');
-            exit;
-        }
-
-        $this->verify_csrf();
-        $id = is_array($id) ? ($id[0] ?? 0) : $id;
-
-        if ((int) $id === (int) ($_SESSION['user_id'] ?? 0)) {
-            $_SESSION['msg'] = 'You cannot delete your own account.';
-            $_SESSION['msg_type'] = 'danger';
-            header('Location: ' . URLROOT . '/admin/accounts');
-            exit;
-        }
-
         $model = $this->model('accounts_model');
 
         $model->delete((int)$id);
@@ -140,22 +110,14 @@ class accounts extends controller
      */
     public function email($params = [])
     {
-        $this->require_admin(9);
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . URLROOT . '/admin/accounts');
             exit;
         }
 
-        $this->verify_csrf();
-
         $id = is_array($params) ? ($params[0] ?? null) : $params;
 
-        if (
-            !$id ||
-            empty($_POST['email_address']) ||
-            !filter_var($_POST['email_address'], FILTER_VALIDATE_EMAIL)
-        ) {
+        if (!$id || empty($_POST['email_address'])) {
             $_SESSION['msg'] = 'Invalid email update request';
             $_SESSION['msg_type'] = 'danger';
 
@@ -179,37 +141,4 @@ class accounts extends controller
         header('Location: ' . URLROOT . '/admin/accounts');
         exit;
     }
-
-    /**
-     * Change an account password.
-     *
-     * @param array|int $params Route parameters.
-     */
-    public function password($params = []): void
-    {
-        $this->require_admin(9);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . URLROOT . '/admin/accounts');
-            exit;
-        }
-
-        $this->verify_csrf();
-        $id = is_array($params) ? ($params[0] ?? 0) : $params;
-        $password = $_POST['password'] ?? '';
-
-        if ((int) $id < 1 || strlen($password) < 12) {
-            $_SESSION['msg'] = 'Passwords must contain at least 12 characters.';
-            $_SESSION['msg_type'] = 'danger';
-            header('Location: ' . URLROOT . '/admin/accounts');
-            exit;
-        }
-
-        $this->model('accounts_model')->change_password((int) $id, $password);
-        $_SESSION['msg'] = 'Password changed successfully.';
-        $_SESSION['msg_type'] = 'success';
-        header('Location: ' . URLROOT . '/admin/accounts');
-        exit;
-    }
 }
-/* [End AI:GPT-5.6 Sol] */

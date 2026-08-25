@@ -1,4 +1,3 @@
-<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require_once APPROOT . '/views/inc/head.php'; ?>
 <div class="login-container" style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
     <h2 style="margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px;">Website Access</h2>
@@ -16,7 +15,6 @@
     <?php endif; ?>
 
     <form action="/auth/login" method="POST">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
         <div style="margin-bottom: 15px;">
             <label for="username" style="font-weight: bold;">Username:</label><br>
             <input type="text" name="username" id="username" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
@@ -38,4 +36,3 @@
     </div>
 </div>
 <?php require_once APPROOT . '/views/inc/foot.php'; ?>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

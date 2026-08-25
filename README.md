@@ -4,13 +4,12 @@
 ![PHP](https://img.shields.io/badge/PHP-8%2B-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-MVC-darkgreen)
 ![Status](https://img.shields.io/badge/Status-Active%20Development-orange)
+![License](https://img.shields.io/badge/License-TBD-lightgrey)
 ![Sponsored](https://img.shields.io/badge/Sponsored-STN_Labz-blue)
 
 Chaos MVC is a lightweight PHP MVC framework focused on **discipline, traceability, and architectural simplicity**.
 
- **Source** is not current Version
- 
- **Current Version**: 1.1.8 Released
+**Current Version**: 1.1.8
 
 The framework was designed to remain predictable and maintainable while avoiding the complexity that often grows inside large CMS systems.
 On the Webz at [Chaos MVC](https://www.chaos-mvc.org)
@@ -415,9 +414,6 @@ Chaos MVC expects contributors to maintain professional communication and respec
  - [CHANGELOG](docs/CHANGELOG.md)
  - [ChAoS MVC License](docs/LICENSE.md)
  - [CONTRIBUTING](docs/CONTRIBUTING.md)
- <!-- [AI:GPT-5.6 Sol | 2026-08-25 UTC] -->
- - [Pre-1.1.9 Maintenance](docs/MAINTENANCE_1.1.9.md)
- <!-- [End AI:GPT-5.6 Sol] -->
 
 # License
 

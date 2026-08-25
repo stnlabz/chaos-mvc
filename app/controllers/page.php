@@ -1,6 +1,5 @@
 <?php
 // path: /app/controllers/page.php
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class page extends controller {
     // Designation as a Core Module prevents deletion from the site/DB
     public static $is_core = true;
@@ -24,6 +23,8 @@ class page extends controller {
 
         require_once APPROOT . '/controllers/error_handler.php';
         (new error_handler())->not_found();
+        
+        // Inside page.php, right before the file_exists check:
+echo "DEBUG: Looking for: " . APPROOT . '/controllers/' . $controllerName . '.php';
     }
 }
-/* [End AI:GPT-5.6 Sol] */

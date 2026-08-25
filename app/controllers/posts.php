@@ -1,7 +1,6 @@
 <?php
 // path: /app/controllers/posts.php
 
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class posts extends controller {
     public static $is_core = true;
 
@@ -63,7 +62,11 @@ class posts extends controller {
 }
 
     public function admin($params = []) {
-        $this->require_admin(7);
+        // GATED: Redirect to login if no session
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: /login");
+            exit;
+        }
 
         $model = $this->model('posts_model');
         $action = $params[1] ?? null;
@@ -71,44 +74,24 @@ class posts extends controller {
 
         // Use the core model archive helper instead of hard delete
         if ($action === 'delete' && $id) {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                http_response_code(405);
-                $this->error_page('Post deletion requires a POST request.');
-            }
-
-            $this->verify_csrf();
             $model->archive('posts', "id = :id", ['id' => (int)$id]);
             header("Location: /admin/posts");
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
-            $this->verify_csrf();
-            $title = trim((string) $_POST['title']);
-            $body = trim((string) ($_POST['body'] ?? ''));
-
-            if ($title === '' || strlen($title) > 255 || $body === '') {
-                $_SESSION['admin_status'] = 'Post title or body is invalid.';
-                header('Location: /admin/posts');
-                exit;
-            }
-
             $payload = [
-                'title'             => $title,
-                'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower($title)), '-'),
-                'body'              => $body,
+                'title'             => $_POST['title'],
+                'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($_POST['title']))), '-'),
+                'body'              => $_POST['body'],
                 'featured_image_id' => !empty($_POST['featured_image_id']) ? (int)$_POST['featured_image_id'] : null,
                 'published'         => isset($_POST['published']) ? 1 : 0
             ];
 
-            try {
-                if (!empty($_POST['id'])) {
-                    $model->update('posts', $payload, "id = :id", ['id' => (int) $_POST['id']]);
-                } else {
-                    $model->insert('posts', $payload);
-                }
-            } catch (PDOException $e) {
-                $_SESSION['admin_status'] = 'The post could not be saved. Its slug may already exist.';
+            if (!empty($_POST['id'])) {
+                $model->update('posts', $payload, "id = :id", ['id' => $_POST['id']]);
+            } else {
+                $model->insert('posts', $payload);
             }
             header("Location: /admin/posts");
             exit;
@@ -123,19 +106,11 @@ class posts extends controller {
     
     public function reply() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
-        $this->verify_csrf();
         $model = $this->model('posts_model');
 
-        $postId = (int) ($_POST['post_id'] ?? 0);
-        $body = trim((string) ($_POST['body'] ?? ''));
-
-        if (!$model->is_public_post($postId) || $body === '' || strlen($body) > 10000) {
-            $this->error_page('The reply could not be accepted.');
-        }
-
         $payload = [
-            'post_id'     => $postId,
-            'body'        => $body,
+            'post_id'     => (int)$_POST['post_id'],
+            'body'        => trim($_POST['body']),
             'author_name' => $_SESSION['username'], // Matches your 'author_name' column
             'is_approved' => 1
         ];
@@ -147,16 +122,12 @@ class posts extends controller {
                 $mail->addAddress('poe@poemei.com');
                 $mail->Subject = "New Comment";
                 $mail->Body = "Hey Poe, a new comment has been posted on something you posted.";
-                try {
-                    $mail->send();
-                } catch (Exception $e) {
-                    error_log('Comment notification failed: ' . $e->getMessage());
-                }
-            header('Location: /posts');
+                $mail->send();
+            $redirect = $_SERVER['HTTP_REFERER'] ?? '/';
+            header("Location: " . $redirect);
             exit;
         }
     }
     $this->error_page("Unauthorized.");
     }
 }
-/* [End AI:GPT-5.6 Sol] */

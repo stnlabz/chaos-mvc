@@ -1,4 +1,3 @@
-<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 
 <p><small><a href="/admin">Admin</a> >> <strong>Modules</strong></small></p>
@@ -73,12 +72,23 @@
             if (file_exists($configPath)) {
                 $config = json_decode(file_get_contents($configPath), true);
                 $version = $config['version'] ?? '0.0.0';
-                $desc = $config['description'] ?? '';
-                $author = $config['creator'] ?? '';
+                $desc = $config['description'];
+                $author = $config['creator'];
                 $domain = $config['domain'] ?? '';
                 $certified = $config['certified'] ?? '';
 
-                $hasUpdate = !empty($config['update_url']);
+                if (!empty($config['update_url'])) {
+                    //$remote = @file_get_contents($config['update_url']);
+                    $remote = @file_get_contents($config['update_url'] . '?t=' . time());
+                    if ($remote) {
+                        $remote = json_decode($remote, true);
+                        $remoteVersion = $remote['version'] ?? $version;
+
+                        if (version_compare($remoteVersion, $version, '>')) {
+                            $hasUpdate = true;
+                        }
+                    }
+                }
             }
         ?>
 
@@ -88,13 +98,16 @@
 
                     <h5 class="fw-bold"><?= ucfirst(htmlspecialchars($module['slug'])); ?></h5>
 
-                    <p><small>Version: <strong><?= htmlspecialchars($version); ?></strong></small></p>
-                    <p><small><strong>Description</strong>: <?= htmlspecialchars($desc); ?></small></p>
-                    <p><small><strong>Author</strong>: <?= htmlspecialchars($author); ?></small></p>
-                    <p><small><strong>Domain</strong>: <?= htmlspecialchars($domain); ?></small></p>
+                    <p><small>Version: <strong><?= $version; ?></strong></small></p>
+                    <p><small><strong>Description</strong>: <?= $desc; ?></small></p>
+                    <p><small><strong>Author</strong>: <?= $author; ?></small></p>
+                    <p><small><strong>Domain</strong>: <a href="https://<?= $domain; ?>"><?= $domain; ?></a></small></p>
                     <p><small>
                     <?php
-                    $certified = $certified ? 'Yes' : 'No';
+                    if($certified == '') {
+                         $certified = 'No';
+                    }
+                    $certified = 'Yes';
                     ?>
                     <strong>Certified</strong>: <?= $certified; ?>
                     </small>
@@ -120,7 +133,6 @@
                         <form action="/admin/uninstall" method="POST"
                               onsubmit="return confirm('EXTREME DANGER: This will permanently remove all data and files for this module.');">
                             <input type="hidden" name="module" value="<?= htmlspecialchars($module['slug']); ?>">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
                             <button type="submit" class="btn btn-sm btn-danger w-100">
                                 Nuke
                             </button>
@@ -149,14 +161,7 @@ document.querySelectorAll('.btn-update').forEach(btn => {
         btn.disabled = true;
 
         try {
-            const body = new FormData();
-            body.append('module', module);
-            body.append('csrf_token', '<?= htmlspecialchars($this->csrf_token()) ?>');
-
-            const res = await fetch('/admin/update', {
-                method: 'POST',
-                body
-            });
+            const res = await fetch(`/admin/update?module=${module}`);
             const data = await res.json();
 
             if (data.success) {
@@ -187,4 +192,3 @@ document.querySelectorAll('.btn-update').forEach(btn => {
 </script>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

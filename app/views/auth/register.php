@@ -1,4 +1,3 @@
-<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <div class="container" style="max-width: 400px; margin-top: 50px;">
     <h2>Register Account</h2>
@@ -6,7 +5,6 @@
         <div class="alert alert-danger"><?= $data['error'] ?></div>
     <?php endif; ?>
     <form action="/auth/register" method="POST">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
         <div class="form-group">
             <label>Username</label>
             <input type="text" name="username" class="form-control" required>
@@ -27,4 +25,3 @@
     </form>
 </div>
 <?php require_once APPROOT . '/views/inc/foot.php'; ?>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

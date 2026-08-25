@@ -1,63 +1,24 @@
 <?php
+// path: /app/models/media_model.php
 
-/**
- * Media Model
- *
- * Handles database operations for media records.
- *
- * Path: /app/models/media_model.php
- */
+class media_model extends model {
 
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
-class media_model extends model
-{
-    /**
-     * Media database table.
-     *
-     * @var string
-     */
     protected $table = 'media';
 
-    /**
-     * Retrieve all media records.
-     *
-     * @return array
-     */
-    public function get_all(): array
-    {
-        return $this->fetchAll(
-            "SELECT * FROM {$this->table} ORDER BY created_at DESC"
-        );
+    public function get_all() {
+        return $this->db->query("SELECT * FROM {$this->table} ORDER BY created_at DESC")->fetchAll();
+    }
+
+    public function get_by_id($id) {
+        return $this->db->query("SELECT * FROM {$this->table} WHERE id = ?", [(int)$id])->fetch();
     }
 
     /**
-     * Retrieve a media record by ID.
-     *
-     * @param int $id Media record ID.
-     * @return array|false
+     * Standard Delete Method
+     * Matches the pattern used in your announcements and admin controllers
      */
-    public function get_by_id($id): array|false
-    {
-        return $this->fetch(
-            "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1",
-            [(int) $id]
-        );
-    }
-
-    /**
-     * Delete a media record.
-     *
-     * @param int $id Media record ID.
-     * @return bool
-     */
-    public function delete($id): bool
-    {
-        $stmt = $this->query(
-            "DELETE FROM {$this->table} WHERE id = ?",
-            [(int) $id]
-        );
-
-        return $stmt->rowCount() > 0;
+    public function delete($table, $where) {
+        $sql = "DELETE FROM $table WHERE $where";
+        return $this->db->query($sql);
     }
 }
-/* [End AI:GPT-5.6 Sol] */

@@ -29,12 +29,6 @@ class traffic_model extends model
      */
     public function get_log_report($limit = 500): array|false
     {
-        /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
-        $limit = max(1, min((int) $limit, 1000));
-
-        return $this->fetchAll(
-            "SELECT * FROM traffic ORDER BY created_at DESC LIMIT {$limit}"
-        );
-        /* [End AI:GPT-5.6 Sol] */
+        return $this->fetchAll("SELECT * FROM traffic ORDER BY created_at DESC LIMIT ?", [$limit]);
     }
 }

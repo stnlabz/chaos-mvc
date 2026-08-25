@@ -34,7 +34,6 @@ require_once APPROOT . '/views/inc/head.php';
     <?php endif; ?>
 
     <form method="post" action="/install">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
         <section class="mb-4">
             <h2>Database</h2>
 

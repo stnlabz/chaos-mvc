@@ -36,8 +36,6 @@ class install extends controller
             return;
         }
 
-        $this->verify_csrf();
-
         $host = trim($_POST['db_host'] ?? '');
         $user = trim($_POST['db_user'] ?? '');
         $pass = $_POST['db_pass'] ?? '';
@@ -68,14 +66,6 @@ class install extends controller
             $this->view(
                 'public/install/index',
                 ['error' => 'A valid administrator email address is required.']
-            );
-            return;
-        }
-
-        if (strlen($adminPass) < 12) {
-            $this->view(
-                'public/install/index',
-                ['error' => 'The administrator password must contain at least 12 characters.']
             );
             return;
         }

@@ -1,16 +1,14 @@
 <?php
-
 /**
  * Router
  * Responsible only for dispatching URL → controller → method → params
  * No database calls belong here.
- * LOCKED CORE FILE
+  * LOCKED CORE FILE
  * Core Routing Infrastructure
  * Modifications require explicit authorization.
  * [Human:Mei | 2026-03-13 03:45:00 UTC]
  */
 
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class router
 {
     protected $controller = 'home';
@@ -24,19 +22,11 @@ class router
 
     /**
      * Main dispatch logic
-     *
-     * @return void
      */
     private function dispatch()
     {
         $url = $this->parseUrl();
 
-        foreach ($url as $segment) {
-            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $segment)) {
-                (new error_handler())->not_found();
-                return;
-            }
-        }
 
         /* -------------------------------------------------
            CLEAN URL ALIASES
@@ -44,81 +34,74 @@ class router
            /signup  → /auth/register
            /logout  → /auth/logout
            /forgot-password → /auth/forgot_password
-           /reset-password/{token}
-               → /auth/reset_password/{token}
+           /reset-password → /auth/reset_password
         --------------------------------------------------*/
 
         if (!empty($url[0])) {
+
             $aliases = [
-                'login' => ['auth', 'login'],
+                'login'  => ['auth', 'login'],
                 'signup' => ['auth', 'register'],
                 'logout' => ['auth', 'logout'],
                 'forgot-password' => ['auth', 'forgot_password'],
-                'reset-password' => ['auth', 'reset_password']
+                'reset-password'  => ['auth', 'reset_password']
             ];
 
             if (isset($aliases[$url[0]])) {
+
                 $map = $aliases[$url[0]];
 
-                /*
-                 * Preserve parameters following the alias.
-                 *
-                 * Example:
-                 * /reset-password/{token}
-                 *
-                 * becomes:
-                 * /auth/reset_password/{token}
-                 */
-                $params = array_slice($url, 1);
-
-                $url = array_merge(
-                    [$map[0], $map[1]],
-                    $params
-                );
+                $url[0] = $map[0];
+                $url[1] = $map[1];
             }
         }
+
 
         /* -------------------------------------------------
            CONTROLLER
         --------------------------------------------------*/
-
         /* [AI:GPT | 2026-03-14 18:15:00 UTC] */
         /* [HUMAN: MEI | APPROVE | 2026-03-15 18:17 UTC] */
         if (isset($url[0]) && $url[0] !== '') {
+
             $controller_file = APPROOT . '/controllers/' . $url[0] . '.php';
 
             if (file_exists($controller_file)) {
+
                 // Normal controller route
                 $this->controller = $url[0];
                 unset($url[0]);
+
             } else {
+
                 // Attempt DB-driven module resolution
                 require_once APPROOT . '/models/modules_model.php';
                 $modules = new modules_model();
 
                 if ($modules->get_by_slug($url[0])) {
-                    // Route request through page controller
-                    $this->controller = 'page';
-                    $this->method = 'index';
-                } else {
-                    // Nothing matched → true 404
-                    (new error_handler())->not_found();
-                    return;
-                }
+
+                // Route request through page controller
+                $this->controller = 'page';
+                $this->method = 'index';
+
+            } else {
+
+                // Nothing matched → true 404
+                (new error_handler())->not_found();
+                return;
+
             }
         }
-        /* [End AI:GPT] */
+    }
+    /* [End AI:GPT] */
 
-        $controller_path = APPROOT
-            . '/controllers/'
-            . $this->controller
-            . '.php';
+        $controller_path = APPROOT . '/controllers/' . $this->controller . '.php';
 
         if (!file_exists($controller_path)) {
-            /**
+            /** 
              * Setting the proper error handler
              * [Human:Mei | 2026-03-13 03:35:00 UTC]
-             */
+            */
             (new error_handler())->not_found();
             return;
         }
@@ -126,32 +109,36 @@ class router
         require_once $controller_path;
 
         if (!class_exists($this->controller)) {
-            /**
+            /** 
              * Setting the proper error handler
              * [Human:Mei | 2026-03-13 03:35:00 UTC]
-             */
+            */
             (new error_handler())->not_found();
             return;
         }
 
         $this->controller = new $this->controller;
 
+
         /* -------------------------------------------------
            METHOD
         --------------------------------------------------*/
 
         if (isset($url[1])) {
-            if (is_callable([$this->controller, $url[1]])) {
+
+            if (method_exists($this->controller, $url[1])) {
                 $this->method = $url[1];
                 unset($url[1]);
             }
         }
+
 
         /* -------------------------------------------------
            PARAMS
         --------------------------------------------------*/
 
         $this->params = $url ? array_values($url) : [];
+
 
         /* -------------------------------------------------
            CLEAN URL SUPPORT
@@ -169,15 +156,16 @@ class router
             $this->method = 'show';
         }
 
+
         /* -------------------------------------------------
            FINAL DISPATCH
         --------------------------------------------------*/
 
-        if (!is_callable([$this->controller, $this->method])) {
-            /**
+        if (!method_exists($this->controller, $this->method)) {
+            /** 
              * Setting the proper error handler
              * [Human:Mei | 2026-03-13 03:35:00 UTC]
-             */
+            */
             (new error_handler())->not_found();
             return;
         }
@@ -188,14 +176,14 @@ class router
         );
     }
 
+
     /**
-     * Parse URL from query string.
-     *
-     * @return array
+     * Parse URL from query string
      */
     private function parseUrl()
     {
         if (isset($_GET['url'])) {
+
             $url = rtrim($_GET['url'], '/');
 
             $url = filter_var($url, FILTER_SANITIZE_URL);
@@ -206,26 +194,26 @@ class router
         return [];
     }
 
+
     /**
      * Basic 404 handler
-     *
-     * Removing to use the proper error handler.
-     * [Human:Mei | 2026-03-13 03:35:00 UTC]
-     *
-     * private function error404()
-     * {
-     *     header("HTTP/1.0 404 Not Found");
-     *
-     *     $error_file = APPROOT . '/views/errors/error_page.php';
-     *
-     *     if (file_exists($error_file)) {
-     *         require_once $error_file;
-     *     } else {
-     *         echo "404 - Page not found.";
-     *     }
-     *
-     *     exit;
-     * }
      */
+     /**
+      * Removing to use the proper error handler
+      * [Human:Mei | 2026-03-13 03:35:00 UTC]
+    private function error404()
+    {
+        header("HTTP/1.0 404 Not Found");
+
+        $error_file = APPROOT . '/views/errors/error_page.php';
+
+        if (file_exists($error_file)) {
+            require_once $error_file;
+        } else {
+            echo "404 - Page not found.";
+        }
+
+        exit;
+    }
+    */
 }
-/* [End AI:GPT-5.6 Sol] */

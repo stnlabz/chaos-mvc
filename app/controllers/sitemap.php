@@ -11,23 +11,14 @@
  *
  * [Human:Mei | 2026-03-11 02:58:00 UTC]
  */
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class sitemap extends controller
 {
     public static $is_core = true;
 
     public function index()
     {
-        $this->require_admin(9);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            return false;
-        }
-
-        $this->verify_csrf();
         $pages = $this->model('modules_model')->get_all();
-        $host = URLROOT;
+        $host = "https://" . $_SERVER['HTTP_HOST'];
 
         $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
 
@@ -41,8 +32,7 @@ class sitemap extends controller
         foreach ($controllers as $file)
         {
             $name = str_replace('.php','',$file);
-            $url = ($name === 'home') ? $host : $host . '/' . rawurlencode($name);
-            $url = htmlspecialchars($url, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            $url = ($name === 'home') ? $host : "$host/$name";
 
             $xml .= "  <url>" . PHP_EOL;
             $xml .= "    <loc>$url</loc>" . PHP_EOL;
@@ -54,8 +44,7 @@ class sitemap extends controller
             foreach ($pages as $p)
             {
                 $xml .= "  <url>" . PHP_EOL;
-                $url = htmlspecialchars($host . '/' . rawurlencode($p['slug']), ENT_XML1 | ENT_QUOTES, 'UTF-8');
-                $xml .= "    <loc>$url</loc>" . PHP_EOL;
+                $xml .= "    <loc>$host/{$p['slug']}</loc>" . PHP_EOL;
                 $xml .= "  </url>" . PHP_EOL;
             }
         }
@@ -67,4 +56,3 @@ class sitemap extends controller
         return true;
     }
 }
-/* [End AI:GPT-5.6 Sol] */

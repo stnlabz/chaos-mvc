@@ -1,28 +1,24 @@
 <?php
 
 /**
- * Public framework capabilities.
+ * Class capabilities
  */
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class capabilities extends controller
 {
-    public static $is_core = true;
-
+    /**
+     * Display capabilities
+     *
+     * @return void
+     */
     public function index(): void
     {
-        $this->view('public/capabilities/index', [
+        $model = $this->model('capabilities_model');
+
+        $data = [
             'title' => 'System Capabilities',
-            'items' => [
-                'Predictable MVC request routing',
-                'PDO-backed model and query helpers',
-                'Authentication and account recovery',
-                'Role-gated administration',
-                'Posts, comments, media, and dynamic modules',
-                'Markdown rendering with safe links',
-                'Sitemap, ROR, and llms.txt generation',
-                'Signed and checksum-verified module updates'
-            ]
-        ]);
+            'items' => $model->get_all()
+        ];
+
+        $this->view('capabilities/index', $data);
     }
 }
-/* [End AI:GPT-5.6 Sol] */

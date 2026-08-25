@@ -3,33 +3,12 @@
 
 **Current Version:** 1.1.8
 
-<!-- [AI:GPT-5.6 Sol | 2026-08-25 UTC] -->
-## v1.1.9 Maintenance (Unreleased)
+## v1.1.9 Development August 25, 2026
 
-### Security
-
-- Added CSRF protection and POST-only state changes.
-- Enforced administrator authorization on directly routed controllers.
-- Restricted media uploads by MIME type, size, and generated filename.
-- Added signed module metadata, package checksums, and safe ZIP extraction.
-- Hardened session cookies, password resets, generated URLs, and Markdown links.
-- Escaped stored content in public and administrative views.
-
-### Fixed
-
-- Preserved password-reset route tokens.
-- Added missing password-reset and traffic schema tables.
-- Fixed media lookup and deletion signatures.
-- Added the missing account password action.
-- Restored developer and capabilities routes that referenced missing dependencies.
-- Repaired the administrative discovery-resource refresh action.
-
-### Maintenance
-
-- Validated SQL identifiers and simple helper conditions.
-- Added the existing-installation `1.1.9` migration.
-- Added dependency, signature, renderer, schema, and syntax regression checks.
-<!-- [End AI:GPT-5.6 Sol] -->
+## Added
+- Updater Controller
+- Update lock in `app/bootstrap.php`
+----
 
 ## v1.1.8	Release	August 24, 2026
 

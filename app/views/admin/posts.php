@@ -1,4 +1,3 @@
-<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <p><small><A href="/admin">Admin</a> >> <strong>Posts</strong></small></p>
 <div class="cl-container">
@@ -9,11 +8,10 @@
 
     <div class="cl-card">
         <form action="/admin/posts" method="POST">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
-            <input type="hidden" name="id" value="<?= (int) ($data['edit_item']['id'] ?? 0) ?>">
+            <input type="hidden" name="id" value="<?= $data['edit_item']['id'] ?? '' ?>">
             <div class="form-group">
                 <label>Post Title</label>
-                <input type="text" name="title" value="<?= htmlspecialchars($data['edit_item']['title'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                <input type="text" name="title" value="<?= $data['edit_item']['title'] ?? '' ?>" required>
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -23,7 +21,7 @@
                         <option value="">No Image</option>
                         <?php foreach($data['media_items'] as $media): ?>
                             <option value="<?= $media['id'] ?>" <?= (isset($data['edit_item']) && $data['edit_item']['featured_image_id'] == $media['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($media['filename'], ENT_QUOTES, 'UTF-8') ?>
+                                <?= $media['filename'] ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -35,7 +33,7 @@
 
             <div class="form-group">
                 <label>Content</label>
-                <textarea name="body" rows="10" required><?= htmlspecialchars($data['edit_item']['body'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                <textarea name="body" rows="10" required><?= $data['edit_item']['body'] ?? '' ?></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Save Post</button>
         </form>
@@ -50,14 +48,11 @@
                 <?php foreach($data['items'] as $post): ?>
                 <tr>
                     <td><?= $post['published'] ? '🟢' : '⚪' ?></td>
-                    <td><strong><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></strong></td>
+                    <td><strong><?= $post['title'] ?></strong></td>
                     <td><?= date('M j, Y', strtotime($post['created_at'])) ?></td>
                     <td style="text-align:right">
                         <a href="/admin/posts/edit/<?= $post['id'] ?>" class="btn-edit">Edit</a>
-                        <form action="/admin/posts/delete/<?= (int) $post['id'] ?>" method="POST" style="display:inline" onsubmit="return confirm('Delete post?')">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
-                            <button type="submit" class="btn-danger">Delete</button>
-                        </form>
+                        <a href="/admin/posts/delete/<?= $post['id'] ?>" class="btn-danger" onclick="return confirm('Delete post?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -66,4 +61,3 @@
     </div>
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

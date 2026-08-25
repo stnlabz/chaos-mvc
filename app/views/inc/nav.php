@@ -1,4 +1,3 @@
-<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <nav>
   <div class="nav-container">
     <a href="/"><img alt="Chaos MVC" src="/assets/icons/icon.svg" height="80" width="80"></a>
@@ -26,16 +25,10 @@
               <li><a href="/admin" class="btn btn-sm btn-outline-primary">Admin</a></li>
           <?php endif; ?>
           
-          <li>
-            <form action="/logout" method="POST" style="display:inline">
-              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
-              <button type="submit" style="color:#666; background:none; border:0; padding:0;">Logout</button>
-            </form>
-          </li>
+          <li><a href="/logout" style="color: #666; text-decoration: none;">Logout</a></li>
       <?php else: ?>
           <li><a href="/login">Login</a></li>
       <?php endif; ?>
     </ul>
   </div>
 </nav>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

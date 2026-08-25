@@ -1,7 +1,0 @@
-# [AI:GPT-5.6 Sol | 2026-08-25 UTC]
-Options -ExecCGI
-
-<FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
-    Require all denied
-</FilesMatch>
-# [End AI:GPT-5.6 Sol]

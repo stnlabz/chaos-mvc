@@ -1,5 +1,4 @@
 <?php
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 require APPROOT . '/views/inc/head.php';
 require_once APPROOT . '/lib/share.php';
 
@@ -10,13 +9,13 @@ $post_url = rtrim(URLROOT, '/') . '/posts/' . urlencode((string)($post['slug'] ?
     
     <?php if (!empty($post['image_path'])): ?>
         <div class="featured-image" style="margin-bottom: 20px;">
-            <img src="<?= htmlspecialchars($post['image_path'], ENT_QUOTES, 'UTF-8') ?>"
+            <img src="<?= $post['image_path'] ?>" 
                  style="width: 100%; height: auto; display: block;">
         </div>
     <?php endif; ?>
 
     <article style="padding: 0; margin: 0;">
-        <h1 style="margin: 0 0 10px 0;"><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+        <h1 style="margin: 0 0 10px 0;"><?= $post['title'] ?></h1>
 
         <?php if (function_exists('share_buttons')): ?>
             <div style="margin: 10px 0 20px 0;">
@@ -48,8 +47,7 @@ replace text with your content
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="reply-form" style="margin-bottom: 30px;">
                 <form action="/posts/reply" method="POST">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
-                    <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
+                    <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
                     <textarea name="body" required style="width: 100%; height: 100px; padding: 10px; background: #1a1a1a; color: #fff; border: 1px solid #333;"></textarea>
                     <br>
                     <button type="submit" style="margin-top: 10px; padding: 10px 20px; background: #eee; color: #000; border: none; cursor: pointer; font-weight: bold;">Post Reply</button>
@@ -66,7 +64,7 @@ replace text with your content
                 <div class="comment" style="margin-bottom: 30px; border-top: 1px solid #222; padding-top: 15px;">
                     <div style="margin-bottom: 5px;">
                         <strong><?= htmlspecialchars($comment['author_name']) ?></strong>
-                        <small style="color: #666; margin-left: 10px;"><?= htmlspecialchars($comment['created_at'], ENT_QUOTES, 'UTF-8') ?></small>
+                        <small style="color: #666; margin-left: 10px;"><?= $comment['created_at'] ?></small>
                     </div>
                     <div style="white-space: pre-wrap; color: #ccc;">
                         <?php 
@@ -81,4 +79,3 @@ replace text with your content
 </div>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

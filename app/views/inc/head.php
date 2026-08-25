@@ -1,5 +1,4 @@
 <?php
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 $og = $og ?? [];
 
 $og_title = $og['title'] ?? 'Chaos MVC';
@@ -45,10 +44,10 @@ $og_type = 'article' ?? '';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 
     <!-- Shadow Witch CSS -->
-    <link rel="stylesheet" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/css/site.css">
+    <link rel="stylesheet" href="<?= URLROOT ?>/assets/css/site.css">
     
     <!-- Site Icon -->
-    <link rel="icon" type="image/x-icon" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/icons/icon.png">
+    <link rel="icon" type="image/x-icon" href="<?= URLROOT ?>/assets/icons/icon.png">
 </head>
 <body>
 <div class="container">
@@ -56,4 +55,3 @@ $og_type = 'article' ?? '';
 include __DIR__ . '/nav.php';
 ?>
 </div>
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

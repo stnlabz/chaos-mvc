@@ -13,23 +13,14 @@
  * [Human:Mei | 2026-03-11 02:58:00 UTC]
  */
  
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class ror extends controller
 {
     public static $is_core = true;
 
     public function index()
     {
-        $this->require_admin(9);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            return false;
-        }
-
-        $this->verify_csrf();
         $pages = $this->model('modules_model')->get_all();
-        $host = URLROOT;
+        $host = "https://" . $_SERVER['HTTP_HOST'];
 
         $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
 
@@ -47,13 +38,11 @@ class ror extends controller
         foreach ($controllers as $file)
         {
             $name = str_replace('.php','',$file);
-            $url = ($name === 'home') ? $host : $host . '/' . rawurlencode($name);
-            $xmlName = htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-            $xmlUrl = htmlspecialchars($url, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            $url = ($name === 'home') ? $host : "$host/$name";
 
             $xml .= "    <item>" . PHP_EOL;
-            $xml .= "      <title>$xmlName</title>" . PHP_EOL;
-            $xml .= "      <link>$xmlUrl</link>" . PHP_EOL;
+            $xml .= "      <title>$name</title>" . PHP_EOL;
+            $xml .= "      <link>$url</link>" . PHP_EOL;
             $xml .= "    </item>" . PHP_EOL;
         }
 
@@ -62,10 +51,8 @@ class ror extends controller
             foreach ($pages as $p)
             {
                 $xml .= "    <item>" . PHP_EOL;
-                $title = htmlspecialchars($p['title'], ENT_XML1 | ENT_QUOTES, 'UTF-8');
-                $url = htmlspecialchars($host . '/' . rawurlencode($p['slug']), ENT_XML1 | ENT_QUOTES, 'UTF-8');
-                $xml .= "      <title>$title</title>" . PHP_EOL;
-                $xml .= "      <link>$url</link>" . PHP_EOL;
+                $xml .= "      <title>{$p['title']}</title>" . PHP_EOL;
+                $xml .= "      <link>$host/{$p['slug']}</link>" . PHP_EOL;
                 $xml .= "    </item>" . PHP_EOL;
             }
         }
@@ -78,4 +65,3 @@ class ror extends controller
         return true;
     }
 }
-/* [End AI:GPT-5.6 Sol] */

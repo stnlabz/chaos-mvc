@@ -123,26 +123,11 @@ class render_md
     // 11) Small: ~~text~~
     $html = preg_replace('/~~(.+?)~~/s', '<small>$1</small>', $html);
 
-    /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
-    // 12) Links [text](url), limited to safe web and email schemes.
-    $html = preg_replace_callback(
-        '/\[([^\]]+)\]\(([^)]+)\)/',
-        static function (array $matches): string {
-            $url = html_entity_decode($matches[2], ENT_QUOTES, 'UTF-8');
-            $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-            $isRelative = str_starts_with($url, '/') && !str_starts_with($url, '//');
-
-            if (!$isRelative && !in_array($scheme, ['http', 'https', 'mailto'], true)) {
-                return $matches[1];
-            }
-
-            return '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
-                . '" target="_blank" rel="noopener noreferrer">'
-                . $matches[1] . '</a>';
-        },
-        $html
-    );
-    /* [End AI:GPT-5.6 Sol] */
+    // 12) Links [text](url)
+    $html = preg_replace(
+        '/\[([^\]]+)\]\(([^)]+)\)/', 
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>', 
+        $html);
         
     // 13 Hard Rule -- ** = <hr>
     $html = preg_replace('/^(?:---|\*\*\*|___)\s*$/m', '<hr>', $html);

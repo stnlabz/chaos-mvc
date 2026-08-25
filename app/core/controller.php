@@ -1,7 +1,6 @@
 <?php
 // path: /app/core/controller.php
 
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class controller {
 
     protected $render_md;
@@ -18,42 +17,6 @@ class controller {
         'health',
         'modules'
     ];
-
-    /**
-     * Return the session CSRF token, creating it when needed.
-     */
-    public function csrf_token(): string
-    {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-
-        return $_SESSION['csrf_token'];
-    }
-
-    /**
-     * Reject a state-changing request without a valid CSRF token.
-     */
-    protected function verify_csrf(): void
-    {
-        $token = $_POST['csrf_token'] ?? '';
-
-        if (!is_string($token) || !hash_equals($this->csrf_token(), $token)) {
-            http_response_code(403);
-            $this->error_page('The request could not be verified. Please try again.');
-        }
-    }
-
-    /**
-     * Require an authenticated administrator at the requested level.
-     */
-    protected function require_admin(int $level = 7): void
-    {
-        if ((int) ($_SESSION['user_level'] ?? 0) < $level) {
-            header('Location: /login');
-            exit;
-        }
-    }
 
     /**
      * Check if module is core
@@ -125,4 +88,3 @@ class controller {
         exit;
     }
 }
-/* [End AI:GPT-5.6 Sol] */

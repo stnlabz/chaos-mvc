@@ -1,54 +1,76 @@
 <?php
-
 /**
- * Developer documentation controller.
+ * Developer Controller
+ *
+ * Provides documentation and examples for the MVC architecture.
+ *
+ * @package MVC
  */
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
+
 class developer extends controller
 {
     public static $is_core = true;
 
-    public function index(): void
+    public function index()
     {
-        $this->show('Developer Portal', 'Choose a topic to understand the framework request flow and conventions.');
+        $data = [
+            'title' => 'Developer Portal'
+        ];
+
+        $this->view('public/developer/index', $data);
     }
 
-    public function example(): void
+    public function example()
     {
-        $this->show('Example Module', 'A module normally contains a lowercase controller, optional model, and public or admin view.');
+        $data = [
+            'title' => 'Example Module'
+        ];
+
+        $this->view('public/developer/example', $data);
     }
 
-    public function flow(): void
+    public function flow()
     {
-        $this->show('MVC Execution Flow', 'Requests pass through the front controller, bootstrap, router, controller, model, and view.');
+        $data = [
+            'title' => 'MVC Execution Flow'
+        ];
+
+        $this->view('public/developer/flow', $data);
     }
 
-    public function database(): void
+    public function database()
     {
-        $this->show('Database Wrapper', 'Models use parameterized PDO queries and validated identifiers through the core model helpers.');
+        $data = [
+            'title' => 'Database Wrapper'
+        ];
+
+        $this->view('public/developer/database', $data);
     }
 
-    public function markdown(): void
+    public function markdown()
     {
-        $this->show('Markdown Rendering', 'Stored Markdown is HTML-escaped before supported formatting and safe links are rendered.');
+        $data = [
+            'title' => 'Markdown Rendering'
+        ];
+
+        $this->view('public/developer/markdown', $data);
+    }
+    
+    public function theme()
+    {
+        $data = [
+            'title' => 'MVC View'
+        ];
+
+        $this->view('public/developer/theme', $data);
     }
 
-    public function theme(): void
+    public function rules()
     {
-        $this->show('MVC Views', 'Views receive controller data and are responsible for escaping values in their HTML context.');
-    }
+        $data = [
+            'title' => 'Development Rules'
+        ];
 
-    public function rules(): void
-    {
-        $this->show('Development Rules', 'Use lowercase names, PSR-12 formatting, DocBlocks, review, and required change annotations.');
-    }
-
-    private function show(string $title, string $description): void
-    {
-        $this->view('public/developer/topic', [
-            'title' => $title,
-            'description' => $description
-        ]);
+        $this->view('public/developer/rules', $data);
     }
 }
-/* [End AI:GPT-5.6 Sol] */
