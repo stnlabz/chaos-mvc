@@ -32,7 +32,7 @@
 
 - Defined the separate v1.1.9 Core Updater release-gate contract.
 - Added Core package checksum, archive-shape, staging, and preflight checks.
-- Added deterministic installed-Core ownership metadata; private release construction remains outside this distribution.
+- Added deterministic installed-Core ownership metadata; `chaos-mvc.org`-only release construction remains outside this distribution.
 - Validated SQL identifiers and simple helper conditions.
 - Added the existing-installation `1.1.9` migration.
 - Added dependency, signature, renderer, schema, and syntax regression checks.
