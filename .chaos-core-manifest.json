@@ -14,8 +14,8 @@
         },
         {
             "path": "app/bootstrap.php",
-            "sha256": "b1546e34feed3f337243207098c87ff11789f3532c183d6fb2f28cc41f17223b",
-            "size": 3366
+            "sha256": "0f85bb16a8bc85f6768d62f1c7e2fc051100171aa564080b2b374b69bf0c5580",
+            "size": 3223
         },
         {
             "path": "app/controllers/accounts.php",
