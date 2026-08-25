@@ -26,7 +26,7 @@ require_once APPROOT . '/core/core_package_stager.php';
 require_once APPROOT . '/core/core_recovery_service.php';
 require_once APPROOT . '/core/core_updater.php';
 require_once APPROOT . '/controllers/admin.php';
-require_once dirname(__DIR__) . '/tools/core_release_builder.php';
+require_once APPROOT . '/api/core_release_builder.php';
 
 $failures = [];
 
@@ -900,7 +900,7 @@ file_put_contents($backupTestRoot . '/app/bootstrap.php', "corrupted\n");
 $cliProcess = proc_open(
     [
         PHP_BINARY,
-        dirname(__DIR__) . '/tools/core-recover.php',
+        APPROOT . '/tools/core-recover.php',
         '--root=' . $backupTestRoot,
         '--confirm'
     ],
@@ -928,13 +928,13 @@ $releaseOutput = $releaseFixture . '-output';
 mkdir($releaseFixture . '/app/core', 0750, true);
 mkdir($releaseFixture . '/app/install/migrations', 0750, true);
 mkdir($releaseFixture . '/public', 0750, true);
-mkdir($releaseFixture . '/tools', 0750, true);
+mkdir($releaseFixture . '/app/tools', 0750, true);
 file_put_contents($releaseFixture . '/app/bootstrap.php', "<?php\n");
 file_put_contents($releaseFixture . '/app/core/version.php', "<?php define('CHAOS_VERSION', '1.1.9');\n");
 file_put_contents($releaseFixture . '/app/core/config.php', "<?php // protected\n");
 file_put_contents($releaseFixture . '/app/install/migrations/1.1.9.sql', "SELECT 1;\n");
 file_put_contents($releaseFixture . '/public/index.php', "<?php // site-owned\n");
-file_put_contents($releaseFixture . '/tools/core-recover.php', "<?php\n");
+file_put_contents($releaseFixture . '/app/tools/core-recover.php', "<?php\n");
 
 $releaseKeyOptions = ['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA];
 $releaseOpenSslConfig = dirname(PHP_BINARY) . '/extras/ssl/openssl.cnf';

@@ -13,6 +13,11 @@
             "size": 9989
         },
         {
+            "path": "app/api/core_release_builder.php",
+            "sha256": "1e4452ba7687db4dde6952d1c63ded951dc728218484c8de3dd4fabe0bc556d3",
+            "size": 7919
+        },
+        {
             "path": "app/bootstrap.php",
             "sha256": "0f85bb16a8bc85f6768d62f1c7e2fc051100171aa564080b2b374b69bf0c5580",
             "size": 3223
@@ -303,6 +308,16 @@
             "size": 1086
         },
         {
+            "path": "app/tools/build-core-release.php",
+            "sha256": "a062f045613599af57da17a5f1882eea076c0fa00dfbaed0cdb548a81472f032",
+            "size": 1332
+        },
+        {
+            "path": "app/tools/core-recover.php",
+            "sha256": "90b05ae2168244f047825932c2900928934600d94d2f164088bcdc17471c428d",
+            "size": 7294
+        },
+        {
             "path": "app/views/admin/accounts.php",
             "sha256": "5e9fa137b0ce95388d40b3edece47b3ad4ba8afeeae886529d794bde56f7a17c",
             "size": 3150
@@ -499,28 +514,13 @@
         },
         {
             "path": "docs/MAINTENANCE_1.1.9.md",
-            "sha256": "0beebf1eb3995d6b0586a99ae9dbc7867388f3e1e2c19f278d49e223c2f9fe3b",
-            "size": 3795
+            "sha256": "62bde3f17a3cc635c294cb4e2865df8f67ea49835533cab0c87de69d55a9efd5",
+            "size": 3862
         },
         {
             "path": "tests/run.php",
-            "sha256": "5364c77da377bb2a4c92963aa7c4ebb7aefb72afe89f428ba6ac13a7a43fbfe8",
-            "size": 42561
-        },
-        {
-            "path": "tools/build-core-release.php",
-            "sha256": "66839e8a6863568263a191ebed55c1f14186cda34e33c34f45d0ccab40267f48",
-            "size": 1316
-        },
-        {
-            "path": "tools/core-recover.php",
-            "sha256": "1f3cc31af345d24c6a28e8b310ab2ccd238ac1028817a0944e3f639b58df663e",
-            "size": 7287
-        },
-        {
-            "path": "tools/core_release_builder.php",
-            "sha256": "6208a44241705ddbb260a841afaf4b52e3cb18fa17cad680c13e7a25ee0bfb86",
-            "size": 7924
+            "sha256": "ce3de3a3596785b338854b501002cdf0a38488594723c6db2110956966633b3d",
+            "size": 42549
         }
     ],
     "migrations": []
