@@ -1,92 +1,233 @@
 <?php
+
 /**
  * Chaos MVC Installer
- * path: /app/controllers/install.php
+ *
+ * Handles initial database configuration, schema installation,
+ * administrator account creation, and installation locking.
+ *
+ * Path: /app/controllers/install.php
+ *
+ * @package Chaos MVC
  */
 
+/* [AI:GPT-5.6 Sol | 2026-08-25 02:19:00 UTC] */
 class install extends controller
 {
-
+    /**
+     * Run the Chaos MVC installer.
+     *
+     * Displays the installer form for GET requests and processes
+     * installation data for POST requests.
+     *
+     * @return void
+     */
     public function index()
     {
+        $lockFile = LOG_PATH . '/install.lock';
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-            $host = trim($_POST['db_host']);
-            $user = trim($_POST['db_user']);
-            $pass = trim($_POST['db_pass']);
-            $name = trim($_POST['db_name']);
-
-            $adminUser = trim($_POST['admin_user']);
-            $adminEmail = trim($_POST['admin_email']);
-            $adminPass = $_POST['admin_pass'];
-
-            if (!$host || !$user || !$name || !$adminUser || !$adminEmail || !$adminPass) {
-                $this->view('public/install/index', ['error' => 'All fields required']);
-                return;
-            }
-
-            /* ------------------------------
-               Test DB Connection
-            ------------------------------ */
-
-            $mysqli = @new mysqli($host, $user, $pass, $name);
-
-            if ($mysqli->connect_errno) {
-                $this->view('public/install/index', ['error' => 'Database connection failed']);
-                return;
-            }
-
-            /* ------------------------------
-               Write config.php
-            ------------------------------ */
-
-            $config = "<?php\n";
-            $config .= "define('DB_HOST', '{$host}');\n";
-            $config .= "define('DB_USER', '{$user}');\n";
-            $config .= "define('DB_PASS', '{$pass}');\n";
-            $config .= "define('DB_NAME', '{$name}');\n";
-
-            file_put_contents(APPROOT . '/core/config.php', $config);
-
-            /* ------------------------------
-               Run SQL Schema
-            ------------------------------ */
-
-            $schema = file_get_contents(APPROOT . '/install/schema.sql');
-
-            if ($schema) {
-
-                $mysqli->multi_query($schema);
-
-                while ($mysqli->more_results() && $mysqli->next_result()) {}
-
-            }
-
-            /* ------------------------------
-               Create Admin
-            ------------------------------ */
-
-            $hash = password_hash($adminPass, PASSWORD_DEFAULT);
-
-            $stmt = $mysqli->prepare("
-                INSERT INTO users (username, email, password, role, created_at)
-                VALUES (?, ?, ?, 'admin', NOW())
-            ");
-
-            $stmt->bind_param("sss", $adminUser, $adminEmail, $hash);
-            $stmt->execute();
-
-            /* ------------------------------
-               Lock Installer
-            ------------------------------ */
-
-            file_put_contents(LOG_PATH . '/install.lock', 'installed');
-
-            header("Location: /login");
+        if (file_exists($lockFile)) {
+            header('Location: /login');
             exit;
         }
 
-        $this->view('public/install/index');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->view('public/install/index');
+            return;
+        }
+
+        $host = trim($_POST['db_host'] ?? '');
+        $user = trim($_POST['db_user'] ?? '');
+        $pass = $_POST['db_pass'] ?? '';
+        $name = trim($_POST['db_name'] ?? '');
+
+        $adminUser = trim($_POST['admin_user'] ?? '');
+        $adminEmail = trim($_POST['admin_email'] ?? '');
+        $adminDisplayName = trim($_POST['admin_display_name'] ?? '');
+        $adminPass = $_POST['admin_pass'] ?? '';
+
+        if (
+            $host === '' ||
+            $user === '' ||
+            $name === '' ||
+            $adminUser === '' ||
+            $adminEmail === '' ||
+            $adminDisplayName === '' ||
+            $adminPass === ''
+        ) {
+            $this->view(
+                'public/install/index',
+                ['error' => 'All required fields must be completed.']
+            );
+            return;
+        }
+
+        if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->view(
+                'public/install/index',
+                ['error' => 'A valid administrator email address is required.']
+            );
+            return;
+        }
+
+        /*
+         * Test DB Connection
+         */
+        $mysqli = @new mysqli($host, $user, $pass, $name);
+
+        if ($mysqli->connect_errno) {
+            $this->view(
+                'public/install/index',
+                ['error' => 'Database connection failed.']
+            );
+            return;
+        }
+
+        $mysqli->set_charset('utf8mb4');
+
+        /*
+         * Run SQL Schema
+         */
+        $schemaFile = APPROOT . '/install/schema.sql';
+        $schema = file_get_contents($schemaFile);
+
+        if ($schema === false || trim($schema) === '') {
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Installer schema could not be loaded.']
+            );
+            return;
+        }
+
+        if (!$mysqli->multi_query($schema)) {
+            $error = $mysqli->error;
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Database schema installation failed: ' . $error]
+            );
+            return;
+        }
+
+        do {
+            if ($result = $mysqli->store_result()) {
+                $result->free();
+            }
+
+            if (!$mysqli->more_results()) {
+                break;
+            }
+
+            if (!$mysqli->next_result()) {
+                $error = $mysqli->error;
+                $mysqli->close();
+
+                $this->view(
+                    'public/install/index',
+                    ['error' => 'Database schema installation failed: ' . $error]
+                );
+                return;
+            }
+        } while (true);
+
+        /*
+         * Create Administrator Account
+         */
+        $hash = password_hash($adminPass, PASSWORD_DEFAULT);
+
+        $stmt = $mysqli->prepare(
+            'INSERT INTO accounts
+                (
+                    username,
+                    email_address,
+                    password_hash,
+                    role,
+                    user_level,
+                    display_name
+                )
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+
+        if (!$stmt) {
+            $error = $mysqli->error;
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Administrator account preparation failed: ' . $error]
+            );
+            return;
+        }
+
+        $role = 'admin';
+        $userLevel = 9;
+
+        $stmt->bind_param(
+            'ssssis',
+            $adminUser,
+            $adminEmail,
+            $hash,
+            $role,
+            $userLevel,
+            $adminDisplayName
+        );
+
+        if (!$stmt->execute()) {
+            $error = $stmt->error;
+
+            $stmt->close();
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Administrator account creation failed: ' . $error]
+            );
+            return;
+        }
+
+        $stmt->close();
+
+        /*
+         * Write config.php
+         */
+        $config = "<?php\n\n";
+        $config .= "define('DB_HOST', " . var_export($host, true) . ");\n";
+        $config .= "define('DB_USER', " . var_export($user, true) . ");\n";
+        $config .= "define('DB_PASS', " . var_export($pass, true) . ");\n";
+        $config .= "define('DB_NAME', " . var_export($name, true) . ");\n";
+
+        $configFile = APPROOT . '/core/config.php';
+
+        if (file_put_contents($configFile, $config, LOCK_EX) === false) {
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Database configuration could not be written.']
+            );
+            return;
+        }
+
+        /*
+         * Lock Installer
+         */
+        if (file_put_contents($lockFile, 'installed', LOCK_EX) === false) {
+            $mysqli->close();
+
+            $this->view(
+                'public/install/index',
+                ['error' => 'Installation completed, but the installer lock could not be written.']
+            );
+            return;
+        }
+
+        $mysqli->close();
+
+        header('Location: /login');
+        exit;
     }
 }
+/* [End AI:GPT-5.6 Sol] */
