@@ -54,7 +54,7 @@ final class core_release_builder
         usort($files, static fn (array $left, array $right): int => strcmp($left['path'], $right['path']));
         $paths = array_column($files, null, 'path');
 
-        foreach (['app/bootstrap.php', 'app/core/version.php', 'app/tools/core-recover.php'] as $required) {
+        foreach (['app/bootstrap.php', 'app/core/version.php', 'tools/core-recover.php'] as $required) {
             if (!isset($paths[$required])) {
                 throw new RuntimeException("Required Core release file is missing: {$required}");
             }
@@ -209,7 +209,7 @@ final class core_release_builder
             return false;
         }
 
-        return in_array($root, ['app', 'docs', 'tests'], true)
+        return in_array($root, ['app', 'docs', 'tests', 'tools'], true)
             || in_array($normalized, ['readme.md', '.htaccess'], true);
     }
 

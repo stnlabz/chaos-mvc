@@ -35,12 +35,11 @@ If the application cannot bootstrap, run the standalone recovery utility from
 outside the web server:
 
 ```text
-php app/tools/core-recover.php --root=/path/to/chaos-mvc --confirm
+php tools/core-recover.php --root=/path/to/chaos-mvc --confirm
 ```
 
 Release maintainers can produce the complete ZIP and signed metadata with
-`app/tools/build-core-release.php`. Its release-service implementation lives
-under `app/api/`. The private PEM is an external input and is
+`tools/build-core-release.php`. The private PEM is an external input and is
 never part of Core ownership or package contents.
 
 ## Existing installations

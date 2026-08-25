@@ -17,10 +17,10 @@ $options = getopt('', [
     'minimum-updater::',
     'installed-manifest::'
 ]);
-$root = is_string($options['root'] ?? null) ? $options['root'] : dirname(__DIR__, 2);
+$root = is_string($options['root'] ?? null) ? $options['root'] : dirname(__DIR__);
 
 require_once $root . '/app/core/core_updater.php';
-require_once dirname(__DIR__) . '/api/core_release_builder.php';
+require_once __DIR__ . '/core_release_builder.php';
 
 try {
     $builder = new core_release_builder($root);

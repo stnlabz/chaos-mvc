@@ -10,11 +10,11 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $options = getopt('', ['root:', 'confirm']);
-$rootInput = $options['root'] ?? dirname(__DIR__, 2);
+$rootInput = $options['root'] ?? dirname(__DIR__);
 $root = realpath(is_string($rootInput) ? $rootInput : '');
 
 if (!is_string($root) || !isset($options['confirm']) || dirname($root) === $root || !is_file($root . '/app/core/config.php')) {
-    fwrite(STDERR, "Usage: php app/tools/core-recover.php --root=/path/to/chaos-mvc --confirm\n");
+    fwrite(STDERR, "Usage: php tools/core-recover.php --root=/path/to/chaos-mvc --confirm\n");
     exit(1);
 }
 
