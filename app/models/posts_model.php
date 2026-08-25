@@ -1,12 +1,15 @@
 <?php
 // path: /app/models/posts_model.php
 
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class posts_model extends model {
 
     protected $table = 'posts';
 
     public function get_all() {
-        return $this->db->query("SELECT * FROM {$this->table} ORDER BY created_at DESC")->fetchAll();
+        return $this->db->query(
+            "SELECT * FROM {$this->table} WHERE is_active = 1 ORDER BY created_at DESC"
+        )->fetchAll();
     }
 
     public function get_by_id($id) {
@@ -23,7 +26,7 @@ class posts_model extends model {
             SELECT p.*, m.file_path AS image_path
             FROM posts p
             LEFT JOIN media m ON m.id = p.featured_image_id
-            WHERE p.slug = ?
+            WHERE p.slug = ? AND p.published = 1 AND p.is_active = 1
             LIMIT 1
         ";
 
@@ -36,7 +39,7 @@ class posts_model extends model {
         $sql = "SELECT p.*, m.file_path as image_path 
                 FROM posts p 
                 LEFT JOIN media m ON p.featured_image_id = m.id 
-                WHERE p.published = 1 
+                WHERE p.published = 1 AND p.is_active = 1
                 ORDER BY p.created_at DESC";
         return $this->db->query($sql)->fetchAll();
     }
@@ -46,7 +49,7 @@ class posts_model extends model {
         $sql = "
             SELECT *
             FROM comments
-            WHERE post_id = ?
+            WHERE post_id = ? AND is_approved = 1
             ORDER BY created_at ASC
         ";
 
@@ -68,18 +71,12 @@ class posts_model extends model {
         ]);
     }
 
-    /**
-     * REAL DELETE: Replaces the 'archive' behavior.
-     * When the controller calls $model->archive(), it now nukes the row.
-     */
-    public function archive($table = null, $where = null, $params = []) {
-        $id = $params['id'] ?? $where;
-        return $this->delete_post($id); 
-    }
-
-    public function delete_post($id) {
-        $sql = "DELETE FROM {$this->table} WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute(['id' => (int)$id]);
+    public function is_public_post(int $id): bool
+    {
+        return (bool) $this->fetch(
+            "SELECT id FROM posts WHERE id = ? AND published = 1 AND is_active = 1 LIMIT 1",
+            [$id]
+        );
     }
 }
+/* [End AI:GPT-5.6 Sol] */

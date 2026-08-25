@@ -1,18 +1,19 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 
 <div class="d-flex align-items-center justify-content-center" style="min-height: 70vh;">
     <div class="text-center">
 
         <h1 class="display-1 fw-bold text-secondary">
-            <?= $data['code'] ?? 'Error' ?>
+            <?= htmlspecialchars((string) ($data['code'] ?? 'Error'), ENT_QUOTES, 'UTF-8') ?>
         </h1>
 
         <h2 class="fs-3">
-            <?= $data['title'] ?? 'Something went wrong' ?>
+            <?= htmlspecialchars((string) ($data['title'] ?? 'Something went wrong'), ENT_QUOTES, 'UTF-8') ?>
         </h2>
 
         <p class="lead text-muted">
-            <?= $data['msg'] ?? 'The system encountered an unexpected issue.' ?>
+            <?= htmlspecialchars((string) ($data['msg'] ?? 'The system encountered an unexpected issue.'), ENT_QUOTES, 'UTF-8') ?>
         </p>
 
         <hr class="my-4">
@@ -25,5 +26,6 @@
 
     </div>
 </div>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>

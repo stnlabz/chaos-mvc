@@ -84,18 +84,31 @@ class posts extends controller {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
             $this->verify_csrf();
+            $title = trim((string) $_POST['title']);
+            $body = trim((string) ($_POST['body'] ?? ''));
+
+            if ($title === '' || strlen($title) > 255 || $body === '') {
+                $_SESSION['admin_status'] = 'Post title or body is invalid.';
+                header('Location: /admin/posts');
+                exit;
+            }
+
             $payload = [
-                'title'             => $_POST['title'],
-                'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($_POST['title']))), '-'),
-                'body'              => $_POST['body'],
+                'title'             => $title,
+                'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower($title)), '-'),
+                'body'              => $body,
                 'featured_image_id' => !empty($_POST['featured_image_id']) ? (int)$_POST['featured_image_id'] : null,
                 'published'         => isset($_POST['published']) ? 1 : 0
             ];
 
-            if (!empty($_POST['id'])) {
-                $model->update('posts', $payload, "id = :id", ['id' => $_POST['id']]);
-            } else {
-                $model->insert('posts', $payload);
+            try {
+                if (!empty($_POST['id'])) {
+                    $model->update('posts', $payload, "id = :id", ['id' => (int) $_POST['id']]);
+                } else {
+                    $model->insert('posts', $payload);
+                }
+            } catch (PDOException $e) {
+                $_SESSION['admin_status'] = 'The post could not be saved. Its slug may already exist.';
             }
             header("Location: /admin/posts");
             exit;
@@ -113,9 +126,16 @@ class posts extends controller {
         $this->verify_csrf();
         $model = $this->model('posts_model');
 
+        $postId = (int) ($_POST['post_id'] ?? 0);
+        $body = trim((string) ($_POST['body'] ?? ''));
+
+        if (!$model->is_public_post($postId) || $body === '' || strlen($body) > 10000) {
+            $this->error_page('The reply could not be accepted.');
+        }
+
         $payload = [
-            'post_id'     => (int)$_POST['post_id'],
-            'body'        => trim($_POST['body']),
+            'post_id'     => $postId,
+            'body'        => $body,
             'author_name' => $_SESSION['username'], // Matches your 'author_name' column
             'is_approved' => 1
         ];
@@ -127,7 +147,11 @@ class posts extends controller {
                 $mail->addAddress('poe@poemei.com');
                 $mail->Subject = "New Comment";
                 $mail->Body = "Hey Poe, a new comment has been posted on something you posted.";
-                $mail->send();
+                try {
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log('Comment notification failed: ' . $e->getMessage());
+                }
             header('Location: /posts');
             exit;
         }

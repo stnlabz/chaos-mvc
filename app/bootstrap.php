@@ -18,7 +18,11 @@ define('PUBROOT', $ROOT . '/public');
 // URL detection. APP_URL is recommended in production.
 $configuredUrl = trim((string) getenv('APP_URL'));
 
-if ($configuredUrl !== '') {
+if (
+    $configuredUrl !== '' &&
+    filter_var($configuredUrl, FILTER_VALIDATE_URL) !== false &&
+    in_array(parse_url($configuredUrl, PHP_URL_SCHEME), ['http', 'https'], true)
+) {
     $urlRoot = rtrim($configuredUrl, '/');
 } else {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -116,5 +120,7 @@ if (!file_exists($installLock)) {
  * Comes with the Chaos MVC.
  * Tracks traffic to your domain
 */
+$GLOBALS['CHAOS_TRAFFIC_INTERNAL'] = true;
 $trafficEngine = new traffic();
 $trafficEngine->collect();
+unset($GLOBALS['CHAOS_TRAFFIC_INTERNAL']);

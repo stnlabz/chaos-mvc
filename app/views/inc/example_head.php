@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -13,12 +14,13 @@
     <meta name="application-name" content="Your Sites Name">
 
     <!-- Site CSS -->
-    <link rel="stylesheet" href="<?= URLROOT ?>/assets/css/site.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/css/site.css">
     
     <!-- Site Icon -->
-    <link rel="icon" type="image/x-icon" href="<?= URLROOT ?>/assets/icons/icon.png">
+    <link rel="icon" type="image/x-icon" href="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8') ?>/assets/icons/icon.png">
 </head>
 <body>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>
 <div class="container">
 <?php
 // include the site nav

@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <div class="container py-5">
     
@@ -57,8 +58,8 @@
                         <div class="card h-100 border-0 shadow-sm p-3">
                             <div class="card-body">
                                 <i class="bi bi-gear h1 d-block mb-3 text-primary"></i>
-                                <h6 class="fw-bold text-capitalize"><?= $name; ?></h6>
-                                <a href="/admin/<?= $name; ?>" class="btn btn-outline-primary btn-sm w-100 mt-2">Manage</a>
+                                <h6 class="fw-bold text-capitalize"><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></h6>
+                                <a href="/admin/<?= rawurlencode($name); ?>" class="btn btn-outline-primary btn-sm w-100 mt-2">Manage</a>
                             </div>
                         </div>
                     </div>
@@ -76,7 +77,10 @@
                     <span class="fw-bold d-block text-uppercase small">Core Maintenance</span>
                     <small class="text-muted">Rebuild sitemaps, ROR files, and search indices.</small>
                 </div>
-                <a href="/admin/refresh_indices" class="btn btn-primary btn-sm px-4">Refresh Indices</a>
+                <form action="/admin/refresh_indices" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
+                    <button type="submit" class="btn btn-primary btn-sm px-4">Refresh Indices</button>
+                </form>
             </div>
         </div>
     </div>
@@ -88,3 +92,4 @@
 </form>
 <?php /* [End AI:GPT-5.6 Sol] */ ?>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

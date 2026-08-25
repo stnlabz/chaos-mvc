@@ -10,10 +10,10 @@
     <div class="cl-card">
         <form action="/admin/posts" method="POST">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
-            <input type="hidden" name="id" value="<?= $data['edit_item']['id'] ?? '' ?>">
+            <input type="hidden" name="id" value="<?= (int) ($data['edit_item']['id'] ?? 0) ?>">
             <div class="form-group">
                 <label>Post Title</label>
-                <input type="text" name="title" value="<?= $data['edit_item']['title'] ?? '' ?>" required>
+                <input type="text" name="title" value="<?= htmlspecialchars($data['edit_item']['title'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -23,7 +23,7 @@
                         <option value="">No Image</option>
                         <?php foreach($data['media_items'] as $media): ?>
                             <option value="<?= $media['id'] ?>" <?= (isset($data['edit_item']) && $data['edit_item']['featured_image_id'] == $media['id']) ? 'selected' : '' ?>>
-                                <?= $media['filename'] ?>
+                                <?= htmlspecialchars($media['filename'], ENT_QUOTES, 'UTF-8') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -35,7 +35,7 @@
 
             <div class="form-group">
                 <label>Content</label>
-                <textarea name="body" rows="10" required><?= $data['edit_item']['body'] ?? '' ?></textarea>
+                <textarea name="body" rows="10" required><?= htmlspecialchars($data['edit_item']['body'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Save Post</button>
         </form>
@@ -50,7 +50,7 @@
                 <?php foreach($data['items'] as $post): ?>
                 <tr>
                     <td><?= $post['published'] ? '🟢' : '⚪' ?></td>
-                    <td><strong><?= $post['title'] ?></strong></td>
+                    <td><strong><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></strong></td>
                     <td><?= date('M j, Y', strtotime($post['created_at'])) ?></td>
                     <td style="text-align:right">
                         <a href="/admin/posts/edit/<?= $post['id'] ?>" class="btn-edit">Edit</a>

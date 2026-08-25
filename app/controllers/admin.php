@@ -10,7 +10,7 @@ class admin extends controller
 
         $slug = $params[0] ?? null;
 
-        if (in_array($slug, ['update', 'uninstall'], true)) {
+        if (in_array($slug, ['update', 'uninstall', 'refresh_indices'], true)) {
             $this->$slug($params);
             return;
         }
@@ -75,6 +75,7 @@ class admin extends controller
 
     $current   = $config['version'] ?? '0.0.0';
     $updateUrl = $config['update_url'] ?? null;
+    $publicKey = $config['signing_public_key'] ?? null;
 
     if (!$this->isSafeRemoteUrl($updateUrl)) {
         echo json_encode(['success' => false, 'error' => 'No update URL']);
@@ -111,9 +112,20 @@ class admin extends controller
     $download = $remote['download'] ?? null;
 
     $expectedHash = strtolower((string) ($remote['sha256'] ?? ''));
+    $signature = $remote['signature'] ?? '';
 
-    if (!$this->isSafeRemoteUrl($download) || !preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
-        echo json_encode(['success' => false, 'error' => 'No package URL']);
+    if (
+        !$this->isSafeRemoteUrl($download) ||
+        !preg_match('/^[a-f0-9]{64}$/', $expectedHash) ||
+        !$this->hasValidUpdateSignature(
+            $publicKey,
+            $signature,
+            $new,
+            $download,
+            $expectedHash
+        )
+    ) {
+        echo json_encode(['success' => false, 'error' => 'Update signature verification failed']);
         exit;
     }
 
@@ -217,9 +229,8 @@ class admin extends controller
             unlink($config);
         }
 
-        if (isset($this->db)) {
-            $this->db->query("DROP TABLE IF EXISTS `" . $module . "`");
-        }
+        $database = new model();
+        $database->query("DROP TABLE IF EXISTS `{$module}`");
 
         $backend = [
             APPROOT . "/controllers/" . $module . ".php",
@@ -239,6 +250,27 @@ class admin extends controller
         }
 
         header("Location: /admin/modules");
+        exit;
+    }
+
+    /**
+     * Regenerate public discovery resources.
+     */
+    public function refresh_indices(): void
+    {
+        $this->require_admin(9);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /admin');
+            exit;
+        }
+
+        $this->verify_csrf();
+        (new llms())->index();
+        (new ror())->index();
+        (new sitemap())->index();
+        $_SESSION['admin_status'] = 'Discovery resources were refreshed.';
+        header('Location: /admin');
         exit;
     }
 
@@ -327,6 +359,41 @@ class admin extends controller
         }
 
         return true;
+    }
+
+    /**
+     * Verify update metadata against the public key pinned locally.
+     */
+    private function hasValidUpdateSignature(
+        $publicKey,
+        $signature,
+        string $version,
+        string $download,
+        string $sha256
+    ): bool {
+        if (
+            !extension_loaded('openssl') ||
+            !is_string($publicKey) ||
+            !is_string($signature)
+        ) {
+            return false;
+        }
+
+        $decodedSignature = base64_decode($signature, true);
+        $key = openssl_pkey_get_public($publicKey);
+
+        if ($decodedSignature === false || $key === false) {
+            return false;
+        }
+
+        $message = $version . "\n" . $download . "\n" . $sha256;
+
+        return openssl_verify(
+            $message,
+            $decodedSignature,
+            $key,
+            OPENSSL_ALGO_SHA256
+        ) === 1;
     }
 }
 /* [End AI:GPT-5.6 Sol] */

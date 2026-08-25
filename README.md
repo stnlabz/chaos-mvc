@@ -414,6 +414,9 @@ Chaos MVC expects contributors to maintain professional communication and respec
  - [CHANGELOG](docs/CHANGELOG.md)
  - [ChAoS MVC License](docs/LICENSE.md)
  - [CONTRIBUTING](docs/CONTRIBUTING.md)
+ <!-- [AI:GPT-5.6 Sol | 2026-08-25 UTC] -->
+ - [Pre-1.1.9 Maintenance](docs/MAINTENANCE_1.1.9.md)
+ <!-- [End AI:GPT-5.6 Sol] -->
 
 # License
 

@@ -151,6 +151,10 @@ The current base schema includes:
 - `modules`
 - `posts`
 - `comments`
+<!-- [AI:GPT-5.6 Sol | 2026-08-25 UTC] -->
+- `password_resets`
+- `traffic`
+<!-- [End AI:GPT-5.6 Sol] -->
 
 The `accounts` table is used by the authentication and account-management systems.
 
@@ -230,6 +234,12 @@ Do not run the installer over an existing working Chaos MVC installation.
 The installer is intended for initial installation.
 
 Framework updates are separate from installation and should use the applicable Chaos MVC update process for the installed release.
+
+<!-- [AI:GPT-5.6 Sol | 2026-08-25 UTC] -->
+For the pre-1.1.9 maintenance upgrade, follow
+[`MAINTENANCE_1.1.9.md`](MAINTENANCE_1.1.9.md) and run the versioned migration
+after taking a backup.
+<!-- [End AI:GPT-5.6 Sol] -->
 
 ## After Installation
 

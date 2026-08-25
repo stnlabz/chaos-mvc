@@ -13,18 +13,30 @@ class traffic extends controller
      * This is the background execution method.
      * It is NOT accessible via URL as a public view.
      */
-    public function collect()
+    /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
+    public function collect(): bool
     {
-        $model = $this->model('traffic_model');
-        $model->record([
-            'host'       => $_SERVER['HTTP_HOST'] ?? 'unknown',
-            'uri'        => $_SERVER['REQUEST_URI'] ?? '/',
-            'method'     => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-            'ip'         => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'referer'    => $_SERVER['HTTP_REFERER'] ?? null
-        ]);
+        if (empty($GLOBALS['CHAOS_TRAFFIC_INTERNAL'])) {
+            return false;
+        }
+
+        try {
+            $model = $this->model('traffic_model');
+
+            return $model->record([
+                'host' => substr((string) ($_SERVER['SERVER_NAME'] ?? 'unknown'), 0, 190),
+                'uri' => substr((string) ($_SERVER['REQUEST_URI'] ?? '/'), 0, 500),
+                'method' => substr((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'), 0, 10),
+                'ip' => substr((string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45),
+                'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+                'referer' => substr((string) ($_SERVER['HTTP_REFERER'] ?? ''), 0, 255)
+            ]);
+        } catch (Throwable $e) {
+            error_log('Traffic collection failed: ' . $e->getMessage());
+            return false;
+        }
     }
+    /* [End AI:GPT-5.6 Sol] */
 
     /**
      * Admin-only access to view the data.
