@@ -9,8 +9,8 @@
         },
         {
             "path": "README.md",
-            "sha256": "bddfcb6683ab9340057d419cca476e49eb1511e8eb0c9ef1d60f87efadccc852",
-            "size": 9927
+            "sha256": "51e1493b57df992efbf60ff77e618af567c41e9215c256eb58455ca2486e8c5f",
+            "size": 9989
         },
         {
             "path": "app/api/core_release_builder.php",
@@ -44,8 +44,8 @@
         },
         {
             "path": "app/controllers/core_updates.php",
-            "sha256": "94128b0f2e0850c40e1104d32ce964756b8bb446f041ec4f87b36ca400d21b8e",
-            "size": 7667
+            "sha256": "c321e643eca3430bb9d47b6555e71c6540dfdf37f0b41512240520375246910f",
+            "size": 6720
         },
         {
             "path": "app/controllers/developer.php",

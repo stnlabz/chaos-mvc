@@ -44,40 +44,15 @@ class core_updates extends controller
 
         require_once APPROOT . '/core/version.php';
         $root = dirname(APPROOT);
-        $stateDirectory = $root . '/.chaos-update';
-        $maintenanceState = ['active' => false];
-        $lockState = null;
-        $rollbackState = null;
-
-        try {
-            foreach (['core_backup_manager', 'core_maintenance', 'core_update_lock'] as $requiredClass) {
-                if (!class_exists($requiredClass)) {
-                    throw new RuntimeException("Required Core updater component is unavailable: {$requiredClass}.");
-                }
-            }
-
-            $backupManager = new core_backup_manager($root, $stateDirectory);
-            $maintenanceState = (new core_maintenance($stateDirectory))->read();
-            $lockState = (new core_update_lock($stateDirectory))->read();
-            $rollbackState = $backupManager->retainedManifest();
-        } catch (Throwable $exception) {
-            $_SESSION['core_update_result'] = [
-                'success' => false,
-                'outcome' => 'failed_unchanged',
-                'phase' => 'readiness',
-                'error_code' => 'core_runtime_unavailable',
-                'message' => $exception->getMessage()
-            ];
-        }
-
+        $backupManager = new core_backup_manager($root, $root . '/.chaos-update');
         $this->view('admin/core_updates', [
             'installed_version' => defined('CHAOS_VERSION') ? CHAOS_VERSION : '0.0.0',
             'result' => $_SESSION['core_update_result'] ?? null,
             'offer' => $_SESSION['core_update_offer'] ?? null,
             'stage' => $_SESSION['core_update_stage'] ?? null,
-            'maintenance' => $maintenanceState,
-            'lock' => $lockState,
-            'rollback' => $rollbackState
+            'maintenance' => (new core_maintenance($root . '/.chaos-update'))->read(),
+            'lock' => (new core_update_lock($root . '/.chaos-update'))->read(),
+            'rollback' => $backupManager->retainedManifest()
         ]);
         unset($_SESSION['core_update_result']);
     }
