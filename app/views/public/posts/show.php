@@ -1,4 +1,5 @@
 <?php
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 require APPROOT . '/views/inc/head.php';
 require_once APPROOT . '/lib/share.php';
 
@@ -47,6 +48,7 @@ replace text with your content
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="reply-form" style="margin-bottom: 30px;">
                 <form action="/posts/reply" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
                     <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
                     <textarea name="body" required style="width: 100%; height: 100px; padding: 10px; background: #1a1a1a; color: #fff; border: 1px solid #333;"></textarea>
                     <br>
@@ -79,3 +81,4 @@ replace text with your content
 </div>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

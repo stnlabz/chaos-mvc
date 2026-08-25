@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <p><small><a href="/admin">Admin</a> >> <strong>Traffic</strong></small></p>
 <div class="container">
@@ -15,9 +16,9 @@
     <tbody>
         <?php foreach ($data['logs'] as $log): ?>
         <tr>
-            <td><?= $log['created_at'] ?></td>
-            <td><code><?= $log['ip'] ?></code></td>
-            <td><span class="badge bg-secondary"><?= $log['method'] ?></span></td>
+            <td><?= htmlspecialchars($log['created_at']) ?></td>
+            <td><code><?= htmlspecialchars($log['ip']) ?></code></td>
+            <td><span class="badge bg-secondary"><?= htmlspecialchars($log['method']) ?></span></td>
             <td><?= htmlspecialchars($log['uri']) ?></td>
             <td class="small text-truncate" style="max-width: 200px;"><?= htmlspecialchars($log['user_agent']) ?></td>
         </tr>
@@ -27,3 +28,4 @@
 
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

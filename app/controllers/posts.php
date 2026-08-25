@@ -1,6 +1,7 @@
 <?php
 // path: /app/controllers/posts.php
 
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class posts extends controller {
     public static $is_core = true;
 
@@ -62,11 +63,7 @@ class posts extends controller {
 }
 
     public function admin($params = []) {
-        // GATED: Redirect to login if no session
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit;
-        }
+        $this->require_admin(7);
 
         $model = $this->model('posts_model');
         $action = $params[1] ?? null;
@@ -74,12 +71,19 @@ class posts extends controller {
 
         // Use the core model archive helper instead of hard delete
         if ($action === 'delete' && $id) {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                $this->error_page('Post deletion requires a POST request.');
+            }
+
+            $this->verify_csrf();
             $model->archive('posts', "id = :id", ['id' => (int)$id]);
             header("Location: /admin/posts");
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
+            $this->verify_csrf();
             $payload = [
                 'title'             => $_POST['title'],
                 'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($_POST['title']))), '-'),
@@ -106,6 +110,7 @@ class posts extends controller {
     
     public function reply() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
+        $this->verify_csrf();
         $model = $this->model('posts_model');
 
         $payload = [
@@ -123,11 +128,11 @@ class posts extends controller {
                 $mail->Subject = "New Comment";
                 $mail->Body = "Hey Poe, a new comment has been posted on something you posted.";
                 $mail->send();
-            $redirect = $_SERVER['HTTP_REFERER'] ?? '/';
-            header("Location: " . $redirect);
+            header('Location: /posts');
             exit;
         }
     }
     $this->error_page("Unauthorized.");
     }
 }
+/* [End AI:GPT-5.6 Sol] */

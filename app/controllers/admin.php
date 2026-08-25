@@ -1,18 +1,16 @@
 <?php
 // path: /app/controllers/admin.php
 
-class admin extends controller 
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
+class admin extends controller
 {
     public function index($params = []) 
     {
-        if (!isset($_SESSION['user_level']) || $_SESSION['user_level'] < 7) {
-            header("Location: /auth/login");
-            exit;
-        }
+        $this->require_admin(7);
 
         $slug = $params[0] ?? null;
 
-        if ($slug && method_exists($this, $slug) && $slug !== 'index') {
+        if (in_array($slug, ['update', 'uninstall'], true)) {
             $this->$slug($params);
             return;
         }
@@ -38,9 +36,19 @@ class admin extends controller
 {
     header('Content-Type: application/json');
 
-    $module = $_GET['module'] ?? '';
+    $this->require_admin(9);
 
-    if (!$module) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'POST required']);
+        exit;
+    }
+
+    $this->verify_csrf();
+
+    $module = $_POST['module'] ?? '';
+
+    if (!is_string($module) || !preg_match('/^[a-z0-9_]+$/', $module)) {
         echo json_encode(['success' => false]);
         exit;
     }
@@ -60,23 +68,33 @@ class admin extends controller
 
     $config = json_decode(file_get_contents($configPath), true);
 
+    if (!is_array($config)) {
+        echo json_encode(['success' => false, 'error' => 'Invalid module config']);
+        exit;
+    }
+
     $current   = $config['version'] ?? '0.0.0';
     $updateUrl = $config['update_url'] ?? null;
 
-    if (!$updateUrl) {
+    if (!$this->isSafeRemoteUrl($updateUrl)) {
         echo json_encode(['success' => false, 'error' => 'No update URL']);
         exit;
     }
 
     // 🌐 Fetch update metadata
-    $remoteRaw = @file_get_contents($updateUrl);
+    $remoteRaw = @file_get_contents($updateUrl, false, null, 0, 1048577);
 
-    if (!$remoteRaw) {
+    if (!$remoteRaw || strlen($remoteRaw) > 1048576) {
         echo json_encode(['success' => false, 'error' => 'Failed to fetch update source']);
         exit;
     }
 
     $remote = json_decode($remoteRaw, true);
+
+    if (!is_array($remote)) {
+        echo json_encode(['success' => false, 'error' => 'Invalid update metadata']);
+        exit;
+    }
 
     $new = $remote['version'] ?? $current;
 
@@ -92,20 +110,28 @@ class admin extends controller
 
     $download = $remote['download'] ?? null;
 
-    if (!$download) {
+    $expectedHash = strtolower((string) ($remote['sha256'] ?? ''));
+
+    if (!$this->isSafeRemoteUrl($download) || !preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
         echo json_encode(['success' => false, 'error' => 'No package URL']);
         exit;
     }
 
     // 📦 temp paths
-    $tmpZip = APPROOT . '/../tmp_' . $module . '.zip';
-    $tmpDir = APPROOT . '/../tmp_' . $module;
+    $temporaryId = bin2hex(random_bytes(12));
+    $tmpZip = sys_get_temp_dir() . '/chaos_' . $temporaryId . '.zip';
+    $tmpDir = sys_get_temp_dir() . '/chaos_' . $temporaryId;
 
     // 🧲 download zip
-    $zipData = @file_get_contents($download);
+    $zipData = @file_get_contents($download, false, null, 0, 20971521);
 
-    if (!$zipData) {
+    if (!$zipData || strlen($zipData) > 20971520) {
         echo json_encode(['success' => false, 'error' => 'Download failed']);
+        exit;
+    }
+
+    if (!hash_equals($expectedHash, hash('sha256', $zipData))) {
+        echo json_encode(['success' => false, 'error' => 'Package checksum failed']);
         exit;
     }
 
@@ -114,7 +140,7 @@ class admin extends controller
     // 📂 extract
     $zip = new ZipArchive;
 
-    if ($zip->open($tmpZip) === TRUE) {
+    if ($zip->open($tmpZip) === true && $this->isSafeModuleArchive($zip)) {
         $zip->extractTo($tmpDir);
         $zip->close();
     } else {
@@ -167,14 +193,18 @@ class admin extends controller
 
     public function uninstall(): void
     {
+        $this->require_admin(9);
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /admin");
             exit;
         }
 
+        $this->verify_csrf();
+
         $module = $_POST['module'] ?? '';
 
-        if (!$module) {
+        if (!is_string($module) || !preg_match('/^[a-z0-9_]+$/', $module)) {
             $this->error_page('Invalid module.');
         }
 
@@ -230,4 +260,73 @@ class admin extends controller
 
         rmdir($dir);
     }
+
+    /**
+     * Accept only HTTPS update endpoints and reject literal private IPs.
+     */
+    private function isSafeRemoteUrl($url): bool
+    {
+        if (!is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+        $host = $parts['host'] ?? '';
+
+        if (($parts['scheme'] ?? '') !== 'https' || $host === '') {
+            return false;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return filter_var(
+                $host,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            ) !== false;
+        }
+
+        return strtolower($host) !== 'localhost';
+    }
+
+    /**
+     * Reject traversal, links, and unexpected module package paths.
+     */
+    private function isSafeModuleArchive(ZipArchive $zip): bool
+    {
+        $allowedRoots = ['controllers', 'models', 'views'];
+
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $entry = $zip->statIndex($index);
+            $name = str_replace('\\', '/', (string) ($entry['name'] ?? ''));
+            $segments = explode('/', trim($name, '/'));
+            $attributes = 0;
+            $zip->getExternalAttributesIndex($index, $operatingSystem, $attributes);
+            $unixType = ($attributes >> 16) & 0170000;
+
+            if (
+                $name === '' ||
+                str_starts_with($name, '/') ||
+                str_contains($name, '../') ||
+                str_contains($name, ':') ||
+                $unixType === 0120000 ||
+                !in_array($segments[0] ?? '', $allowedRoots, true)
+            ) {
+                $zip->close();
+                return false;
+            }
+
+            if (!str_ends_with($name, '/') && strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'php') {
+                $zip->close();
+                return false;
+            }
+
+            if (($entry['size'] ?? 0) > 2097152) {
+                $zip->close();
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
+/* [End AI:GPT-5.6 Sol] */

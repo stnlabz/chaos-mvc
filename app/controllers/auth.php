@@ -5,6 +5,7 @@
  *
  * Handles authentication, registration, and account recovery.
  */
+/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 class auth extends controller
 {
     /**
@@ -35,6 +36,7 @@ class auth extends controller
         $data = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->verify_csrf();
             $model = $this->model('accounts_model');
 
             $user = $model->authenticate(
@@ -43,7 +45,7 @@ class auth extends controller
             );
 
             if ($user) {
-                session_regenerate_id();
+                session_regenerate_id(true);
 
                 $_SESSION['user_id']    = $user['id'];
                 $_SESSION['username']  = $user['username'];
@@ -72,6 +74,13 @@ class auth extends controller
      */
     public function logout()
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /');
+            exit;
+        }
+
+        $this->verify_csrf();
+
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -108,6 +117,7 @@ class auth extends controller
         $data = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->verify_csrf();
             $model = $this->model('accounts_model');
 
             $payload = [
@@ -121,11 +131,17 @@ class auth extends controller
             if (
                 empty($payload['username']) ||
                 empty($payload['email_address']) ||
-                empty($payload['password'])
+                empty($payload['password']) ||
+                !filter_var($payload['email_address'], FILTER_VALIDATE_EMAIL) ||
+                strlen($payload['password']) < 12
             ) {
-                $data['error'] = 'All required fields must be completed.';
+                $data['error'] = 'Complete all fields with a valid email and a 12-character password.';
             } else {
-                $result = $model->create($payload);
+                try {
+                    $result = $model->create($payload);
+                } catch (PDOException $e) {
+                    $result = false;
+                }
 
                 if ($result) {
                     header('Location: /login?signup=success');
@@ -149,6 +165,7 @@ class auth extends controller
         $data = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->verify_csrf();
             $email = trim($_POST['email'] ?? '');
 
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -166,11 +183,12 @@ class auth extends controller
 
             if ($user) {
                 $token = bin2hex(random_bytes(32));
+                $tokenHash = hash('sha256', $token);
                 $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
                 $model->query(
                     "INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)",
-                    [$email, $token, $expires]
+                    [$email, $tokenHash, $expires]
                 );
 
                 $resetLink = URLROOT . '/reset-password/' . $token;
@@ -210,7 +228,7 @@ class auth extends controller
 
         $reset = $model->fetch(
             "SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1",
-            [$token]
+            [hash('sha256', $token)]
         );
 
         if (!$reset) {
@@ -218,7 +236,18 @@ class auth extends controller
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $newPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            $this->verify_csrf();
+            $password = $_POST['password'] ?? '';
+
+            if (strlen($password) < 12) {
+                $this->view(
+                    'auth/reset_password',
+                    ['token' => $token, 'error' => 'Password must contain at least 12 characters.']
+                );
+                return;
+            }
+
+            $newPassword = password_hash($password, PASSWORD_DEFAULT);
 
             $model->query(
                 "UPDATE accounts SET password_hash = ? WHERE email_address = ?",
@@ -256,6 +285,13 @@ public function delete($params = null): void
         exit;
     }
 
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: /admin/accounts');
+        exit;
+    }
+
+    $this->verify_csrf();
+
     $id = is_array($params)
         ? ($params[0] ?? null)
         : $params;
@@ -292,3 +328,4 @@ public function delete($params = null): void
     exit;
 }
 }
+/* [End AI:GPT-5.6 Sol] */

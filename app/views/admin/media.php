@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <p><small><A href="/admin">Admin</a> >> <strong>Media</strong></small></p>
 <div class="cl-container">
@@ -7,6 +8,7 @@
 
     <div class="cl-card" style="border: 2px dashed #d1d5da; text-align: center; padding: 40px;">
         <form action="/admin/media" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
             <input type="file" name="file" required>
             <button type="submit" class="btn btn-primary">Upload Asset</button>
         </form>
@@ -21,10 +23,14 @@
                 <small style="display: block; margin-bottom: 8px; color: #6a737d;"><?= $item['filename'] ?></small>
                 <div style="display: flex; justify-content: space-between;">
                     <button class="btn-edit" onclick="navigator.clipboard.writeText('<?= $item['file_path'] ?>'); alert('Copied!');">URL</button>
-                    <a href="/admin/media/delete/<?= $item['id'] ?>" class="btn-danger" onclick="return confirm('Delete permanently?')">Delete</a>
+                    <form action="/admin/media/delete/<?= (int) $item['id'] ?>" method="POST" onsubmit="return confirm('Delete permanently?')">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
                 </div>
             </div>
         <?php endforeach; ?>
     </div>
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

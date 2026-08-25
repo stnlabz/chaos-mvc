@@ -81,5 +81,10 @@
         </div>
     </div>
 </div>
-<p><small><a href="/logout">Logout</a></small></p>
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
+<form action="/logout" method="POST">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
+    <button type="submit" class="btn btn-link btn-sm">Logout</button>
+</form>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>
 <?php require APPROOT . '/views/inc/foot.php'; ?>

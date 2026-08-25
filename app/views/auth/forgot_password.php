@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require_once APPROOT . '/views/inc/head.php'; ?>
 <div class="login-container" style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
     <h2>Recover Account</h2>
@@ -8,6 +9,7 @@
         <p><a href="/login">Return to Login</a></p>
     <?php else: ?>
         <form action="/auth/forgot_password" method="POST">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
             <div style="margin-bottom: 15px;">
                 <label for="email" style="font-weight: bold;">Email Address:</label><br>
                 <input type="email" name="email" id="email" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
@@ -17,3 +19,4 @@
     <?php endif; ?>
 </div>
 <?php require_once APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

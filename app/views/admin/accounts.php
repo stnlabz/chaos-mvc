@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <p><small><a href="/admin">Admin</a> >> <strong>Accounts</strong></small></p>
 <div class="container mt-4">
@@ -38,6 +39,7 @@
 <td><!--<?php echo htmlspecialchars($a['email_address']); ?>-->
 
 <form method="POST" action="<?php echo URLROOT; ?>/accounts/email/<?php echo $a['id']; ?>">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
 <input type="email" name="email_address" placeholder="<?= htmlspecialchars($a['email_address'])?>" required>
 <button type="submit">change</button>
 </form>
@@ -49,6 +51,7 @@
 <td>
 
 <form method="POST" action="<?php echo URLROOT; ?>/accounts/password/<?php echo $a['id']; ?>">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
 <input type="password" name="password" placeholder="new password" required>
 <button type="submit">change</button>
 </form>
@@ -58,7 +61,8 @@
 <td>
 
 <?php if ($a['id'] != ($_SESSION['user_id'] ?? 0)): ?>
-    <form method="POST" action="<?php echo URLROOT; ?>/auth/delete/<?php echo $a['id']; ?>">
+    <form method="POST" action="<?php echo URLROOT; ?>/accounts/delete/<?php echo $a['id']; ?>">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
         <button type="submit">delete</button>
     </form>
 <?php else: ?>
@@ -80,6 +84,7 @@
 <h3>Create Account</h3>
 
 <form method="POST" action="<?php echo URLROOT; ?>/accounts/create">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
 
 <div class="mb-2">
 <label>Username</label>
@@ -119,3 +124,4 @@
 </div>
 
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>

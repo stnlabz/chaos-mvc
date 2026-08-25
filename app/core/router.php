@@ -31,6 +31,13 @@ class router
     {
         $url = $this->parseUrl();
 
+        foreach ($url as $segment) {
+            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $segment)) {
+                (new error_handler())->not_found();
+                return;
+            }
+        }
+
         /* -------------------------------------------------
            CLEAN URL ALIASES
            /login   → /auth/login
@@ -134,7 +141,7 @@ class router
         --------------------------------------------------*/
 
         if (isset($url[1])) {
-            if (method_exists($this->controller, $url[1])) {
+            if (is_callable([$this->controller, $url[1]])) {
                 $this->method = $url[1];
                 unset($url[1]);
             }
@@ -166,7 +173,7 @@ class router
            FINAL DISPATCH
         --------------------------------------------------*/
 
-        if (!method_exists($this->controller, $this->method)) {
+        if (!is_callable([$this->controller, $this->method])) {
             /**
              * Setting the proper error handler
              * [Human:Mei | 2026-03-13 03:35:00 UTC]

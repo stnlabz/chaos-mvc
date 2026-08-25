@@ -1,3 +1,4 @@
+<?php /* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */ ?>
 <?php require APPROOT . '/views/inc/head.php'; ?>
 <p><small><A href="/admin">Admin</a> >> <strong>Posts</strong></small></p>
 <div class="cl-container">
@@ -8,6 +9,7 @@
 
     <div class="cl-card">
         <form action="/admin/posts" method="POST">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
             <input type="hidden" name="id" value="<?= $data['edit_item']['id'] ?? '' ?>">
             <div class="form-group">
                 <label>Post Title</label>
@@ -52,7 +54,10 @@
                     <td><?= date('M j, Y', strtotime($post['created_at'])) ?></td>
                     <td style="text-align:right">
                         <a href="/admin/posts/edit/<?= $post['id'] ?>" class="btn-edit">Edit</a>
-                        <a href="/admin/posts/delete/<?= $post['id'] ?>" class="btn-danger" onclick="return confirm('Delete post?')">Delete</a>
+                        <form action="/admin/posts/delete/<?= (int) $post['id'] ?>" method="POST" style="display:inline" onsubmit="return confirm('Delete post?')">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token()) ?>">
+                            <button type="submit" class="btn-danger">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -61,3 +66,4 @@
     </div>
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
+<?php /* [End AI:GPT-5.6 Sol] */ ?>
