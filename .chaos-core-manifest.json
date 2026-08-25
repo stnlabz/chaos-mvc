@@ -24,8 +24,8 @@
         },
         {
             "path": "app/controllers/admin.php",
-            "sha256": "4afc68d2f7c80fac763680529d772a4ef7384ba9e5fb2991eab6072b696218eb",
-            "size": 11992
+            "sha256": "61404f5caede09e6a415c8cd9aaeb3d1e32ea51f2879f13ec8891b8ea2f57616",
+            "size": 10797
         },
         {
             "path": "app/controllers/auth.php",
