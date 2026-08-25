@@ -4,22 +4,6 @@
 This maintenance release hardens authentication, administration, uploads,
 database helpers, generated discovery files, and module updates.
 
-## Core Updater release gate
-
-The v1.1.9 release gate includes a dedicated Core/system updater. Its
-requirements are defined in [`CORE_UPDATER_1.1.9.md`](CORE_UPDATER_1.1.9.md).
-The Core Updater is distinct from the independently versioned module updater;
-neither updater's authority, state, package, backup, or installation model
-defines the other.
-
-The first implementation slice provides read-only authenticated Core release
-checking, a dedicated administration screen, and isolated filesystem lock
-state. Core installation remains disabled until the package, backup,
-installation, verification, maintenance, and recovery stages are implemented
-and pass the release-gate fixtures. The fixed Core signing public key is
-embedded at `app/core/core_update_public_key.pem`; the corresponding private
-release-signing key must remain outside the repository and update server.
-
 ## Existing installations
 
 Back up the database and application files before upgrading. Run
