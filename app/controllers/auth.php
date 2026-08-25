@@ -238,39 +238,57 @@ class auth extends controller
     }
 
     /**
-     * Delete account (Admin only)
-     *
-     * @param int|null $id
-     * @return void
-     */
-    public function delete($id = null)
-    {
-        if (!isset($_SESSION['user_id']) || (int)$_SESSION['user_level'] !== 9) {
-            header('Location: /login');
-            exit;
-        }
+ * Delete account.
+ *
+ * Deletes the requested account while preventing the currently
+ * authenticated administrator from deleting their own account.
+ *
+ * @param array|string|int|null $params Route parameters.
+ * @return void
+ */
+public function delete($params = null): void
+{
+    if (
+        !isset($_SESSION['user_id']) ||
+        (int) ($_SESSION['user_level'] ?? 0) !== 9
+    ) {
+        header('Location: /login');
+        exit;
+    }
 
-        if ((int)$id === (int)($_SESSION['user_id'] ?? 0)) {
-            $_SESSION['msg'] = 'You cannot delete your own account.';
-            $_SESSION['msg_type'] = 'danger';
+    $id = is_array($params)
+        ? ($params[0] ?? null)
+        : $params;
 
-            header('Location: /admin/accounts');
-            exit;
-        }
-
-        if ($id) {
-            $model = $this->model('accounts_model');
-
-            if ($model->delete((int)$id)) {
-                $_SESSION['msg'] = "Account #{$id} deleted.";
-                $_SESSION['msg_type'] = 'success';
-            } else {
-                $_SESSION['msg'] = 'Deletion failed.';
-                $_SESSION['msg_type'] = 'danger';
-            }
-        }
+    if (!$id) {
+        $_SESSION['msg'] = 'Invalid account ID.';
+        $_SESSION['msg_type'] = 'danger';
 
         header('Location: /admin/accounts');
         exit;
     }
+
+    $id = (int) $id;
+
+    if ($id === (int) $_SESSION['user_id']) {
+        $_SESSION['msg'] = 'You cannot delete your own account.';
+        $_SESSION['msg_type'] = 'danger';
+
+        header('Location: /admin/accounts');
+        exit;
+    }
+
+    $model = $this->model('accounts_model');
+
+    if ($model->delete($id)) {
+        $_SESSION['msg'] = "Account #{$id} deleted.";
+        $_SESSION['msg_type'] = 'success';
+    } else {
+        $_SESSION['msg'] = 'Deletion failed.';
+        $_SESSION['msg_type'] = 'danger';
+    }
+
+    header('Location: /admin/accounts');
+    exit;
+}
 }
