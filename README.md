@@ -412,6 +412,8 @@ Chaos MVC expects contributors to maintain professional communication and respec
 
 # documentation
 [CHANGELOG](docs/CHANGELOG.md)
+[ChAoS MVC License](docs/LICENSE.md)
+[CONTRIBUTING](docs/CONTRIBUTING.md)
 
 # License
 
