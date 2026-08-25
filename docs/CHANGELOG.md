@@ -1,6 +1,6 @@
 # Chaos MVC
-** CHANGELOG **
-** Current Version: ** 1.1.8
+**CHANGELOG**
+**Current Version:** 1.1.8
 
 ## v1.1.8	Release	August 24, 2026
 
