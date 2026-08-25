@@ -104,6 +104,8 @@ class updater_engine
                 self::MANIFEST_URL
             );
 
+            $this->validateReleaseIdentity($manifest, $current);
+
             $target = trim(
                 (string) ($manifest['version'] ?? '')
             );
@@ -221,7 +223,7 @@ class updater_engine
             self::MANIFEST_URL
         );
 
-        $this->validateManifest(
+        $this->validateReleaseIdentity(
             $manifest,
             $current
         );
@@ -244,6 +246,11 @@ class updater_engine
                 'message' => 'Already up to date.'
             ];
         }
+
+        $this->validateManifest(
+            $manifest,
+            $current
+        );
 
         $packageFile =
             $this->tempDir
@@ -565,10 +572,9 @@ class updater_engine
         array $manifest,
         string $current
     ): void {
+        $this->validateReleaseIdentity($manifest, $current);
+
         $required = [
-            'product',
-            'version',
-            'minimum_version',
             'package',
             'sha256',
             'files_manifest'
@@ -583,24 +589,6 @@ class updater_engine
                     'Release manifest is missing ' . $field . '.'
                 );
             }
-        }
-
-        if ($manifest['product'] !== 'Chaos MVC') {
-            throw new RuntimeException(
-                'Release manifest product does not match Chaos MVC.'
-            );
-        }
-
-        if (
-            version_compare(
-                $current,
-                (string) $manifest['minimum_version'],
-                '<'
-            )
-        ) {
-            throw new RuntimeException(
-                'This installation is too old for the available update.'
-            );
         }
 
         $this->requireHttpsUrl(
@@ -619,6 +607,31 @@ class updater_engine
         ) {
             throw new RuntimeException(
                 'Release package SHA-256 is invalid.'
+            );
+        }
+    }
+
+    private function validateReleaseIdentity(
+        array $manifest,
+        string $current
+    ): void {
+        foreach (['product', 'version', 'minimum_version'] as $field) {
+            if (!isset($manifest[$field]) || trim((string) $manifest[$field]) === '') {
+                throw new RuntimeException(
+                    'Release manifest is missing ' . $field . '.'
+                );
+            }
+        }
+
+        if ($manifest['product'] !== 'Chaos MVC') {
+            throw new RuntimeException(
+                'Release manifest product does not match Chaos MVC.'
+            );
+        }
+
+        if (version_compare($current, (string) $manifest['minimum_version'], '<')) {
+            throw new RuntimeException(
+                'This installation is too old for the available update.'
             );
         }
     }

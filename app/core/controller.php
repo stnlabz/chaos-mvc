@@ -37,6 +37,18 @@ class controller {
         }
     }
 
+    protected function require_csrf(): void
+    {
+        $this->verify_csrf();
+    }
+
+    public function csrf_field(): string
+    {
+        return '<input type="hidden" name="csrf_token" value="'
+            . htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8')
+            . '">';
+    }
+
     protected function require_admin(int $level = 7): void
     {
         if ((int) ($_SESSION['user_level'] ?? 0) < $level) {
