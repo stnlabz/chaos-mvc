@@ -17,15 +17,36 @@ class admin extends controller
 
         $path = APPROOT . '/controllers/' . $slug . '.php';
         if ($slug && file_exists($path)) {
-            require_once $path;
+            try {
+                require_once $path;
 
-            if (class_exists($slug)) {
-                $controller = new $slug();
+                if (class_exists($slug)) {
+                    $controller = new $slug();
 
-                if (method_exists($controller, 'admin')) {
-                    $controller->admin($params);
-                    return;
+                    if (method_exists($controller, 'admin')) {
+                        $controller->admin($params);
+                        return;
+                    }
                 }
+            } catch (Throwable $exception) {
+                error_log(
+                    'Admin controller failure [' . $slug . ']: '
+                    . $exception->getMessage() . ' in '
+                    . $exception->getFile() . ':' . $exception->getLine()
+                );
+                http_response_code(200);
+                header('Content-Type: text/html; charset=UTF-8');
+                $message = htmlspecialchars($exception->getMessage(), ENT_QUOTES, 'UTF-8');
+                echo '<!doctype html><html lang="en"><meta charset="utf-8">'
+                    . '<title>Chaos MVC Admin</title><main>'
+                    . '<h1>Administrative component unavailable</h1>'
+                    . '<p>The requested administrative component could not load.</p>'
+                    . '<p><strong>Component:</strong> '
+                    . htmlspecialchars((string) $slug, ENT_QUOTES, 'UTF-8') . '</p>'
+                    . '<p><strong>Server error:</strong> ' . $message . '</p>'
+                    . '<p><a href="/admin">Return to Admin</a></p>'
+                    . '</main></html>';
+                return;
             }
         }
 
