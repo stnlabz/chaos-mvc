@@ -256,15 +256,15 @@ These resources help search engines and AI systems understand the structure of t
 
 # Developer Documentation
 
-Chaos MVC ships with internal developer documentation accessible through the framework.
+Chaos-MVC.com now has documentation available.
 
-Developer portal pages include:
-- `/developer`
-- `/developer/flow`
-- `/developer/example`
-- `/developer/database`
-- `/developer/markdown`
-- `/developer/rules`
+Certification portal pages include:
+- `/certification`
+- `/certification/flow`
+- `/certification/example`
+- `/certification/database`
+- `/certification/markdown`
+- `/certification/rules`
   
   These pages explain the architecture, database wrapper, Markdown system, and development standards.
 
@@ -299,6 +299,7 @@ Key rules enforced by the framework:
 
 - GitHub is required for core changes
 - AI-generated code must be annotated
+- HUMAN Approval is required for all AI edited/created work
 - PSR-12 code formatting is required
 - Proper DocBlock documentation must be present
 - Core files are protected
@@ -378,7 +379,7 @@ Because this framework prioritizes stability and traceability, contributions mus
 
 All contributions must follow the Chaos MVC development standards:
 
-- PSR-12 compliant code formatting
+- PSR-12 compliant code formatting where ChAoS Coding standards end.
 - Proper DocBlock documentation
 - Lowercase file and class naming
 - No modification of core files without approval
@@ -391,6 +392,7 @@ All contributions must follow the Chaos MVC development standards:
 /* [AI:MODEL_NAME | YYYY-MM-DD HH:MM:SS UTC] */
 /* modified code */
 /* [End AI:MODEL_NAME] */
+/* [HUMAN: YOU | APPROVE | YYYY-DD-MM HH:MM:SS UTC] */
 ```
 ### Core File Protection
 
