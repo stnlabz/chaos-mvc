@@ -9,7 +9,7 @@
 
 Chaos MVC is a lightweight PHP MVC framework focused on **discipline, traceability, and architectural simplicity**.
 
-**NOTICE** Current Source does **NOT** mean Current Version. Please see the [Releases](/releases) for current version.
+**NOTICE** Current Source does **NOT** mean Current Version. Please see the [Releases](https://github.com/stnlabz/chaos-mvc/releases) for current version.
 
 **Current Version**: 1.1.8
 
