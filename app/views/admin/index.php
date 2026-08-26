@@ -81,5 +81,8 @@
         </div>
     </div>
 </div>
-<p><small><a href="/logout">Logout</a></small></p>
+<form action="/logout" method="POST">
+    <?= $this->csrf_field(); ?>
+    <button type="submit" style="background: none; border: 0; color: inherit; cursor: pointer; font: inherit; padding: 0;"><small>Logout</small></button>
+</form>
 <?php require APPROOT . '/views/inc/foot.php'; ?>

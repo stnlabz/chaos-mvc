@@ -3,21 +3,81 @@
 /**
  * Auth Controller
  *
- * Handles authentication, registration, and account recovery.
+ * Handles authentication, registration, account recovery, and
+ * administrative account deletion.
+ *
+ * Security Maintenance
+ *
+ * CMSEC-2026-4827 — Authentication Boundary Hardening
+ *
+ * Findings:
+ * - A: State-changing authentication operations require CSRF verification.
+ * - B: Logout and account deletion must be POST-only.
+ * - C: Password-reset bearer tokens must not be stored in plaintext.
+ * - D: Registration and password reset require a consistent minimum password.
+ * - E: Login and password recovery require bounded request throttling.
+ * - F: Authentication action dispatch must use an explicit action allowlist.
+ * - G: Successful authentication must invalidate the previous session ID.
+ *
+ * Status:
+ * Protected-owner remediation applied. Qualification and regression testing
+ * required before release.
+ *
+ * CMSEC identifiers are internal Chaos MVC security tracking identifiers.
+ * They are not CVE identifiers.
+ *
+ * Path: /app/controllers/auth.php
+ * LOCKED CORE FILE
  */
+
+/** [AI:GPT-5.6 Sol | 2026-08-26 14:20:00 UTC]
+    [HUMAN:Mei | 2026-08-26 15:56 UTC] 
+*/
+
 class auth extends controller
 {
     /**
-     * Router entry
+     * Minimum accepted password length.
+     */
+    private const MIN_PASSWORD_LENGTH = 12;
+
+    /**
+     * Explicitly routable authentication actions.
+     */
+    private const AUTH_ACTIONS = [
+        'login',
+        'logout',
+        'register',
+        'forgot_password',
+        'reset_password',
+        'delete',
+    ];
+
+    /**
+     * Router entry.
      *
-     * @param array $url
+     * CMSEC-2026-4827-F
+     *
+     * Dispatch only explicitly approved authentication actions.
+     *
+     * @param array $url Route segments.
      * @return void
      */
-    public function index($url = [])
+    public function index($url = []): void
     {
-        $method = $url[1] ?? 'login';
+        $method = (string) ($url[1] ?? 'login');
 
-        if (method_exists($this, $method)) {
+        if (
+            in_array(
+                $method,
+                self::AUTH_ACTIONS,
+                true
+            )
+            && method_exists(
+                $this,
+                $method
+            )
+        ) {
             $this->$method();
             return;
         }
@@ -26,60 +86,168 @@ class auth extends controller
     }
 
     /**
-     * Login handler
+     * Login handler.
+     *
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-E
+     * CMSEC-2026-4827-G
      *
      * @return void
      */
-    public function login()
+    public function login(): void
     {
         $data = [];
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $model = $this->model('accounts_model');
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            === 'POST'
+        ) {
+            $this->require_csrf();
+
+            $username = trim(
+                (string) (
+                    $_POST['username']
+                    ?? ''
+                )
+            );
+
+            $password = (string) (
+                $_POST['password']
+                ?? ''
+            );
+
+            $ip = $this->request_ip();
+            $throttle = $this->auth_throttle();
+
+            if (
+                !$throttle->is_login_allowed(
+                    $username,
+                    $ip
+                )
+            ) {
+                /*
+                 * Do not reveal throttle state to the requester.
+                 */
+                $data['error'] =
+                    'Invalid credentials.';
+
+                $this->view(
+                    'auth/login',
+                    $data
+                );
+
+                return;
+            }
+
+            $model = $this->model(
+                'accounts_model'
+            );
 
             $user = $model->authenticate(
-                $_POST['username'] ?? '',
-                $_POST['password'] ?? ''
+                $username,
+                $password
             );
 
             if ($user) {
-                session_regenerate_id();
+                /*
+                 * CMSEC-2026-4827-G
+                 *
+                 * Replace the authenticated session identifier and remove
+                 * the previous session state.
+                 */
+                session_regenerate_id(true);
 
-                $_SESSION['user_id']    = $user['id'];
-                $_SESSION['username']  = $user['username'];
-                $_SESSION['user_level'] = $user['user_level'];
-                $_SESSION['role']      = $user['role'];
+                unset(
+                    $_SESSION['csrf_token']
+                );
 
-                if ((int)$user['user_level'] === 9) {
-                    header('Location: /admin');
+                $throttle->clear_login_failures(
+                    $username,
+                    $ip
+                );
+
+                $_SESSION['user_id'] =
+                    $user['id'];
+
+                $_SESSION['username'] =
+                    $user['username'];
+
+                $_SESSION['user_level'] =
+                    $user['user_level'];
+
+                $_SESSION['role'] =
+                    $user['role'];
+
+                if (
+                    (int) $user['user_level']
+                    === 9
+                ) {
+                    header(
+                        'Location: /admin'
+                    );
+
                     exit;
                 }
 
-                header('Location: /');
+                header(
+                    'Location: /'
+                );
+
                 exit;
             }
 
-            $data['error'] = 'Invalid credentials.';
+            $throttle->record_login_failure(
+                $username,
+                $ip
+            );
+
+            $data['error'] =
+                'Invalid credentials.';
         }
 
-        $this->view('auth/login', $data);
+        $this->view(
+            'auth/login',
+            $data
+        );
     }
 
     /**
-     * Logout handler
+     * Logout handler.
+     *
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-B
      *
      * @return void
      */
-    public function logout()
+    public function logout(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            !== 'POST'
+        ) {
+            http_response_code(405);
+            header('Allow: POST');
+            exit;
+        }
+
+        $this->require_csrf();
+
+        if (
+            session_status()
+            === PHP_SESSION_NONE
+        ) {
             session_start();
         }
 
         $_SESSION = [];
 
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
+        if (
+            ini_get(
+                'session.use_cookies'
+            )
+        ) {
+            $params =
+                session_get_cookie_params();
 
             setcookie(
                 session_name(),
@@ -94,201 +262,613 @@ class auth extends controller
 
         session_destroy();
 
-        header('Location: /login');
+        header(
+            'Location: /login'
+        );
+
         exit;
     }
 
     /**
-     * Signup / Registration handler
+     * Signup / Registration handler.
+     *
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-D
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $data = [];
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $model = $this->model('accounts_model');
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            === 'POST'
+        ) {
+            $this->require_csrf();
+
+            $model = $this->model(
+                'accounts_model'
+            );
 
             $payload = [
-                'username'      => trim($_POST['username'] ?? ''),
-                'email_address' => trim($_POST['email_address'] ?? ''),
-                'display_name'  => trim($_POST['display_name'] ?? ''),
-                'password'      => $_POST['password'] ?? '',
-                'user_level'    => 1
+                'username' => trim(
+                    (string) (
+                        $_POST['username']
+                        ?? ''
+                    )
+                ),
+                'email_address' => trim(
+                    (string) (
+                        $_POST['email_address']
+                        ?? ''
+                    )
+                ),
+                'display_name' => trim(
+                    (string) (
+                        $_POST['display_name']
+                        ?? ''
+                    )
+                ),
+                'password' => (string) (
+                    $_POST['password']
+                    ?? ''
+                ),
+                'user_level' => 1,
             ];
 
             if (
-                empty($payload['username']) ||
-                empty($payload['email_address']) ||
-                empty($payload['password'])
+                $payload['username'] === ''
+                || $payload['email_address'] === ''
+                || $payload['password'] === ''
             ) {
-                $data['error'] = 'All required fields must be completed.';
+                $data['error'] =
+                    'All required fields must be completed.';
+            } elseif (
+                !filter_var(
+                    $payload['email_address'],
+                    FILTER_VALIDATE_EMAIL
+                )
+            ) {
+                $data['error'] =
+                    'A valid email address is required.';
+            } elseif (
+                !preg_match(
+                    '/^[a-z0-9_.-]{3,50}$/i',
+                    $payload['username']
+                )
+            ) {
+                $data['error'] =
+                    'Username must be 3-50 letters, numbers, dots, dashes, or underscores.';
+            } elseif (
+                strlen(
+                    $payload['password']
+                )
+                < self::MIN_PASSWORD_LENGTH
+            ) {
+                $data['error'] =
+                    'Password must be at least '
+                    . self::MIN_PASSWORD_LENGTH
+                    . ' characters.';
             } else {
-                $result = $model->create($payload);
+                $result = $model->create(
+                    $payload
+                );
 
                 if ($result) {
-                    header('Location: /login?signup=success');
+                    header(
+                        'Location: /login?signup=success'
+                    );
+
                     exit;
                 }
 
-                $data['error'] = 'Signup failed. Username or email may already be in use.';
+                $data['error'] =
+                    'Signup failed. Username or email may already be in use.';
             }
         }
 
-        $this->view('auth/register', $data);
+        $this->view(
+            'auth/register',
+            $data
+        );
     }
 
     /**
-     * Forgot password handler
+     * Forgot password handler.
+     *
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-C
+     * CMSEC-2026-4827-E
      *
      * @return void
      */
-    public function forgot_password()
+    public function forgot_password(): void
     {
         $data = [];
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = trim($_POST['email'] ?? '');
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            === 'POST'
+        ) {
+            $this->require_csrf();
 
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $data['error'] = 'Invalid email address.';
-                $this->view('auth/forgot_password', $data);
+            $email = strtolower(
+                trim(
+                    (string) (
+                        $_POST['email']
+                        ?? ''
+                    )
+                )
+            );
+
+            if (
+                !filter_var(
+                    $email,
+                    FILTER_VALIDATE_EMAIL
+                )
+            ) {
+                $data['error'] =
+                    'Invalid email address.';
+
+                $this->view(
+                    'auth/forgot_password',
+                    $data
+                );
+
                 return;
             }
 
-            $model = $this->model('accounts_model');
+            $ip = $this->request_ip();
+            $throttle = $this->auth_throttle();
+
+            /*
+             * CMSEC-2026-4827-E
+             *
+             * Recovery requests always return the same external response.
+             * When throttled, no account lookup or mail delivery occurs.
+             */
+            if (
+                !$throttle->is_recovery_allowed(
+                    $email,
+                    $ip
+                )
+            ) {
+                $data['success'] =
+                    'If that account exists, a recovery link has been sent.';
+
+                $this->view(
+                    'auth/forgot_password',
+                    $data
+                );
+
+                return;
+            }
+
+            /*
+             * Record the request regardless of whether the account exists
+             * so throttle behavior cannot be used for account enumeration.
+             */
+            $throttle->record_recovery_request(
+                $email,
+                $ip
+            );
+
+            $model = $this->model(
+                'accounts_model'
+            );
 
             $user = $model->fetch(
-                "SELECT id FROM accounts WHERE email_address = ? LIMIT 1",
+                'SELECT id FROM accounts WHERE email_address = ? LIMIT 1',
                 [$email]
             );
 
             if ($user) {
-                $token = bin2hex(random_bytes(32));
-                $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
-
-                $model->query(
-                    "INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)",
-                    [$email, $token, $expires]
+                /*
+                 * CMSEC-2026-4827-C
+                 *
+                 * The raw bearer token is sent to the user.
+                 * Only its SHA-256 digest is persisted.
+                 */
+                $token = bin2hex(
+                    random_bytes(32)
                 );
 
-                $resetLink = URLROOT . '/reset-password/' . $token;
+                $tokenHash = hash(
+                    'sha256',
+                    $token
+                );
 
-                require_once APPROOT . '/lib/mailer.php';
+                $expires = date(
+                    'Y-m-d H:i:s',
+                    strtotime('+1 hour')
+                );
 
-                $mailerObj = new mailer();
-                $mail = $mailerObj->create();
+                /*
+                 * Invalidate earlier outstanding recovery records for the
+                 * same account before issuing a new recovery token.
+                 */
+                $model->query(
+                    'DELETE FROM password_resets WHERE email = ?',
+                    [$email]
+                );
+
+                $model->query(
+                    'INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)',
+                    [
+                        $email,
+                        $tokenHash,
+                        $expires,
+                    ]
+                );
+
+                $resetLink =
+                    URLROOT
+                    . '/reset-password/'
+                    . $token;
+
+                require_once
+                    APPROOT
+                    . '/lib/mailer.php';
+
+                $mailerObj =
+                    new mailer();
+
+                $mail =
+                    $mailerObj->create();
 
                 try {
-                    $mail->addAddress($email);
-                    $mail->Subject = 'Account Recovery';
-                    $mail->Body = "Reset Link: <a href='{$resetLink}'>{$resetLink}</a>";
+                    $mail->addAddress(
+                        $email
+                    );
+
+                    $mail->Subject =
+                        'Account Recovery';
+
+                    $safeLink =
+                        htmlspecialchars(
+                            $resetLink,
+                            ENT_QUOTES,
+                            'UTF-8'
+                        );
+
+                    $mail->Body =
+                        "Reset Link: <a href=\"{$safeLink}\">{$safeLink}</a>";
+
                     $mail->send();
                 } catch (Exception $e) {
-                    error_log('Mailer Error: ' . $mail->ErrorInfo);
+                    error_log(
+                        'Mailer Error: '
+                        . $mail->ErrorInfo
+                    );
                 }
             }
 
-            $data['success'] = 'If that account exists, a recovery link has been sent.';
+            $data['success'] =
+                'If that account exists, a recovery link has been sent.';
         }
 
-        $this->view('auth/forgot_password', $data);
+        $this->view(
+            'auth/forgot_password',
+            $data
+        );
     }
 
     /**
-     * Reset password handler
+     * Reset password handler.
      *
-     * @param array $params
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-C
+     * CMSEC-2026-4827-D
+     *
+     * @param array|string $params Route parameters.
      * @return void
      */
-    public function reset_password($params = [])
-    {
-        $token = $params[0] ?? '';
+    public function reset_password(
+        $params = []
+    ): void {
+        $token = is_array($params)
+            ? (string) (
+                $params[0]
+                ?? ''
+            )
+            : (string) $params;
 
-        $model = $this->model('accounts_model');
+        /*
+         * random_bytes(32) encoded with bin2hex produces exactly
+         * 64 hexadecimal characters.
+         */
+        if (
+            !preg_match(
+                '/^[a-f0-9]{64}$/',
+                $token
+            )
+        ) {
+            http_response_code(404);
+
+            $this->error_page(
+                'Invalid or expired token.'
+            );
+        }
+
+        $tokenHash = hash(
+            'sha256',
+            $token
+        );
+
+        $model = $this->model(
+            'accounts_model'
+        );
 
         $reset = $model->fetch(
-            "SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1",
-            [$token]
+            'SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1',
+            [$tokenHash]
         );
 
         if (!$reset) {
-            die('Invalid or expired token.');
+            http_response_code(404);
+
+            $this->error_page(
+                'Invalid or expired token.'
+            );
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $newPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            === 'POST'
+        ) {
+            $this->require_csrf();
 
-            $model->query(
-                "UPDATE accounts SET password_hash = ? WHERE email_address = ?",
-                [$newPassword, $reset['email']]
+            $password = (string) (
+                $_POST['password']
+                ?? ''
             );
 
+            if (
+                strlen($password)
+                < self::MIN_PASSWORD_LENGTH
+            ) {
+                $this->view(
+                    'auth/reset_password',
+                    [
+                        'token' => $token,
+                        'error' =>
+                            'Password must be at least '
+                            . self::MIN_PASSWORD_LENGTH
+                            . ' characters.',
+                    ]
+                );
+
+                return;
+            }
+
+            /*
+             * CMSEC-2026-4827-C
+             *
+             * Consume the exact recovery token before applying the password
+             * change so the bearer credential cannot be reused.
+             */
+            $consume = $model->query(
+                'DELETE FROM password_resets WHERE token = ? AND expires_at > NOW()',
+                [$tokenHash]
+            );
+
+            if (
+                $consume->rowCount()
+                !== 1
+            ) {
+                http_response_code(409);
+
+                $this->error_page(
+                    'Invalid or expired token.'
+                );
+            }
+
+            $newPassword =
+                password_hash(
+                    $password,
+                    PASSWORD_DEFAULT
+                );
+
             $model->query(
-                "DELETE FROM password_resets WHERE email = ?",
+                'UPDATE accounts SET password_hash = ? WHERE email_address = ?',
+                [
+                    $newPassword,
+                    $reset['email'],
+                ]
+            );
+
+            /*
+             * Invalidate any other recovery records belonging to the
+             * account after the password has changed.
+             */
+            $model->query(
+                'DELETE FROM password_resets WHERE email = ?',
                 [$reset['email']]
             );
 
-            header('Location: /login?reset=success');
+            header(
+                'Location: /login?reset=success'
+            );
+
             exit;
         }
 
-        $this->view('auth/reset_password', ['token' => $token]);
+        $this->view(
+            'auth/reset_password',
+            [
+                'token' => $token,
+            ]
+        );
     }
 
     /**
- * Delete account.
- *
- * Deletes the requested account while preventing the currently
- * authenticated administrator from deleting their own account.
- *
- * @param array|string|int|null $params Route parameters.
- * @return void
- */
-public function delete($params = null): void
-{
-    if (
-        !isset($_SESSION['user_id']) ||
-        (int) ($_SESSION['user_level'] ?? 0) !== 9
-    ) {
-        header('Location: /login');
+     * Delete account.
+     *
+     * CMSEC-2026-4827-A
+     * CMSEC-2026-4827-B
+     *
+     * Deletes the requested account while preventing the currently
+     * authenticated administrator from deleting their own account.
+     *
+     * @param array|string|int|null $params Route parameters.
+     * @return void
+     */
+    public function delete(
+        $params = null
+    ): void {
+        if (
+            !isset(
+                $_SESSION['user_id']
+            )
+            || (int) (
+                $_SESSION['user_level']
+                ?? 0
+            ) !== 9
+        ) {
+            header(
+                'Location: /login'
+            );
+
+            exit;
+        }
+
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+            !== 'POST'
+        ) {
+            http_response_code(405);
+            header('Allow: POST');
+            exit;
+        }
+
+        $this->require_csrf();
+
+        $id = is_array($params)
+            ? (
+                $params[0]
+                ?? null
+            )
+            : $params;
+
+        if (
+            $id === null
+            || $id === ''
+            || filter_var(
+                $id,
+                FILTER_VALIDATE_INT,
+                [
+                    'options' => [
+                        'min_range' => 1,
+                    ],
+                ]
+            ) === false
+        ) {
+            $_SESSION['msg'] =
+                'Invalid account ID.';
+
+            $_SESSION['msg_type'] =
+                'danger';
+
+            header(
+                'Location: /admin/accounts'
+            );
+
+            exit;
+        }
+
+        $id = (int) $id;
+
+        if (
+            $id
+            === (int) $_SESSION['user_id']
+        ) {
+            $_SESSION['msg'] =
+                'You cannot delete your own account.';
+
+            $_SESSION['msg_type'] =
+                'danger';
+
+            header(
+                'Location: /admin/accounts'
+            );
+
+            exit;
+        }
+
+        $model = $this->model(
+            'accounts_model'
+        );
+
+        if (
+            $model->delete($id)
+        ) {
+            $_SESSION['msg'] =
+                "Account #{$id} deleted.";
+
+            $_SESSION['msg_type'] =
+                'success';
+        } else {
+            $_SESSION['msg'] =
+                'Deletion failed.';
+
+            $_SESSION['msg_type'] =
+                'danger';
+        }
+
+        header(
+            'Location: /admin/accounts'
+        );
+
         exit;
     }
 
-    $id = is_array($params)
-        ? ($params[0] ?? null)
-        : $params;
+    /**
+     * Load the authentication throttle service.
+     *
+     * CMSEC-2026-4827-E
+     *
+     * @return auth_throttle
+     */
+    private function auth_throttle(): auth_throttle
+    {
+        require_once
+            APPROOT
+            . '/lib/auth_throttle.php';
 
-    if (!$id) {
-        $_SESSION['msg'] = 'Invalid account ID.';
-        $_SESSION['msg_type'] = 'danger';
-
-        header('Location: /admin/accounts');
-        exit;
+        return new auth_throttle();
     }
 
-    $id = (int) $id;
+    /**
+     * Return the direct request source address.
+     *
+     * The application does not trust forwarding headers here because
+     * proxy trust has not been established by this controller.
+     *
+     * CMSEC-2026-4827-E
+     *
+     * @return string
+     */
+    private function request_ip(): string
+    {
+        $ip = trim(
+            (string) (
+                $_SERVER['REMOTE_ADDR']
+                ?? ''
+            )
+        );
 
-    if ($id === (int) $_SESSION['user_id']) {
-        $_SESSION['msg'] = 'You cannot delete your own account.';
-        $_SESSION['msg_type'] = 'danger';
+        if (
+            filter_var(
+                $ip,
+                FILTER_VALIDATE_IP
+            ) === false
+        ) {
+            return '0.0.0.0';
+        }
 
-        header('Location: /admin/accounts');
-        exit;
+        return $ip;
     }
-
-    $model = $this->model('accounts_model');
-
-    if ($model->delete($id)) {
-        $_SESSION['msg'] = "Account #{$id} deleted.";
-        $_SESSION['msg_type'] = 'success';
-    } else {
-        $_SESSION['msg'] = 'Deletion failed.';
-        $_SESSION['msg_type'] = 'danger';
-    }
-
-    header('Location: /admin/accounts');
-    exit;
 }
-}
+
+/* [End AI:GPT-5.6 Sol] */

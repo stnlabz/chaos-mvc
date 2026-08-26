@@ -2,7 +2,10 @@
 # ChAoS MVC Specifics
 # ============================================================
 app/data/*.json
+app/data/security/
 app/core/config.php
+test
+test/*
 
 # ============================================================
 # Visual Studio
