@@ -111,7 +111,8 @@ Example:
 ```php
 /* [AI:GPT | YYYY-MM-DD HH:MM:SS UTC] */
 /* modified code */
-/* [End AI:GPT] */
+/* [End AI:GPT | YYYY-MM-DD] */
+/* [HUMAN: YOU | APPROVED | YYY-MM-DD] */
 ```
 This ensures full accountability in collaborative environments.
 
