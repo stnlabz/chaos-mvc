@@ -18,7 +18,7 @@ class media_model extends model {
      * Matches the pattern used in your announcements and admin controllers
      */
     public function delete_by_id(int $id): bool {
-        $statement = $this->db->prepare("DELETE FROM {$this->table} WHERE id = ?");
-        return $statement->execute([$id]);
+        $stmt = $this->db->prepare('DELETE FROM media WHERE id = ?');
+        return $stmt->execute([$id]);
     }
 }

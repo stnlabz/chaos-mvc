@@ -27,7 +27,7 @@ $og_type = $og['type'] ?? 'article';
     <meta property="og:image" content="<?= htmlspecialchars($og_image) ?>">
     <meta property="og:url" content="<?= htmlspecialchars($og_url) ?>">
     <meta property="og:description" content="<?= htmlspecialchars($og_desc) ?>">
-    <meta property="og:type" content="<?= htmlspecialchars($og_type, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:type" content="<?= htmlspecialchars((string) $og_type, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- For Twitter -->
     <meta name="twitter:card" content="summary">
@@ -35,7 +35,7 @@ $og_type = $og['type'] ?? 'article';
     <meta name="twitter:description" content="<?= htmlspecialchars($og_desc) ?>">
     <meta name="twitter:url" content="<?= htmlspecialchars($og_url) ?>">
     <meta name="twitter:image" content="<?= htmlspecialchars($og_image) ?>">
-    <meta name="twitter:type" content="<?= htmlspecialchars($og_type, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:type" content="<?= htmlspecialchars((string) $og_type, ENT_QUOTES, 'UTF-8') ?>">
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">

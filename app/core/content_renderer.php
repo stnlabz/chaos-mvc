@@ -20,7 +20,19 @@ class content_renderer
             $s = preg_replace('/\*\*\*(.+?)\*\*\*/u', '<strong>$1</strong>', $s);
             
             // Added: [Link Text](URL) logic
-            $s = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/u', '<a href="$2">$1</a>', $s);
+            $s = preg_replace_callback(
+                '/\[([^\]]+)\]\(([^)]+)\)/u',
+                static function (array $matches): string {
+                    $url = html_entity_decode($matches[2], ENT_QUOTES, 'UTF-8');
+                    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+                    $isRelative = str_starts_with($url, '/') && !str_starts_with($url, '//');
+                    if (!$isRelative && !in_array($scheme, ['http', 'https', 'mailto'], true)) {
+                        return $matches[1];
+                    }
+                    return '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . $matches[1] . '</a>';
+                },
+                $s
+            );
             
             return $s;
         };

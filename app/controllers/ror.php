@@ -20,7 +20,12 @@ class ror extends controller
     public function index()
     {
         $pages = $this->model('modules_model')->get_all();
-        $host = "https://" . $_SERVER['HTTP_HOST'];
+        $host = rtrim(URLROOT, '/');
+        $xmlEscape = static fn (string $value): string => htmlspecialchars(
+            $value,
+            ENT_XML1 | ENT_QUOTES,
+            'UTF-8'
+        );
 
         $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
 
@@ -32,7 +37,7 @@ class ror extends controller
         $xml .= '<rss version="2.0">' . PHP_EOL;
         $xml .= '  <channel>' . PHP_EOL;
         $xml .= '    <title>Poe Mei</title>' . PHP_EOL;
-        $xml .= '    <link>'.$host.'</link>' . PHP_EOL;
+        $xml .= '    <link>'.$xmlEscape($host).'</link>' . PHP_EOL;
         $xml .= '    <description>Poe Mei Resource Feed</description>' . PHP_EOL;
 
         foreach ($controllers as $file)
@@ -41,8 +46,8 @@ class ror extends controller
             $url = ($name === 'home') ? $host : "$host/$name";
 
             $xml .= "    <item>" . PHP_EOL;
-            $xml .= "      <title>$name</title>" . PHP_EOL;
-            $xml .= "      <link>$url</link>" . PHP_EOL;
+            $xml .= "      <title>" . $xmlEscape($name) . "</title>" . PHP_EOL;
+            $xml .= "      <link>" . $xmlEscape($url) . "</link>" . PHP_EOL;
             $xml .= "    </item>" . PHP_EOL;
         }
 
@@ -51,8 +56,8 @@ class ror extends controller
             foreach ($pages as $p)
             {
                 $xml .= "    <item>" . PHP_EOL;
-                $xml .= "      <title>{$p['title']}</title>" . PHP_EOL;
-                $xml .= "      <link>$host/{$p['slug']}</link>" . PHP_EOL;
+                $xml .= "      <title>" . $xmlEscape((string) $p['title']) . "</title>" . PHP_EOL;
+                $xml .= "      <link>" . $xmlEscape($host . '/' . rawurlencode((string) $p['slug'])) . "</link>" . PHP_EOL;
                 $xml .= "    </item>" . PHP_EOL;
             }
         }

@@ -1,5 +1,5 @@
 <IfModule mod_rewrite.c>
-    Options -Indexes -MultiViews
+    Options -MultiViews
     RewriteEngine On
 
     # If the file or directory exists, serve it directly
@@ -9,11 +9,4 @@
     # This is the critical line: pass everything after the domain into ?url=
     RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
     
-</IfModule>
-
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "DENY"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>

@@ -5,32 +5,31 @@
 
 ## v1.1.9 Development — Unreleased
 
-> Pre-release maintenance only. The current release remains v1.1.8. No v1.1.9
-> release announcement, package, manifest, or supported Core update is available
-> until deployment and testing on chaos-mvc.org are complete.
+> Pre-release maintenance only. The current release remains v1.1.8 until the
+> changes are deployed and tested on chaos-mvc.org.
 
 ## Security
-- Added CSRF verification to authentication, account, post, media, and installer state changes
-- Restricted destructive actions to authenticated administrators and POST requests
-- Regenerated session identifiers after successful authentication and hardened session cookies
-- Stored password-reset tokens as SHA-256 hashes and enforced stronger password requirements
-- Validated uploaded image size and MIME type, generated safe filenames, restricted deletion paths, and blocked executable files in the uploads directory
-- Restored SQL identifier and simple `WHERE` clause validation in the shared model helpers
-- Blocked unsafe URL schemes in both Markdown renderers
-- Escaped untrusted content across authentication, error, traffic, account, media, post, and shared views
-- Limited public post and comment queries to published and approved records
-- Added route-segment and callable-method validation
-- Added browser security headers and disabled public directory listings
+- Added administrator authorization and CSRF verification to account, media, post, installer, and site-configuration operations
+- Restricted media and post deletion to verified POST requests
+- Added image MIME, size, generated-filename, and upload-path protections
+- Blocked executable files in the public uploads directory
+- Added secure session-cookie defaults and disabled production error display by default
+- Validated generated site URLs rather than trusting the HTTP Host header
+- Restored SQL identifier and parameterized `WHERE` validation in shared model helpers
+- Blocked unsafe URL schemes in Markdown and content renderers
+- Escaped untrusted database and request content across public and administrative views
+- Limited public post and comment retrieval to published and approved records
+- Replaced referer-based comment redirects with a validated internal post route
+- Restricted generated site and mail configuration files to owner-only permissions where supported
+
+## Reliability
+- Prevented recursive document-root rewrites of requests already routed under `public/`
+- Closed the installer database test connection after successful validation
 
 ## Installer
 - Added the missing `password_resets` table to the fresh-install schema
-- Added uniqueness constraints for account usernames, account email addresses, module slugs, post slugs, and password-reset tokens
+- Added uniqueness constraints for account usernames, account emails, module slugs, post slugs, and reset tokens
 - Standardized newly installed account and comment tables on `utf8mb4`
-
-## Core Updater Status
-- Core Updater development remains separate from the independently versioned module updater
-- Core Updater files are not yet deployed or operational on chaos-mvc.org
-- Core Updater verification is deferred until a test release is deliberately published
 
 ---
 

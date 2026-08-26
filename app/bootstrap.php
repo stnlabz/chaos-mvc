@@ -1,14 +1,10 @@
 <?php
-
 /**
  * Bootstrap
- *
- * Preloads Chaos MVC Core services and installation configuration.
+ * Pre loads Core
  */
 
 declare(strict_types=1);
-
-/* [AI:GPT-5.6 Sol | 2026-08-25 UTC] */
 
 // Root
 $ROOT = dirname(__DIR__);
@@ -18,7 +14,6 @@ define('LOG_PATH', $ROOT . '/logs');
 define('APPROOT', $ROOT . '/app');
 define('PUBROOT', $ROOT . '/public');
 
-// Site configuration
 $SITE = [
     'name' => 'Chaos MVC',
     'copyright_name' => 'Chaos MVC',
@@ -28,56 +23,37 @@ $SITE = [
 ];
 
 $siteConfigFile = APPROOT . '/data/site.json';
-
 if (is_file($siteConfigFile)) {
     $siteConfigRaw = file_get_contents($siteConfigFile);
-
-    if ($siteConfigRaw !== false) {
-        $siteConfig = json_decode($siteConfigRaw, true);
-
-        if (is_array($siteConfig)) {
-            $SITE = array_replace($SITE, $siteConfig);
-        }
+    $siteConfig = $siteConfigRaw !== false ? json_decode($siteConfigRaw, true) : null;
+    if (is_array($siteConfig)) {
+        $SITE = array_replace($SITE, $siteConfig);
     }
 }
 
 $GLOBALS['SITE'] = $SITE;
 
 // URL detection
-$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    ? 'https'
-    : 'http';
-
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = (string) ($_SERVER['SERVER_NAME'] ?? 'localhost');
 
-if (
-    !preg_match(
-        '/^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:]+\])$/i',
-        $host
-    )
-) {
+if (!preg_match('/^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:]+\])$/i', $host)) {
     $host = 'localhost';
 }
 
 $port = (int) ($_SERVER['SERVER_PORT'] ?? 0);
-
-$portSuffix = (
-    $port > 0
-    && !(($scheme === 'https' && $port === 443)
-    || ($scheme === 'http' && $port === 80))
-)
+$portSuffix = $port > 0
+    && !(($scheme === 'https' && $port === 443) || ($scheme === 'http' && $port === 80))
     ? ':' . $port
     : '';
 
 define('URLROOT', $scheme . '://' . $host . $portSuffix);
 
+
 /**
  * Debug
  */
-$debug = filter_var(
-    getenv('APP_DEBUG') ?: 'false',
-    FILTER_VALIDATE_BOOL
-);
+$debug = filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOL);
 
 if ($debug) {
     ini_set('display_errors', '1');
@@ -93,15 +69,18 @@ if ($debug) {
     error_reporting(E_ALL);
 }
 
+
 /**
  * Config
  */
 require_once APPROOT . '/core/config.php';
 
+
 /**
  * Autoload
  */
 spl_autoload_register(function ($class) {
+
     $paths = [
         APPROOT . '/core/' . $class . '.php',
         APPROOT . '/controllers/' . $class . '.php',
@@ -117,6 +96,7 @@ spl_autoload_register(function ($class) {
     }
 });
 
+
 /* -------------------------------------------------
    INSTALL CHECK
 -------------------------------------------------- */
@@ -125,25 +105,15 @@ $installLock = LOG_PATH . '/install.lock';
 
 if (!file_exists($installLock)) {
     try {
-        $mysqli = new mysqli(
-            DB_HOST,
-            DB_USER,
-            DB_PASS,
-            DB_NAME
-        );
+        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
         if ($mysqli->connect_errno) {
-            throw new Exception(
-                'Database connection failed'
-            );
+            throw new Exception('Database connection failed');
         }
-
         $mysqli->close();
     } catch (Exception $e) {
         require_once APPROOT . '/controllers/install.php';
-
         (new install())->index();
-
         exit;
     }
 }
@@ -152,8 +122,7 @@ if (!file_exists($installLock)) {
    MAINTENANCE MODE
 -------------------------------------------------- */
 
-$maintenanceFile =
-    APPROOT . '/data/updater/maintenance.lock';
+$maintenanceFile = APPROOT . '/data/updater/maintenance.lock';
 
 if (is_file($maintenanceFile)) {
     $requestPath = (string) parse_url(
@@ -173,13 +142,7 @@ if (is_file($maintenanceFile)) {
     $maintenanceAllowed = false;
 
     foreach ($allowedMaintenanceRoutes as $allowedRoute) {
-        if (
-            $requestPath === $allowedRoute
-            || str_starts_with(
-                $requestPath,
-                $allowedRoute . '/'
-            )
-        ) {
+        if ($requestPath === $allowedRoute || str_starts_with($requestPath, $allowedRoute . '/')) {
             $maintenanceAllowed = true;
             break;
         }
@@ -187,29 +150,17 @@ if (is_file($maintenanceFile)) {
 
     if (!$maintenanceAllowed) {
         http_response_code(503);
-
-        header(
-            'Retry-After: 60'
-        );
-
-        header(
-            'Cache-Control: no-store, no-cache, must-revalidate'
-        );
-
-        require APPROOT
-            . '/views/errors/maintenance.php';
-
+        header('Retry-After: 60');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        require APPROOT . '/views/errors/maintenance.php';
         exit;
     }
 }
 
 /**
  * Traffic
- *
- * Comes with Chaos MVC.
- * Tracks traffic to the configured site.
- */
+ * Comes with the Chaos MVC.
+ * Tracks traffic to your domain
+*/
 $trafficEngine = new traffic();
 $trafficEngine->collect();
-
-/* [End AI:GPT-5.6 Sol] */

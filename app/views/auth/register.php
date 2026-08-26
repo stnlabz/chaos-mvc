@@ -5,7 +5,6 @@
         <div class="alert alert-danger"><?= htmlspecialchars((string) $data['error'], ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
     <form action="/auth/register" method="POST">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <div class="form-group">
             <label>Username</label>
             <input type="text" name="username" class="form-control" required>
@@ -20,7 +19,7 @@
         </div>
         <div class="form-group">
             <label>Password</label>
-            <input type="password" name="password" class="form-control" minlength="12" required>
+            <input type="password" name="password" class="form-control" required>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
     </form>

@@ -15,7 +15,9 @@ class controller {
         'media',
         'accounts',
         'health',
-        'modules'
+        'modules',
+        'site',
+        'updater'
     ];
 
     public function csrf_token(): string
@@ -92,7 +94,7 @@ class controller {
             $render_md = $this->render_md;
 
             if (is_array($data)) {
-                extract($data);
+                extract($data, EXTR_SKIP);
             }
 
             require_once $file;

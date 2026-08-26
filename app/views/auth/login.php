@@ -15,7 +15,6 @@
     <?php endif; ?>
 
     <form action="/auth/login" method="POST">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <div style="margin-bottom: 15px;">
             <label for="username" style="font-weight: bold;">Username:</label><br>
             <input type="text" name="username" id="username" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">

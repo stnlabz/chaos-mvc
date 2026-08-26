@@ -11,7 +11,7 @@ class llms extends controller {
     
     public function index() {
         $pages = $this->model('modules_model')->get_all();
-        $host = "https://" . $_SERVER['HTTP_HOST'];
+        $host = rtrim(URLROOT, '/');
 
         $excluded = ['admin.php', 'auth.php', 'health.php', 'sentinel.php', 'modules.php', 'ror.php', 'llms.php', 'sitemap.php', 'error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
         /* [Human:Mei | 2026-03-11 02:20:00 UTC] */
@@ -28,7 +28,9 @@ class llms extends controller {
 
         $txt .= "\n## Modules\n";
         foreach ($pages as $p) {
-            $txt .= "- [" . $p['title'] . "]($host/" . $p['slug'] . ")\n";
+            $title = str_replace(["[", "]", "\r", "\n"], '', (string) $p['title']);
+            $slug = rawurlencode((string) $p['slug']);
+            $txt .= "- [$title]($host/$slug)\n";
         }
 
         file_put_contents(PUBROOT . '/llms.txt', $txt);

@@ -73,10 +73,9 @@ class install extends controller
         }
 
         if (strlen($adminPass) < 12) {
-            $this->view(
-                'public/install/index',
-                ['error' => 'The administrator password must contain at least 12 characters.']
-            );
+            $this->view('public/install/index', [
+                'error' => 'The administrator password must contain at least 12 characters.'
+            ]);
             return;
         }
 

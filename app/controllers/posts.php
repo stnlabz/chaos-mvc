@@ -71,7 +71,6 @@ class posts extends controller {
                 http_response_code(405);
                 $this->error_page('Post deletion requires POST.');
             }
-
             $this->verify_csrf();
             $model->archive('posts', "id = :id", ['id' => (int)$id]);
             header("Location: /admin/posts");
@@ -108,6 +107,7 @@ class posts extends controller {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
         $this->verify_csrf();
         $model = $this->model('posts_model');
+
         $postId = (int) ($_POST['post_id'] ?? 0);
         $body = trim((string) ($_POST['body'] ?? ''));
         $post = $postId > 0 ? $model->get_by_id($postId) : false;

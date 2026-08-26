@@ -25,12 +25,7 @@
               <li><a href="/admin" class="btn btn-sm btn-outline-primary">Admin</a></li>
           <?php endif; ?>
           
-          <li>
-            <form action="/logout" method="POST" style="display:inline">
-              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-              <button type="submit" style="color:#666; background:none; border:0; padding:0;">Logout</button>
-            </form>
-          </li>
+          <li><a href="/logout" style="color: #666; text-decoration: none;">Logout</a></li>
       <?php else: ?>
           <li><a href="/login">Login</a></li>
       <?php endif; ?>

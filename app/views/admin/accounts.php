@@ -52,7 +52,7 @@
 
 <form method="POST" action="<?php echo URLROOT; ?>/accounts/password/<?php echo $a['id']; ?>">
 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-<input type="password" name="password" minlength="12" placeholder="new password" required>
+<input type="password" name="password" placeholder="new password" minlength="12" required>
 <button type="submit">change</button>
 </form>
 
@@ -61,7 +61,7 @@
 <td>
 
 <?php if ($a['id'] != ($_SESSION['user_id'] ?? 0)): ?>
-    <form method="POST" action="<?php echo URLROOT; ?>/auth/delete/<?php echo $a['id']; ?>">
+    <form method="POST" action="<?php echo URLROOT; ?>/accounts/delete/<?php echo (int) $a['id']; ?>">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <button type="submit">delete</button>
     </form>
@@ -93,7 +93,7 @@
 
 <div class="mb-2">
 <label>Password</label>
-<input type="password" name="password" minlength="12" class="form-control" required>
+<input type="password" name="password" class="form-control" minlength="12" required>
 </div>
 
 <div class="mb-2">

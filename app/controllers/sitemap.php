@@ -18,7 +18,12 @@ class sitemap extends controller
     public function index()
     {
         $pages = $this->model('modules_model')->get_all();
-        $host = "https://" . $_SERVER['HTTP_HOST'];
+        $host = rtrim(URLROOT, '/');
+        $xmlEscape = static fn (string $value): string => htmlspecialchars(
+            $value,
+            ENT_XML1 | ENT_QUOTES,
+            'UTF-8'
+        );
 
         $excluded = ['admin.php','auth.php','health.php','sentinel.php','modules.php','ror.php','llms.php','sitemap.php','error_handler.php', 'media.php', 'accounts.php', 'traffic.php'];
 
@@ -35,7 +40,7 @@ class sitemap extends controller
             $url = ($name === 'home') ? $host : "$host/$name";
 
             $xml .= "  <url>" . PHP_EOL;
-            $xml .= "    <loc>$url</loc>" . PHP_EOL;
+            $xml .= "    <loc>" . $xmlEscape($url) . "</loc>" . PHP_EOL;
             $xml .= "  </url>" . PHP_EOL;
         }
 
@@ -44,7 +49,7 @@ class sitemap extends controller
             foreach ($pages as $p)
             {
                 $xml .= "  <url>" . PHP_EOL;
-                $xml .= "    <loc>$host/{$p['slug']}</loc>" . PHP_EOL;
+                $xml .= "    <loc>" . $xmlEscape($host . '/' . rawurlencode((string) $p['slug'])) . "</loc>" . PHP_EOL;
                 $xml .= "  </url>" . PHP_EOL;
             }
         }

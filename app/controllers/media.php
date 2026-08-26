@@ -22,13 +22,11 @@ class media extends controller {
             if ($item) {
                 $uploadRoot = realpath(PUBROOT . '/uploads');
                 $file = realpath(PUBROOT . (string) $item['file_path']);
-
                 if ($uploadRoot !== false && $file !== false
                     && str_starts_with($file, $uploadRoot . DIRECTORY_SEPARATOR)
                     && is_file($file)) {
                     unlink($file);
                 }
-
                 $model->delete_by_id((int) $id);
             }
             header("Location: /admin/media");
@@ -61,7 +59,6 @@ class media extends controller {
 
             $temporary = (string) ($file['tmp_name'] ?? '');
             $mime = (new finfo(FILEINFO_MIME_TYPE))->file($temporary);
-
             if (!is_string($mime) || !isset($allowed[$mime])) {
                 $this->error_page('Unsupported upload type.');
             }

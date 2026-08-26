@@ -8,7 +8,6 @@
         <p><a href="/login">Return to Login</a></p>
     <?php else: ?>
         <form action="/auth/forgot_password" method="POST">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
             <div style="margin-bottom: 15px;">
                 <label for="email" style="font-weight: bold;">Email Address:</label><br>
                 <input type="email" name="email" id="email" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">

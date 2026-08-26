@@ -104,7 +104,10 @@ class updater_engine
                 self::MANIFEST_URL
             );
 
-            $this->validateReleaseIdentity($manifest, $current);
+            $this->validateReleaseIdentity(
+                $manifest,
+                $current
+            );
 
             $target = trim(
                 (string) ($manifest['version'] ?? '')
@@ -311,6 +314,10 @@ class updater_engine
                 (string) $manifest['files_manifest']
             );
 
+            /*
+             * The release manifest is validated before the archive
+             * is staged or maintenance mode begins.
+             */
             $this->validateFilesManifest(
                 $filesManifest,
                 $target
@@ -572,7 +579,10 @@ class updater_engine
         array $manifest,
         string $current
     ): void {
-        $this->validateReleaseIdentity($manifest, $current);
+        $this->validateReleaseIdentity(
+            $manifest,
+            $current
+        );
 
         $required = [
             'package',
@@ -611,12 +621,28 @@ class updater_engine
         }
     }
 
+    /**
+     * Validate release identity and compatibility.
+     *
+     * @param array $manifest Release manifest.
+     * @param string $current Current version.
+     * @return void
+     */
     private function validateReleaseIdentity(
         array $manifest,
         string $current
     ): void {
-        foreach (['product', 'version', 'minimum_version'] as $field) {
-            if (!isset($manifest[$field]) || trim((string) $manifest[$field]) === '') {
+        foreach (
+            [
+                'product',
+                'version',
+                'minimum_version'
+            ] as $field
+        ) {
+            if (
+                !isset($manifest[$field])
+                || trim((string) $manifest[$field]) === ''
+            ) {
                 throw new RuntimeException(
                     'Release manifest is missing ' . $field . '.'
                 );
@@ -629,7 +655,13 @@ class updater_engine
             );
         }
 
-        if (version_compare($current, (string) $manifest['minimum_version'], '<')) {
+        if (
+            version_compare(
+                $current,
+                (string) $manifest['minimum_version'],
+                '<'
+            )
+        ) {
             throw new RuntimeException(
                 'This installation is too old for the available update.'
             );
@@ -638,6 +670,8 @@ class updater_engine
 
     /**
      * Validate the files manifest.
+     *
+     * Installation-owned paths are outside Core update authority.
      *
      * @param array $manifest Files manifest.
      * @param string $target Target release.
@@ -672,10 +706,25 @@ class updater_engine
             );
         }
 
-        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
+        foreach (
+            $this->getManifestFiles($manifest)
+            as $path => $hash
+        ) {
             $this->validateRelativePath(
                 (string) $path
             );
+
+            if (
+                $this->isInstallationOwnedPath(
+                    (string) $path
+                )
+            ) {
+                throw new RuntimeException(
+                    'Release attempts to modify installation-owned content: '
+                    . $path
+                    . '.'
+                );
+            }
 
             if (
                 !preg_match(
@@ -693,7 +742,8 @@ class updater_engine
     /**
      * Return all authoritative release files.
      *
-     * Public files are included only when explicitly declared.
+     * Public files may be included only when explicitly declared by a
+     * release and must still remain outside installation-owned paths.
      *
      * @param array $manifest Files manifest.
      * @return array
@@ -704,15 +754,126 @@ class updater_engine
         $core = $manifest['core'] ?? [];
         $public = $manifest['public'] ?? [];
 
+        if (!is_array($core)) {
+            $core = [];
+        }
+
         if (!is_array($public)) {
             $public = [];
         }
 
-        return array_merge(
+        $files = array_merge(
             $core,
             $public
         );
+
+        /*
+         * Defense in depth: any code path consuming manifest files
+         * receives the same installation-ownership protection.
+         */
+        /* [AI:GPT-5.6 Sol | 2026-08-25 22:21:00 UTC] */
+        foreach ($files as $path => $hash) {
+            if (
+                $this->isInstallationOwnedPath(
+                    (string) $path
+                )
+            ) {
+                throw new RuntimeException(
+                    'Release attempts to modify installation-owned content: '
+                    . $path
+                    . '.'
+                );
+            }
+        }
+        /* [End AI:GPT-5.6 Sol] */
+
+        return $files;
     }
+
+    /**
+     * Determine whether a release path belongs to the installation.
+     *
+     * These paths contain site content, installation configuration,
+     * credentials, updater runtime state, or uploaded content and are
+     * never writable by a Chaos MVC Core release.
+     *
+     * @param string $path Release-relative path.
+     * @return bool
+     */
+    /* [AI:GPT-5.6 Sol | 2026-08-25 22:21:00 UTC] */
+    private function isInstallationOwnedPath(
+        string $path
+    ): bool {
+        $path = str_replace(
+            '\\',
+            '/',
+            trim($path)
+        );
+
+        $segments = [];
+
+        foreach (
+            explode(
+                '/',
+                trim($path, '/')
+            ) as $segment
+        ) {
+            if (
+                $segment === ''
+                || $segment === '.'
+            ) {
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        $normalized = implode(
+            '/',
+            $segments
+        );
+
+        if (
+            $normalized === 'app/views/public'
+            || str_starts_with(
+                $normalized,
+                'app/views/public/'
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            $normalized === 'app/data/updater'
+            || str_starts_with(
+                $normalized,
+                'app/data/updater/'
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            $normalized === 'public/uploads'
+            || str_starts_with(
+                $normalized,
+                'public/uploads/'
+            )
+        ) {
+            return true;
+        }
+
+        return in_array(
+            $normalized,
+            [
+                'app/core/config.php',
+                'app/data/site.json',
+                'app/data/mailer.json'
+            ],
+            true
+        );
+    }
+    /* [End AI:GPT-5.6 Sol] */
 
     /**
      * Verify staged release files.
@@ -725,7 +886,10 @@ class updater_engine
         string $stageDir,
         array $manifest
     ): void {
-        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
+        foreach (
+            $this->getManifestFiles($manifest)
+            as $path => $hash
+        ) {
             $file = $stageDir . '/' . $path;
 
             if (!is_file($file)) {
@@ -758,9 +922,19 @@ class updater_engine
 
         $state = [];
 
-        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
-            $source = dirname(APPROOT) . '/' . $path;
-            $destination = $backupDir . '/files/' . $path;
+        foreach (
+            $this->getManifestFiles($manifest)
+            as $path => $hash
+        ) {
+            $source =
+                dirname(APPROOT)
+                . '/'
+                . $path;
+
+            $destination =
+                $backupDir
+                . '/files/'
+                . $path;
 
             $state[$path] = is_file($source);
 
@@ -781,7 +955,8 @@ class updater_engine
 
         $encoded = json_encode(
             $state,
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+            JSON_PRETTY_PRINT
+            | JSON_UNESCAPED_SLASHES
         );
 
         if (
@@ -809,9 +984,19 @@ class updater_engine
         string $stageDir,
         array $manifest
     ): void {
-        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
-            $source = $stageDir . '/' . $path;
-            $destination = dirname(APPROOT) . '/' . $path;
+        foreach (
+            $this->getManifestFiles($manifest)
+            as $path => $hash
+        ) {
+            $source =
+                $stageDir
+                . '/'
+                . $path;
+
+            $destination =
+                dirname(APPROOT)
+                . '/'
+                . $path;
 
             $this->ensureDirectory(
                 dirname($destination)
@@ -834,8 +1019,14 @@ class updater_engine
     private function verifyInstalledFiles(
         array $manifest
     ): void {
-        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
-            $file = dirname(APPROOT) . '/' . $path;
+        foreach (
+            $this->getManifestFiles($manifest)
+            as $path => $hash
+        ) {
+            $file =
+                dirname(APPROOT)
+                . '/'
+                . $path;
 
             if (!is_file($file)) {
                 throw new RuntimeException(
@@ -859,7 +1050,9 @@ class updater_engine
     private function restoreBackup(
         string $backupDir
     ): void {
-        $stateFile = $backupDir . '/backup.json';
+        $stateFile =
+            $backupDir
+            . '/backup.json';
 
         if (!is_file($stateFile)) {
             throw new RuntimeException(
@@ -882,6 +1075,20 @@ class updater_engine
         }
 
         foreach ($state as $path => $existed) {
+            /*
+             * Rollback state is produced only from validated release
+             * paths, but enforce the ownership boundary here as well.
+             */
+            if (
+                $this->isInstallationOwnedPath(
+                    (string) $path
+                )
+            ) {
+                throw new RuntimeException(
+                    'Rollback state contains installation-owned content.'
+                );
+            }
+
             $destination =
                 dirname(APPROOT)
                 . '/'
@@ -895,7 +1102,8 @@ class updater_engine
 
                 if (!is_file($source)) {
                     throw new RuntimeException(
-                        'Rollback file is missing: ' . $path
+                        'Rollback file is missing: '
+                        . $path
                     );
                 }
 
@@ -937,7 +1145,10 @@ class updater_engine
             $migration
         );
 
-        $file = $stageDir . '/' . $migration;
+        $file =
+            $stageDir
+            . '/'
+            . $migration;
 
         if (!is_file($file)) {
             throw new RuntimeException(
@@ -949,7 +1160,10 @@ class updater_engine
             $file
         );
 
-        if ($sql === false || trim($sql) === '') {
+        if (
+            $sql === false
+            || trim($sql) === ''
+        ) {
             throw new RuntimeException(
                 'Database migration is empty.'
             );
@@ -974,15 +1188,20 @@ class updater_engine
 
         if (!$mysqli->multi_query($sql)) {
             $error = $mysqli->error;
+
             $mysqli->close();
 
             throw new RuntimeException(
-                'Database migration failed: ' . $error
+                'Database migration failed: '
+                . $error
             );
         }
 
         do {
-            if ($result = $mysqli->store_result()) {
+            if (
+                $result =
+                    $mysqli->store_result()
+            ) {
                 $result->free();
             }
 
@@ -992,10 +1211,12 @@ class updater_engine
 
             if (!$mysqli->next_result()) {
                 $error = $mysqli->error;
+
                 $mysqli->close();
 
                 throw new RuntimeException(
-                    'Database migration failed: ' . $error
+                    'Database migration failed: '
+                    . $error
                 );
             }
         } while (true);
@@ -1031,7 +1252,10 @@ class updater_engine
             $context
         );
 
-        if ($data === false || $data === '') {
+        if (
+            $data === false
+            || $data === ''
+        ) {
             throw new RuntimeException(
                 'Update package download failed.'
             );
@@ -1067,7 +1291,8 @@ class updater_engine
             'http' => [
                 'timeout' => 15,
                 'follow_location' => 1,
-                'header' => "Accept: application/json\r\n"
+                'header' =>
+                    "Accept: application/json\r\n"
             ]
         ]);
 
@@ -1077,7 +1302,10 @@ class updater_engine
             $context
         );
 
-        if ($raw === false || $raw === '') {
+        if (
+            $raw === false
+            || $raw === ''
+        ) {
             throw new RuntimeException(
                 'Could not retrieve update metadata.'
             );
@@ -1100,6 +1328,8 @@ class updater_engine
     /**
      * Extract a release ZIP after checking archive paths.
      *
+     * Installation-owned paths are rejected before extraction.
+     *
      * @param string $archive ZIP archive.
      * @param string $destination Stage directory.
      * @return void
@@ -1116,7 +1346,11 @@ class updater_engine
             );
         }
 
-        for ($index = 0; $index < $zip->numFiles; $index++) {
+        for (
+            $index = 0;
+            $index < $zip->numFiles;
+            $index++
+        ) {
             $name = $zip->getNameIndex(
                 $index
             );
@@ -1132,6 +1366,26 @@ class updater_engine
             $this->validateRelativePath(
                 $name
             );
+
+            /*
+             * Even an unlisted archive entry may not enter an
+             * installation-owned path.
+             */
+            /* [AI:GPT-5.6 Sol | 2026-08-25 22:21:00 UTC] */
+            if (
+                $this->isInstallationOwnedPath(
+                    $name
+                )
+            ) {
+                $zip->close();
+
+                throw new RuntimeException(
+                    'Update package contains installation-owned content: '
+                    . $name
+                    . '.'
+                );
+            }
+            /* [End AI:GPT-5.6 Sol] */
         }
 
         $this->ensureDirectory(
@@ -1212,9 +1466,18 @@ class updater_engine
 
         if (
             $normalized === ''
-            || str_contains($normalized, "\0")
-            || str_starts_with($normalized, '/')
-            || preg_match('/^[a-zA-Z]:\//', $normalized)
+            || str_contains(
+                $normalized,
+                "\0"
+            )
+            || str_starts_with(
+                $normalized,
+                '/'
+            )
+            || preg_match(
+                '/^[a-zA-Z]:\//',
+                $normalized
+            )
         ) {
             throw new RuntimeException(
                 'Unsafe update path detected.'
@@ -1225,9 +1488,13 @@ class updater_engine
             explode(
                 '/',
                 trim($normalized, '/')
-            ) as $segment
+            )
+            as $segment
         ) {
-            if ($segment === '..') {
+            if (
+                $segment === '..'
+                || $segment === '.'
+            ) {
                 throw new RuntimeException(
                     'Unsafe update path detected.'
                 );
@@ -1244,7 +1511,12 @@ class updater_engine
     private function requireHttpsUrl(
         string $url
     ): void {
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        if (
+            !filter_var(
+                $url,
+                FILTER_VALIDATE_URL
+            )
+        ) {
             throw new RuntimeException(
                 'Update URL is invalid.'
             );
@@ -1277,11 +1549,14 @@ class updater_engine
             $this->runtimeDir
         );
 
-        $state = json_encode([
-            'maintenance' => true,
-            'target_version' => $targetVersion,
-            'started_at' => gmdate('c')
-        ], JSON_PRETTY_PRINT);
+        $state = json_encode(
+            [
+                'maintenance' => true,
+                'target_version' => $targetVersion,
+                'started_at' => gmdate('c')
+            ],
+            JSON_PRETTY_PRINT
+        );
 
         if (
             $state === false
@@ -1349,7 +1624,8 @@ class updater_engine
 
         $encoded = json_encode(
             $payload,
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+            JSON_PRETTY_PRINT
+            | JSON_UNESCAPED_SLASHES
         );
 
         if ($encoded === false) {
@@ -1409,7 +1685,10 @@ class updater_engine
         }
 
         foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
+            if (
+                $item === '.'
+                || $item === '..'
+            ) {
                 continue;
             }
 
@@ -1418,7 +1697,10 @@ class updater_engine
                 . '/'
                 . $item;
 
-            if (is_link($path) || is_file($path)) {
+            if (
+                is_link($path)
+                || is_file($path)
+            ) {
                 unlink($path);
                 continue;
             }
