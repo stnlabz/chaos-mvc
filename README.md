@@ -123,7 +123,7 @@ Chaos MVC enforces development discipline to prevent long-term code decay.
 This includes:
 
  - Mandatory annotations for AI-generated code
- - PSR-12 code formatting
+ - PSR-12 code formatting when ChAoS Development Standard do not apply
  - Proper DocBlock documentation
  - Controlled modification of core files
  - Strict code review expectations
@@ -207,6 +207,10 @@ User authentication system providing:
 - Forgotten Password
 - Password reset
 
+## Updating
+The ChAoS MVC Core can be updated whenever a release has been published.
+ - `Updater` now comes default
+ - Entire `Core` get over written to keep the core, protected.
 ---
 
 ## Administration Panel
