@@ -208,9 +208,9 @@ User authentication system providing:
 - Password reset
 
 ## Updating
-The ChAoS MVC Core can be updated whenever a release has been published.
+The ChAoS MVC **Core** can be updated whenever a release has been published.
  - `Updater` now comes default
- - Entire `Core` get over written to keep the core, protected.
+ - **Entire** `Core` gets over written to keep the core, **protected**.
 ---
 
 ## Administration Panel
@@ -233,6 +233,9 @@ Handles file uploads and media storage.
 
 ### Posts
 Content and article management.
+
+### Updater
+Check for new releases, click to update, update is automated.
 
 ---
 
