@@ -20,6 +20,10 @@ class controller {
         'updater'
     ];
 
+    /**
+	 * CSRF Token
+	 * @api
+	*/
     public function csrf_token(): string
     {
         if (empty($_SESSION['csrf_token'])) {
@@ -43,6 +47,11 @@ class controller {
     {
         $this->verify_csrf();
     }
+	
+	/**
+	 * CSRF Field
+	 * @api
+	*/
 
     public function csrf_field(): string
     {
@@ -80,6 +89,7 @@ class controller {
 
     /**
      * Render View
+	 * @api
      */
     public function view($view, $data = []) 
     {
@@ -106,6 +116,7 @@ class controller {
 
     /**
      * Load Model
+	 * @api
      */
     public function model($model) 
     {
@@ -121,6 +132,7 @@ class controller {
 
     /**
      * Error Page
+	 * @api
      */
     public function error_page($message) 
     {

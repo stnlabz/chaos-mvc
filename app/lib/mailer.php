@@ -15,16 +15,16 @@ class mailer
 
         // Hardcoded Configuration
         $mail->isSMTP();
-        $mail->Host       = 'mail.poemei.com';
+        $mail->Host       = '';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'rictus@poemei.com';
-        $mail->Password   = 'H6a91c62a!';
+        $mail->Username   = '';
+        $mail->Password   = '';
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
         $mail->CharSet    = 'UTF-8';
         $mail->isHTML(true);
 
-        $mail->setFrom('rictus@poemei.com', 'Rictus');
+        $mail->setFrom('', '');
 
         return $mail;
     }
