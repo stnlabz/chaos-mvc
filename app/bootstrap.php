@@ -23,7 +23,8 @@ $SITE = [
     'copyright_name' => 'Chaos MVC',
     'author' => 'Chaos MVC',
     'description' => 'Lightweight Model View Controller',
-    'keywords' => ''
+    'keywords' => '',
+    'active_theme' => ''
 ];
 
 $siteConfigFile = APPROOT . '/data/site.json';

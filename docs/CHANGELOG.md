@@ -53,6 +53,8 @@
 - Updated the bundled PHPMailer dependency to v7.1.1
 
 ## Reliability
+- Added installation-owned PHP themes under `/user/themes/{slug}`, authenticated theme selection at `/admin/themes`, Core layout fallback, and confined active-theme asset delivery
+- Exposed the established `$SITE`, page, Open Graph, renderer, URL, and session context to active theme `head.php`, `nav.php`, and `foot.php` layouts while preserving `active_theme` across site-identity edits
 - Updated authentication and logout forms to submit the required CSRF tokens and POST requests
 - Added matching client-side 12-character password requirements to registration and password-reset forms
 - Prevented recursive document-root rewrites of requests already routed under `public/`

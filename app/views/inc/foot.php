@@ -1,3 +1,8 @@
+<?php
+if (class_exists('theme') && theme::render('foot', get_defined_vars())) {
+    return;
+}
+?>
 </div>
 <footer class="sw-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-top: 1px solid #333; font-size: 0.9rem;">
     <div style="flex: 1; text-align: left;">

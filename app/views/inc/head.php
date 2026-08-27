@@ -1,4 +1,8 @@
 <?php
+if (class_exists('theme') && theme::render('head', get_defined_vars())) {
+    return;
+}
+
 $og = $og ?? [];
 
 $og_title = $og['title'] ?? 'Chaos MVC';

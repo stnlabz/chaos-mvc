@@ -119,7 +119,7 @@ class site extends controller
         string $file,
         array $current
     ): array {
-        $config = [
+        $config = array_replace($current, [
             'name' => trim((string) ($_POST['name'] ?? '')),
             'copyright_name' => trim(
                 (string) ($_POST['copyright_name'] ?? '')
@@ -131,7 +131,7 @@ class site extends controller
             'keywords' => trim(
                 (string) ($_POST['keywords'] ?? '')
             )
-        ];
+        ]);
 
         if ($config['name'] === '') {
             return [
