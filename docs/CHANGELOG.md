@@ -40,6 +40,7 @@
 - Added exact-file module class ownership checks, pinned RSA-SHA256 developer signatures, link-aware destination confinement, portable ZIP path collision rejection, atomic whole-directory updates, transactional uninstall quarantine, and separation of signed release metadata from installation-local trust (`CMSEC-2026-4828-L` through `CMSEC-2026-4828-R`)
 - Migrated module discovery and administration navigation to verified `/user/modules/{slug}` metadata without executing user PHP during listing (`CMSEC-2026-4830-A`, `CMSEC-2026-4830-B`)
 - Added exact controller-file ownership and explicit `module.json` route declarations for user-module HTTP dispatch (`CMSEC-2026-4830-C`, `CMSEC-2026-4830-D`)
+- Preserved `/admin/{module}` dispatch for router-prevalidated user controllers while continuing to reject classes owned by any other file (`CMSEC-2026-4830-C1`)
 - Serialized update and uninstall transactions with per-module locks (`CMSEC-2026-4830-E`)
 - Removed the internal traffic collector from HTTP routing, bounded request-derived traffic fields, and added retention pruning (`CMSEC-2026-4830-F`, `CMSEC-2026-4830-G`)
 - Escaped administrator health diagnostics contextually (`CMSEC-2026-4830-H`)
@@ -58,17 +59,20 @@
 - Added explicit failures for missing, unreadable, or invalid installation SMTP configuration
 
 ## Module Update Contract
-- Defined remote addon manifests as release metadata containing `version`, `download`, and the downloadable ZIP package’s `sha256`
-- Kept installation-local module records responsible for the installed `version`, trusted `update_url`, descriptive metadata, owned `database_tables`, and any explicitly authorized alternate `package_hosts`
+- Defined remote addon manifests as authenticated release metadata containing `module`, `version`, `download`, the downloadable ZIP package’s `sha256`, `key_id`, and an embedded Base64 `signature`
+- Required update ZIP archives to contain one self-contained `{slug}/` directory with a matching `module.json` and controller
+- Kept installation-local module records responsible for the installed `version`, trusted `update_url`, pinned developer `signing` configuration, owned `database_tables`, explicit HTTP `routes`, and any authorized alternate `package_hosts`
+- Standardized developer release signing on RSA-3072 with SHA-256 using one developer keypair across that developer’s products; private keys remain outside the repository and web root
 - Clarified that the local installed version changes only after a verified update succeeds
-- Deferred signed-manifest enforcement until the Core and independent-developer key model is finalized and provisioned
+- Kept Core Updater signing separate from the developer-module signing contract; no Core public-key file or Core signature requirement is currently imposed
 
 ## Qualification Pending
 - Run live authentication coverage for login, logout, registration, password recovery, password reset, throttle limits, token replay rejection, and administrative account operations
 - Run live regression coverage for router aliases, administrative module delegation, clean post slugs, rejected controller helpers, and 404 behavior
-- Validate addon update staging, rollback, manifest SHA-256 enforcement, destination blocking, and authorized alternate package hosts with controlled test packages
+- Validate user-module discovery, declared public routes, `/admin/{module}` delegation, and class-collision rejection with controlled modules
+- Validate addon signature enforcement, atomic directory replacement and rollback, stale-file removal, destination blocking, maintenance locking, and authorized alternate package hosts with controlled signed packages
 - Validate addon uninstall behavior with module-owned files and metadata-declared database tables
-- Migrate remaining addon tracking records and remote manifests to the finalized local/remote contract
+- Migrate remaining addons and remote manifests to the self-contained `/user/modules/{slug}` and signed-manifest contract
 - Save production SMTP settings and verify password-recovery and post-notification delivery
 
 ## Installer
