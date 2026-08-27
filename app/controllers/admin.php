@@ -126,10 +126,28 @@ class admin extends controller
              * running application or framework.
              */
             if (class_exists($slug, true)) {
-                $this->view('admin/index', [
-                    'modules' => $this->discoverAdminNavigationModules()
-                ]);
-                return;
+                /*
+                 * CMSEC-2026-4830-C1 — Prevalidated admin module ownership
+                 *
+                 * The router may already have loaded this exact controller
+                 * while validating /admin/{module}. Reject an existing class
+                 * only when it belongs to a different file.
+                 *
+                 * Disabled regression behavior:
+                 * class_exists($slug, true) caused every router-prevalidated
+                 * user administration controller to be rejected.
+                 */
+                $existingClass = new ReflectionClass($slug);
+
+                if (
+                    realpath((string) $existingClass->getFileName())
+                    !== realpath($userPath)
+                ) {
+                    $this->view('admin/index', [
+                        'modules' => $this->discoverAdminNavigationModules()
+                    ]);
+                    return;
+                }
             }
 
             require_once $userPath;
