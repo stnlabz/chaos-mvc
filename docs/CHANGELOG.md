@@ -44,6 +44,7 @@
 - Serialized update and uninstall transactions with per-module locks (`CMSEC-2026-4830-E`)
 - Removed the internal traffic collector from HTTP routing, bounded request-derived traffic fields, and added retention pruning (`CMSEC-2026-4830-F`, `CMSEC-2026-4830-G`)
 - Escaped administrator health diagnostics contextually (`CMSEC-2026-4830-H`)
+- Prevented `/install` from reopening after a completed installation when the runtime lock file is missing by verifying the configured database contains an administrator account (`CMSEC-2026-4831-A`)
 - Connected PHPMailer to the installation-local SMTP configuration with strict validation and no source-embedded credentials (`CMSEC-2026-4829`)
 - Escaped and validated addon metadata, module links, and developer-domain links in the module administration interface
 - Removed installation database configuration and runtime authentication state from Git tracking

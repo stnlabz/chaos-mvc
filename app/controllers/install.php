@@ -31,6 +31,50 @@ class install extends controller
             exit;
         }
 
+        /*
+         * CMSEC-2026-4831-A — Completed-installation boundary
+         *
+         * The lock file is the primary installation marker. If that runtime
+         * file is removed while the installed database remains available,
+         * the previous lock-only behavior exposed the installer again.
+         * Confirm a completed administrator installation before rendering or
+         * processing the installer, without changing database state.
+         */
+        try {
+            $installedDatabase = @new mysqli(
+                DB_HOST,
+                DB_USER,
+                DB_PASS,
+                DB_NAME
+            );
+
+            if (!$installedDatabase->connect_errno) {
+                $result = $installedDatabase->query(
+                    'SELECT 1 FROM accounts WHERE user_level = 9 LIMIT 1'
+                );
+                $installationComplete = $result instanceof mysqli_result
+                    && $result->num_rows > 0;
+
+                if ($result instanceof mysqli_result) {
+                    $result->free();
+                }
+
+                $installedDatabase->close();
+
+                if ($installationComplete) {
+                    header('Location: /login');
+                    exit;
+                }
+            } else {
+                $installedDatabase->close();
+            }
+        } catch (Throwable $error) {
+            /*
+             * A missing database, schema, or valid administrator is expected
+             * during a genuine first installation. Continue to the installer.
+             */
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->view('public/install/index');
             return;
