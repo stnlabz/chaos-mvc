@@ -36,6 +36,7 @@
 - Prevented module uninstall cleanup from traversing top-level or nested symbolic links; links are removed without following their targets (`CMSEC-2026-4828-I`)
 - Blocked module update connections to loopback, private, link-local, reserved, multicast, carrier-grade NAT, and mapped IPv6 destinations (`CMSEC-2026-4828-G`)
 - Added cumulative count and byte limits for module-server HTTP headers and chunked-response trailers (`CMSEC-2026-4828-J`)
+- Migrated module update and uninstall ownership from distributed `/app` paths to the self-contained `/user/modules/{slug}` boundary, including canonical slug validation and package identity checks (`CMSEC-2026-4828-K`)
 - Connected PHPMailer to the installation-local SMTP configuration with strict validation and no source-embedded credentials (`CMSEC-2026-4829`)
 - Escaped and validated addon metadata, module links, and developer-domain links in the module administration interface
 - Removed installation database configuration and runtime authentication state from Git tracking

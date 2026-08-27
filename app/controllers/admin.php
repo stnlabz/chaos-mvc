@@ -18,30 +18,114 @@
  * Path: /app/controllers/admin.php
  */
 
-class admin extends controller 
+class admin extends controller
 {
-    public function index($params = []) 
+    /**
+     * Administrative actions exposed directly by this controller.
+     *
+     * @var array
+     */
+    private const ADMIN_ACTIONS = [
+        'update',
+        'uninstall',
+    ];
+
+    /**
+     * Administration entry point.
+     *
+     * Core administration controllers are resolved from /app/controllers.
+     * User-land module administration controllers are resolved from
+     * /user/modules/{slug}/controllers.
+     *
+     * Core controller names take priority over user-land module names.
+     *
+     * @param array $params Route parameters.
+     *
+     * @return void
+     */
+    public function index($params = []): void
     {
-        if (!isset($_SESSION['user_level']) || $_SESSION['user_level'] < 7) {
-            header("Location: /auth/login");
+        if (
+            !isset($_SESSION['user_level'])
+            || $_SESSION['user_level'] < 7
+        ) {
+            header('Location: /auth/login');
             exit;
         }
 
         $slug = $params[0] ?? null;
 
-        if ($slug && method_exists($this, $slug) && $slug !== 'index') {
-            $this->$slug($params);
+        /*
+         * Direct administrative actions are explicitly bounded.
+         */
+        if (
+            is_string($slug)
+            && in_array($slug, self::ADMIN_ACTIONS, true)
+        ) {
+            $reflection = new ReflectionMethod($this, $slug);
+
+            if ($reflection->isPublic()) {
+                $this->$slug();
+                return;
+            }
+        }
+
+        if (
+            !is_string($slug)
+            || !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $slug)
+        ) {
+            $this->view('admin/index');
             return;
         }
 
-        $path = APPROOT . '/controllers/' . $slug . '.php';
-        if ($slug && file_exists($path)) {
-            require_once $path;
+        /*
+         * Core owns the controller namespace first.
+         */
+        $corePath = APPROOT . '/controllers/' . $slug . '.php';
 
-            if (class_exists($slug)) {
-                $controller = new $slug();
+        if (is_file($corePath)) {
+            require_once $corePath;
 
-                if (method_exists($controller, 'admin')) {
+            if (class_exists($slug, false) && method_exists($slug, 'admin')) {
+                $reflection = new ReflectionMethod($slug, 'admin');
+
+                if (
+                    $reflection->isPublic()
+                    && $reflection->getDeclaringClass()->getName() === $slug
+                ) {
+                    $controller = new $slug();
+                    $controller->admin($params);
+                    return;
+                }
+            }
+
+            $this->view('admin/index');
+            return;
+        }
+
+        /*
+         * No Core controller owns the slug. Resolve the independently owned
+         * user module and establish its context before dispatch.
+         */
+        $userPath = USERROOT
+            . '/modules/'
+            . $slug
+            . '/controllers/'
+            . $slug
+            . '.php';
+
+        if (is_file($userPath)) {
+            require_once $userPath;
+
+            if (class_exists($slug, false) && method_exists($slug, 'admin')) {
+                $reflection = new ReflectionMethod($slug, 'admin');
+
+                if (
+                    $reflection->isPublic()
+                    && $reflection->getDeclaringClass()->getName() === $slug
+                ) {
+                    $controller = new $slug();
+                    $controller->setModuleContext($slug);
                     $controller->admin($params);
                     return;
                 }
@@ -58,6 +142,7 @@ class admin extends controller
      * CMSEC-2026-4828-B — Manifest and package integrity
      * CMSEC-2026-4828-C — Safe archive and module identity
      * CMSEC-2026-4828-D — Staging, backup, and rollback
+     * CMSEC-2026-4828-K — User module ownership boundary
      *
      * @return void
      */
@@ -76,7 +161,7 @@ class admin extends controller
 
         $module = trim((string) ($_POST['module'] ?? ''));
 
-        if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/', $module)) {
+        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
             $this->respondModuleUpdate(false, null, 'Invalid module.');
         }
 
@@ -84,7 +169,13 @@ class admin extends controller
             $this->respondModuleUpdate(false, null, 'Core modules cannot be updated here.');
         }
 
-        $configPath = APPROOT . '/data/modules/' . $module . '.json';
+        try {
+            $moduleRoot = $this->resolveInstalledModuleRoot($module);
+        } catch (Throwable $error) {
+            $this->respondModuleUpdate(false, null, $error->getMessage());
+        }
+
+        $configPath = $moduleRoot . '/module.json';
 
         try {
             $config = $this->readModuleJson($configPath);
@@ -125,8 +216,15 @@ class admin extends controller
             }
 
             $new = (string) ($manifest['version'] ?? '');
+            $manifestModule = (string) ($manifest['module'] ?? '');
             $downloadUrl = (string) ($manifest['download'] ?? '');
             $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
+
+            if ($manifestModule !== $module) {
+                throw new RuntimeException(
+                    'Update manifest does not match the requested module.'
+                );
+            }
 
             if ($new === '' || !version_compare($new, $current, '>')) {
                 $this->cleanupModuleUpdate($workRoot);
@@ -194,9 +292,29 @@ class admin extends controller
 
             $zip->close();
 
+            $stagedConfig = $this->readModuleJson(
+                $stagePath
+                    . DIRECTORY_SEPARATOR
+                    . $module
+                    . DIRECTORY_SEPARATOR
+                    . 'module.json'
+            );
+
+            if ((string) ($stagedConfig['module'] ?? '') !== $module) {
+                throw new RuntimeException(
+                    'Packaged module metadata does not match the requested module.'
+                );
+            }
+
             foreach ($files as $relativePath) {
-                $source = $stagePath . DIRECTORY_SEPARATOR . $relativePath;
-                $destination = APPROOT . DIRECTORY_SEPARATOR . $relativePath;
+                $source = $stagePath
+                    . DIRECTORY_SEPARATOR
+                    . $module
+                    . DIRECTORY_SEPARATOR
+                    . $relativePath;
+                $destination = $moduleRoot
+                    . DIRECTORY_SEPARATOR
+                    . $relativePath;
 
                 if (!is_file($source)) {
                     continue;
@@ -237,7 +355,8 @@ class admin extends controller
                 $this->rollbackModuleUpdate(
                     $installed,
                     $backedUp,
-                    $backupPath
+                    $backupPath,
+                    $moduleRoot
                 );
 
                 if (is_string($originalConfig)) {
@@ -325,6 +444,36 @@ class admin extends controller
         }
 
         return $data;
+    }
+
+    /**
+     * Resolve one installed user module without following a module-root link.
+     *
+     * CMSEC-2026-4828-K — User module ownership boundary
+     */
+    private function resolveInstalledModuleRoot(string $module): string
+    {
+        $modulesRoot = realpath(USERROOT . '/modules');
+        $candidate = USERROOT . '/modules/' . $module;
+
+        if ($modulesRoot === false || is_link($candidate)) {
+            throw new RuntimeException('Installed module boundary is invalid.');
+        }
+
+        $resolved = realpath($candidate);
+
+        if (
+            $resolved === false
+            || !is_dir($resolved)
+            || !str_starts_with(
+                $resolved,
+                $modulesRoot . DIRECTORY_SEPARATOR
+            )
+        ) {
+            throw new RuntimeException('Installed module was not found.');
+        }
+
+        return $resolved;
     }
 
     /**
@@ -796,6 +945,7 @@ class admin extends controller
      * Validate module archive paths, type, size, and identity.
      *
      * CMSEC-2026-4828-C
+     * CMSEC-2026-4828-K
      *
      * @return array<int, string>
      */
@@ -817,12 +967,8 @@ class admin extends controller
         $files = [];
         $totalSize = 0;
         $controllerFound = false;
-        $allowedFiles = [
-            'controllers/' . $module . '.php',
-            'models/' . $module . '_model.php',
-            'views/admin/' . $module . '.php',
-        ];
-        $publicPrefix = 'views/public/' . $module . '/';
+        $archivePrefix = $module . '/';
+        $metadataFound = false;
 
         for ($index = 0; $index < $zip->numFiles; $index++) {
             $stat = $zip->statIndex($index);
@@ -855,18 +1001,15 @@ class admin extends controller
                 throw new RuntimeException('Update package contains a symbolic link.');
             }
 
-            if (str_ends_with($normalized, '/')) {
-                continue;
-            }
-
-            $allowed = in_array($normalized, $allowedFiles, true)
-                || str_starts_with($normalized, $publicPrefix);
-
-            if (!$allowed) {
+            if (!str_starts_with($normalized, $archivePrefix)) {
                 $zip->close();
                 throw new RuntimeException(
                     'Update package contains files outside the module boundary.'
                 );
+            }
+
+            if (str_ends_with($normalized, '/')) {
+                continue;
             }
 
             $size = is_array($stat) ? (int) ($stat['size'] ?? 0) : 0;
@@ -877,16 +1020,26 @@ class admin extends controller
                 throw new RuntimeException('Update package expands beyond the size limit.');
             }
 
-            if ($normalized === 'controllers/' . $module . '.php') {
+            $moduleRelative = substr($normalized, strlen($archivePrefix));
+
+            if ($moduleRelative === '' || str_ends_with($moduleRelative, '/')) {
+                continue;
+            }
+
+            if ($moduleRelative === 'controllers/' . $module . '.php') {
                 $controllerFound = true;
             }
 
-            $files[] = str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+            if ($moduleRelative === 'module.json') {
+                $metadataFound = true;
+            }
+
+            $files[] = str_replace('/', DIRECTORY_SEPARATOR, $moduleRelative);
         }
 
         $zip->close();
 
-        if (!$controllerFound) {
+        if (!$controllerFound || !$metadataFound) {
             throw new RuntimeException('Update package does not match the requested module.');
         }
 
@@ -897,6 +1050,7 @@ class admin extends controller
      * Copy one staged or backup module file.
      *
      * CMSEC-2026-4828-D
+     * CMSEC-2026-4828-K
      */
     private function copyModuleFile(
         string $source,
@@ -917,14 +1071,18 @@ class admin extends controller
      * Restore files after an incomplete module update.
      *
      * CMSEC-2026-4828-D
+     * CMSEC-2026-4828-K
      */
     private function rollbackModuleUpdate(
         array $installed,
         array $backedUp,
-        string $backupPath
+        string $backupPath,
+        string $moduleRoot
     ): void {
         foreach (array_reverse($installed) as $relativePath) {
-            $destination = APPROOT . DIRECTORY_SEPARATOR . $relativePath;
+            $destination = $moduleRoot
+                . DIRECTORY_SEPARATOR
+                . $relativePath;
 
             if (isset($backedUp[$relativePath])) {
                 $backup = $backupPath . DIRECTORY_SEPARATOR . $relativePath;
@@ -983,6 +1141,7 @@ class admin extends controller
      *
      * CMSEC-2026-4828-E — Authenticated module removal
      * CMSEC-2026-4828-F — Trusted module identity and owned resources
+     * CMSEC-2026-4828-K — User module ownership boundary
      *
      * @return void
      */
@@ -999,7 +1158,7 @@ class admin extends controller
 
         $module = trim((string) ($_POST['module'] ?? ''));
 
-        if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/', $module)) {
+        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
             $this->error_page('Invalid module.');
         }
 
@@ -1007,7 +1166,13 @@ class admin extends controller
             $this->error_page('Core modules cannot be removed.');
         }
 
-        $configPath = APPROOT . '/data/modules/' . $module . '.json';
+        try {
+            $moduleRoot = $this->resolveInstalledModuleRoot($module);
+        } catch (Throwable $error) {
+            $this->error_page('Installed module boundary could not be verified.');
+        }
+
+        $configPath = $moduleRoot . '/module.json';
 
         try {
             $config = $this->readModuleJson($configPath);
@@ -1015,7 +1180,7 @@ class admin extends controller
             $this->error_page('Installed module metadata could not be verified.');
         }
 
-        $controllerPath = APPROOT . '/controllers/' . $module . '.php';
+        $controllerPath = $moduleRoot . '/controllers/' . $module . '.php';
 
         if (!is_file($controllerPath)) {
             $this->error_page('Installed module controller was not found.');
@@ -1039,20 +1204,25 @@ class admin extends controller
             }
         }
 
-        $ownedFiles = [
-            $controllerPath,
-            APPROOT . '/models/' . $module . '_model.php',
-            APPROOT . '/views/admin/' . $module . '.php',
-            $configPath,
-        ];
-
-        foreach ($ownedFiles as $file) {
-            $this->deleteModuleFile($file);
-        }
-
-        $this->deleteModuleDirectory(
-            APPROOT . '/views/public/' . $module
-        );
+        /*
+         * CMSEC-2026-4828-K
+         *
+         * Disabled legacy ownership model retained for maintenance history:
+         * individual controller, model, view, and metadata paths under
+         * /app were deleted separately. User modules are now owned and
+         * removed only as /user/modules/{slug}.
+         *
+         * $ownedFiles = [
+         *     APPROOT . '/controllers/' . $module . '.php',
+         *     APPROOT . '/models/' . $module . '_model.php',
+         *     APPROOT . '/views/admin/' . $module . '.php',
+         *     APPROOT . '/data/modules/' . $module . '.json',
+         * ];
+         * $this->deleteModuleDirectory(
+         *     APPROOT . '/views/public/' . $module
+         * );
+         */
+        $this->deleteModuleDirectory($moduleRoot);
 
         header('Location: /admin/modules');
         exit;
@@ -1165,6 +1335,7 @@ class admin extends controller
      *
      * CMSEC-2026-4828-F
      * CMSEC-2026-4828-I
+     * CMSEC-2026-4828-K
      */
     private function deleteModuleDirectory(string $directory): void
     {
@@ -1186,15 +1357,15 @@ class admin extends controller
             return;
         }
 
-        $publicRoot = realpath(APPROOT . '/views/public');
+        $modulesRoot = realpath(USERROOT . '/modules');
         $resolved = realpath($directory);
 
         if (
-            $publicRoot === false
+            $modulesRoot === false
             || $resolved === false
             || !str_starts_with(
                 $resolved,
-                $publicRoot . DIRECTORY_SEPARATOR
+                $modulesRoot . DIRECTORY_SEPARATOR
             )
         ) {
             throw new RuntimeException('Module directory target escaped its owned root.');
