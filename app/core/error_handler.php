@@ -125,6 +125,7 @@ final class error_handler
 
         if ($view !== '' && is_file($view)) {
             try {
+                $SITE = $GLOBALS['SITE'] ?? [];
                 require $view;
                 exit;
             } catch (Throwable $renderError) {

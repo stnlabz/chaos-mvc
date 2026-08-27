@@ -62,6 +62,7 @@
 - Added explicit failures for missing, unreadable, or invalid installation SMTP configuration
 - Consolidated duplicate error controllers into one bootstrap-registered Core handler for intentional HTTP errors, uncaught exceptions, reportable PHP errors, and fatal shutdown failures
 - Added safe site-styled error responses, dependency-free emergency rendering, private incident logging, reference identifiers, and removal of partial response output
+- Restored bootstrap-provided `$SITE` identity inside normal and Core error view scopes so installation-specific titles and copyright values no longer fall back to `Chaos MVC`
 
 ## Module Update Contract
 - Defined remote addon manifests as authenticated release metadata containing `module`, `version`, `download`, the downloadable ZIP package’s `sha256`, `key_id`, and an embedded Base64 `signature`

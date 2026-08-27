@@ -270,6 +270,7 @@ class controller
 
         if ($file !== null && is_file($file)) {
             $render_md = $this->render_md;
+            $SITE = $GLOBALS['SITE'] ?? [];
 
             if (is_array($data)) {
                 extract(
