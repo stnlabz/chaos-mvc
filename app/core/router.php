@@ -117,7 +117,12 @@ class router
                 $this->controller_scope = 'core';
 
                 unset($url[0]);
-            } elseif (is_file($userController)) {
+            } elseif (
+                $this->isConfinedUserModuleFile(
+                    $requestedController,
+                    $userController
+                )
+            ) {
                 $this->controller = $requestedController;
                 $this->controller_scope = 'user';
                 $this->module_context = $requestedController;
@@ -231,6 +236,11 @@ class router
                  *
                  * admin::index() remains the admin dispatcher.
                  */
+                if ((int) ($_SESSION['user_level'] ?? 0) < 7) {
+                    header('Location: /auth/login');
+                    exit;
+                }
+
                 if (
                     !$this->isAdminModuleRoute(
                         $requestedMethod
@@ -433,7 +443,7 @@ class router
             . $module
             . '.php';
 
-        if (!is_file($userController)) {
+        if (!$this->isConfinedUserModuleFile($module, $userController)) {
             return false;
         }
 
@@ -540,6 +550,10 @@ class router
             $controller instanceof controller
             && $controller->isUserModule()
         ) {
+            if ($method === 'admin') {
+                return false;
+            }
+
             $module = (string) $controller->getModuleContext();
             $metadataPath = USERROOT
                 . '/modules/' . $module . '/module.json';
@@ -656,6 +670,41 @@ class router
             '/^[a-z][a-z0-9_]{0,62}$/',
             $name
         );
+    }
+
+    /**
+     * Confirm that an executable user-module file is a real, unlinked file
+     * confined to the selected module directory.
+     */
+    private function isConfinedUserModuleFile(
+        string $module,
+        string $file
+    ): bool {
+        $modulesRoot = realpath(USERROOT . '/modules');
+        $modulePath = USERROOT . '/modules/' . $module;
+
+        if (
+            $modulesRoot === false
+            || is_link($modulePath)
+            || is_link($file)
+        ) {
+            return false;
+        }
+
+        $moduleRoot = realpath($modulePath);
+        $resolvedFile = realpath($file);
+
+        return $moduleRoot !== false
+            && $resolvedFile !== false
+            && str_starts_with(
+                $moduleRoot,
+                $modulesRoot . DIRECTORY_SEPARATOR
+            )
+            && str_starts_with(
+                $resolvedFile,
+                $moduleRoot . DIRECTORY_SEPARATOR
+            )
+            && is_file($resolvedFile);
     }
 
     /**

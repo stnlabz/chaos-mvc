@@ -89,7 +89,18 @@ class controller
             . '/modules/'
             . $module;
 
-        if (!is_dir($moduleRoot)) {
+        $modulesRoot = realpath(USERROOT . '/modules');
+        $resolvedModuleRoot = realpath($moduleRoot);
+
+        if (
+            $modulesRoot === false
+            || $resolvedModuleRoot === false
+            || is_link($moduleRoot)
+            || !str_starts_with(
+                $resolvedModuleRoot,
+                $modulesRoot . DIRECTORY_SEPARATOR
+            )
+        ) {
             throw new RuntimeException(
                 'User module context does not exist.'
             );
@@ -247,10 +258,9 @@ class controller
         }
 
         if ($this->isUserModule()) {
-            $file = $this->userModuleRoot()
-                . '/views/'
-                . $view
-                . '.php';
+            $file = $this->userModuleFile(
+                '/views/' . $view . '.php'
+            );
         } else {
             $file = APPROOT
                 . '/views/'
@@ -258,7 +268,7 @@ class controller
                 . '.php';
         }
 
-        if (is_file($file)) {
+        if ($file !== null && is_file($file)) {
             $render_md = $this->render_md;
 
             if (is_array($data)) {
@@ -339,10 +349,9 @@ class controller
         }
 
         if ($this->isUserModule()) {
-            $file = $this->userModuleRoot()
-                . '/models/'
-                . $model
-                . '.php';
+            $file = $this->userModuleFile(
+                '/models/' . $model . '.php'
+            );
         } else {
             $file = APPROOT
                 . '/models/'
@@ -350,7 +359,7 @@ class controller
                 . '.php';
         }
 
-        if (!is_file($file)) {
+        if ($file === null || !is_file($file)) {
             die(
                 'Model '
                 . htmlspecialchars(
@@ -432,6 +441,42 @@ class controller
         return USERROOT
             . '/modules/'
             . $this->module_context;
+    }
+
+    /**
+     * Resolve an unlinked file confined to the current user module.
+     *
+     * @return string|null
+     */
+    private function userModuleFile(string $relativePath): ?string
+    {
+        $moduleRootPath = $this->userModuleRoot();
+
+        if (is_link($moduleRootPath)) {
+            return null;
+        }
+
+        $moduleRoot = realpath($moduleRootPath);
+        $candidate = $moduleRootPath . $relativePath;
+
+        if ($moduleRoot === false || is_link($candidate)) {
+            return null;
+        }
+
+        $resolved = realpath($candidate);
+
+        if (
+            $resolved === false
+            || !str_starts_with(
+                $resolved,
+                $moduleRoot . DIRECTORY_SEPARATOR
+            )
+            || !is_file($resolved)
+        ) {
+            return null;
+        }
+
+        return $resolved;
     }
 
     /**
