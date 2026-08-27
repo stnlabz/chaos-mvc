@@ -66,6 +66,8 @@ class router
     /**
      * Dispatch the current request.
      *
+     * CMSEC-2026-4830-C — Exact controller class ownership
+     *
      * @return void
      */
     private function dispatch(): void
@@ -152,6 +154,17 @@ class router
             return;
         }
 
+        /*
+         * CMSEC-2026-4830-C — Exact controller class ownership
+         */
+        if (
+            $this->controller_scope === 'user'
+            && class_exists((string) $this->controller, true)
+        ) {
+            $this->notFound();
+            return;
+        }
+
         require_once $controllerPath;
 
         if (
@@ -159,6 +172,16 @@ class router
                 $this->controller,
                 false
             )
+        ) {
+            $this->notFound();
+            return;
+        }
+
+        $controllerReflection = new ReflectionClass((string) $this->controller);
+
+        if (
+            realpath((string) $controllerReflection->getFileName())
+            !== realpath($controllerPath)
         ) {
             $this->notFound();
             return;
@@ -369,6 +392,8 @@ class router
     /**
      * Determine whether a segment names an administrative module route.
      *
+     * CMSEC-2026-4830-C — Exact controller class ownership
+     *
      * Core controllers are resolved first.
      * User modules are resolved only when no Core controller owns
      * the requested module name.
@@ -396,7 +421,8 @@ class router
             require_once $coreController;
 
             return $this->classHasPublicAdmin(
-                $module
+                $module,
+                $coreController
             );
         }
 
@@ -411,22 +437,30 @@ class router
             return false;
         }
 
+        if (class_exists($module, true)) {
+            return false;
+        }
+
         require_once $userController;
 
         return $this->classHasPublicAdmin(
-            $module
+            $module,
+            $userController
         );
     }
 
     /**
      * Determine whether a class exposes a public admin action.
      *
+     * CMSEC-2026-4830-C — Exact controller class ownership
+     *
      * @param string $class Controller class.
      *
      * @return bool
      */
     private function classHasPublicAdmin(
-        string $class
+        string $class,
+        ?string $expectedFile = null
     ): bool {
         if (
             !class_exists(
@@ -446,11 +480,18 @@ class router
             'admin'
         );
 
-        return $reflection->isPublic();
+        return $reflection->isPublic()
+            && (
+                $expectedFile === null
+                || realpath((string) $reflection->getFileName())
+                    === realpath($expectedFile)
+            );
     }
 
     /**
      * Determine whether a controller method is an authorized HTTP action.
+     *
+     * CMSEC-2026-4830-D — Explicit user-module route declarations
      *
      * Core controllers retain the explicit Core route table.
      *
@@ -499,11 +540,19 @@ class router
             $controller instanceof controller
             && $controller->isUserModule()
         ) {
-            return $reflection
-                ->getDeclaringClass()
-                ->getName() === get_class(
-                    $controller
-                );
+            $module = (string) $controller->getModuleContext();
+            $metadataPath = USERROOT
+                . '/modules/' . $module . '/module.json';
+            $raw = is_file($metadataPath)
+                ? file_get_contents($metadataPath)
+                : false;
+            $metadata = is_string($raw) ? json_decode($raw, true) : null;
+            $routes = is_array($metadata) ? ($metadata['routes'] ?? []) : [];
+
+            return $reflection->getDeclaringClass()->getName()
+                    === get_class($controller)
+                && is_array($routes)
+                && in_array($method, $routes, true);
         }
 
         /*
@@ -564,7 +613,12 @@ class router
                 'status',
             ],
             'traffic' => [
-                'collect',
+                /*
+                 * CMSEC-2026-4830-F — Internal traffic collector
+                 *
+                 * Disabled HTTP exposure retained for maintenance history:
+                 * 'collect',
+                 */
                 'admin',
             ],
             'modules' => [

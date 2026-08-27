@@ -25,6 +25,25 @@ class traffic_model extends model
     }
 
     /**
+     * Apply the traffic retention window and hard row ceiling.
+     *
+     * CMSEC-2026-4830-G — Bounded traffic records and retention
+     */
+    public function prune(): void
+    {
+        $this->query(
+            'DELETE FROM traffic WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)'
+        );
+        $this->query(
+            'DELETE FROM traffic WHERE id NOT IN ('
+            . 'SELECT id FROM ('
+            . 'SELECT id FROM traffic ORDER BY id DESC LIMIT 100000'
+            . ') AS retained'
+            . ')'
+        );
+    }
+
+    /**
      * Exclusively for the Admin Controller.
      */
     public function get_log_report($limit = 500): array|false

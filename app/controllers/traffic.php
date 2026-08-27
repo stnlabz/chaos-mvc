@@ -12,18 +12,25 @@ class traffic extends controller
     /**
      * This is the background execution method.
      * It is NOT accessible via URL as a public view.
+     *
+     * CMSEC-2026-4830-F — Internal traffic collector
+     * CMSEC-2026-4830-G — Bounded traffic records and retention
      */
     public function collect()
     {
         $model = $this->model('traffic_model');
         $model->record([
-            'host'       => $_SERVER['HTTP_HOST'] ?? 'unknown',
-            'uri'        => $_SERVER['REQUEST_URI'] ?? '/',
-            'method'     => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-            'ip'         => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'referer'    => $_SERVER['HTTP_REFERER'] ?? null
+            'host'       => substr((string) ($_SERVER['HTTP_HOST'] ?? 'unknown'), 0, 255),
+            'uri'        => substr((string) ($_SERVER['REQUEST_URI'] ?? '/'), 0, 2048),
+            'method'     => substr((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'), 0, 16),
+            'ip'         => substr((string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45),
+            'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 1024),
+            'referer'    => substr((string) ($_SERVER['HTTP_REFERER'] ?? ''), 0, 2048)
         ]);
+
+        if (random_int(1, 1000) === 1) {
+            $model->prune();
+        }
     }
 
     /**

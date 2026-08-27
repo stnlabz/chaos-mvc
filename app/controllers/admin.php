@@ -74,7 +74,9 @@ class admin extends controller
             !is_string($slug)
             || !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $slug)
         ) {
-            $this->view('admin/index');
+            $this->view('admin/index', [
+                'modules' => $this->discoverAdminNavigationModules()
+            ]);
             return;
         }
 
@@ -99,7 +101,9 @@ class admin extends controller
                 }
             }
 
-            $this->view('admin/index');
+            $this->view('admin/index', [
+                'modules' => $this->discoverAdminNavigationModules()
+            ]);
             return;
         }
 
@@ -115,6 +119,19 @@ class admin extends controller
             . '.php';
 
         if (is_file($userPath)) {
+            /*
+             * CMSEC-2026-4828-L — Module class ownership
+             *
+             * A user module may not claim a class name already owned by the
+             * running application or framework.
+             */
+            if (class_exists($slug, true)) {
+                $this->view('admin/index', [
+                    'modules' => $this->discoverAdminNavigationModules()
+                ]);
+                return;
+            }
+
             require_once $userPath;
 
             if (class_exists($slug, false) && method_exists($slug, 'admin')) {
@@ -123,6 +140,8 @@ class admin extends controller
                 if (
                     $reflection->isPublic()
                     && $reflection->getDeclaringClass()->getName() === $slug
+                    && realpath((string) $reflection->getFileName())
+                        === realpath($userPath)
                 ) {
                     $controller = new $slug();
                     $controller->setModuleContext($slug);
@@ -132,7 +151,62 @@ class admin extends controller
             }
         }
 
-        $this->view('admin/index');
+        $this->view('admin/index', [
+            'modules' => $this->discoverAdminNavigationModules()
+        ]);
+    }
+
+    /**
+     * Discover administrative navigation without executing user module PHP.
+     *
+     * CMSEC-2026-4830-B — Inert administration discovery
+     *
+     * @return array<int, string>
+     */
+    private function discoverAdminNavigationModules(): array
+    {
+        $modules = [];
+        $excluded = ['admin', 'pages', 'auth', 'error_handler'];
+
+        foreach (glob(APPROOT . '/controllers/*.php') ?: [] as $file) {
+            $name = basename($file, '.php');
+
+            if (in_array($name, $excluded, true)) {
+                continue;
+            }
+
+            require_once $file;
+
+            if (class_exists($name, false) && method_exists($name, 'admin')) {
+                $method = new ReflectionMethod($name, 'admin');
+
+                if ($method->isPublic()) {
+                    $modules[] = $name;
+                }
+            }
+        }
+
+        foreach (glob(USERROOT . '/modules/*', GLOB_ONLYDIR) ?: [] as $directory) {
+            $name = basename($directory);
+            $metadataPath = $directory . '/module.json';
+            $raw = is_file($metadataPath)
+                ? file_get_contents($metadataPath)
+                : false;
+            $metadata = is_string($raw) ? json_decode($raw, true) : null;
+
+            if (
+                preg_match('/^[a-z][a-z0-9_]{1,62}$/', $name)
+                && !is_link($directory)
+                && is_array($metadata)
+                && (string) ($metadata['module'] ?? '') === $name
+                && is_file($directory . '/controllers/' . $name . '.php')
+            ) {
+                $modules[] = $name;
+            }
+        }
+
+        sort($modules, SORT_STRING);
+        return array_values(array_unique($modules));
     }
     
     /**
@@ -143,6 +217,11 @@ class admin extends controller
      * CMSEC-2026-4828-C — Safe archive and module identity
      * CMSEC-2026-4828-D — Staging, backup, and rollback
      * CMSEC-2026-4828-K — User module ownership boundary
+     * CMSEC-2026-4828-M — Developer release authenticity
+     * CMSEC-2026-4828-N — Module write-path confinement
+     * CMSEC-2026-4828-O — Atomic module directory replacement
+     * CMSEC-2026-4828-Q — Trust and release metadata separation
+     * CMSEC-2026-4830-E — Serialized module maintenance
      *
      * @return void
      */
@@ -170,6 +249,12 @@ class admin extends controller
         }
 
         try {
+            $maintenanceLock = $this->acquireModuleMaintenanceLock($module);
+        } catch (Throwable $error) {
+            $this->respondModuleUpdate(false, null, $error->getMessage());
+        }
+
+        try {
             $moduleRoot = $this->resolveInstalledModuleRoot($module);
         } catch (Throwable $error) {
             $this->respondModuleUpdate(false, null, $error->getMessage());
@@ -183,7 +268,6 @@ class admin extends controller
             $this->respondModuleUpdate(false, null, $error->getMessage());
         }
 
-        $originalConfig = file_get_contents($configPath);
         $current = (string) ($config['version'] ?? '0.0.0');
         $updateUrl = (string) ($config['update_url'] ?? '');
 
@@ -199,9 +283,22 @@ class admin extends controller
 
         $packagePath = $workRoot . DIRECTORY_SEPARATOR . 'package.zip';
         $stagePath = $workRoot . DIRECTORY_SEPARATOR . 'stage';
-        $backupPath = $workRoot . DIRECTORY_SEPARATOR . 'backup';
-        $installed = [];
-        $backedUp = [];
+        /*
+         * CMSEC-2026-4828-O
+         *
+         * Disabled file-level rollback state retained for maintenance:
+         * $originalConfig = file_get_contents($configPath);
+         * $backupPath = $workRoot . DIRECTORY_SEPARATOR . 'backup';
+         * $installed = [];
+         * $backedUp = [];
+         */
+        $transactionId = bin2hex(random_bytes(8));
+        $moduleParent = dirname($moduleRoot);
+        $incomingRoot = $moduleParent . DIRECTORY_SEPARATOR
+            . '.' . $module . '.incoming-' . $transactionId;
+        $moduleBackupRoot = $moduleParent . DIRECTORY_SEPARATOR
+            . '.' . $module . '.backup-' . $transactionId;
+        $moduleMoved = false;
 
         try {
             if (!mkdir($workRoot, 0700, true)) {
@@ -255,6 +352,15 @@ class admin extends controller
                 throw new RuntimeException('Manifest SHA-256 is missing or invalid.');
             }
 
+            $this->verifyModuleReleaseSignature(
+                $manifest,
+                $config,
+                $module,
+                $new,
+                $downloadUrl,
+                $expectedHash
+            );
+
             $package = $this->downloadModuleResource($downloadUrl, 26214400);
 
             if (file_put_contents($packagePath, $package, LOCK_EX) === false) {
@@ -306,41 +412,57 @@ class admin extends controller
                 );
             }
 
+            if (!mkdir($incomingRoot, 0700, true)) {
+                throw new RuntimeException('Could not create incoming module directory.');
+            }
+
             foreach ($files as $relativePath) {
                 $source = $stagePath
                     . DIRECTORY_SEPARATOR
                     . $module
                     . DIRECTORY_SEPARATOR
                     . $relativePath;
-                $destination = $moduleRoot
+                $destination = $incomingRoot
                     . DIRECTORY_SEPARATOR
                     . $relativePath;
+
+                $this->assertModuleWritePath(
+                    $incomingRoot,
+                    $destination
+                );
 
                 if (!is_file($source)) {
                     continue;
                 }
 
-                if (file_exists($destination)) {
-                    $backup = $backupPath . DIRECTORY_SEPARATOR . $relativePath;
-                    $this->copyModuleFile($destination, $backup);
-                    $backedUp[$relativePath] = true;
-                }
-
                 $this->copyModuleFile($source, $destination);
-                $installed[] = $relativePath;
             }
 
-            $config['version'] = $new;
+            /*
+             * CMSEC-2026-4828-Q — Trust and release metadata separation
+             *
+             * Signed packaged metadata may advance with the release, while
+             * installation-local network and signing trust remains pinned.
+             */
+            $updatedConfig = $stagedConfig;
+
+            foreach (['update_url', 'package_hosts', 'signing'] as $trustedKey) {
+                if (array_key_exists($trustedKey, $config)) {
+                    $updatedConfig[$trustedKey] = $config[$trustedKey];
+                }
+            }
+
+            $updatedConfig['version'] = $new;
 
             $encodedConfig = json_encode(
-                $config,
+                $updatedConfig,
                 JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
             );
 
             if (
                 $encodedConfig === false
                 || file_put_contents(
-                    $configPath,
+                    $incomingRoot . DIRECTORY_SEPARATOR . 'module.json',
                     $encodedConfig . PHP_EOL,
                     LOCK_EX
                 ) === false
@@ -348,23 +470,50 @@ class admin extends controller
                 throw new RuntimeException('Could not update module metadata.');
             }
 
+            /*
+             * CMSEC-2026-4828-O — Atomic module directory replacement
+             *
+             * Disabled file-by-file installation merged releases into the
+             * live directory and retained removed executable files. The
+             * verified directory is now exchanged as one owned unit.
+             */
+            if (!rename($moduleRoot, $moduleBackupRoot)) {
+                throw new RuntimeException('Could not back up the installed module.');
+            }
+
+            $moduleMoved = true;
+
+            if (!rename($incomingRoot, $moduleRoot)) {
+                throw new RuntimeException('Could not activate the module update.');
+            }
+
+            $moduleMoved = false;
+
+            try {
+                $this->deleteModuleDirectory($moduleBackupRoot);
+            } catch (Throwable $cleanupError) {
+                error_log(
+                    'Module backup cleanup failed: '
+                    . $cleanupError->getMessage()
+                );
+            }
+
             $this->cleanupModuleUpdate($workRoot);
             $this->respondModuleUpdate(true, $new, null);
         } catch (Throwable $error) {
             try {
-                $this->rollbackModuleUpdate(
-                    $installed,
-                    $backedUp,
-                    $backupPath,
-                    $moduleRoot
-                );
+                if ($moduleMoved && is_dir($moduleBackupRoot)) {
+                    if (is_dir($moduleRoot)) {
+                        $this->deleteModuleDirectory($moduleRoot);
+                    }
 
-                if (is_string($originalConfig)) {
-                    file_put_contents(
-                        $configPath,
-                        $originalConfig,
-                        LOCK_EX
-                    );
+                    if (!rename($moduleBackupRoot, $moduleRoot)) {
+                        throw new RuntimeException('Module directory rollback failed.');
+                    }
+                }
+
+                if (is_dir($incomingRoot)) {
+                    $this->deleteModuleDirectory($incomingRoot);
                 }
             } catch (Throwable $rollbackError) {
                 error_log(
@@ -474,6 +623,155 @@ class admin extends controller
         }
 
         return $resolved;
+    }
+
+    /**
+     * Acquire an exclusive lock for one module maintenance transaction.
+     *
+     * CMSEC-2026-4830-E — Serialized module maintenance
+     *
+     * @return resource
+     */
+    private function acquireModuleMaintenanceLock(string $module)
+    {
+        $lockDirectory = USERROOT . '/modules/.locks';
+
+        if (
+            !is_dir($lockDirectory)
+            && !mkdir($lockDirectory, 0700, true)
+            && !is_dir($lockDirectory)
+        ) {
+            throw new RuntimeException('Module maintenance lock is unavailable.');
+        }
+
+        $lock = fopen($lockDirectory . '/' . $module . '.lock', 'c');
+
+        if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+            if (is_resource($lock)) {
+                fclose($lock);
+            }
+
+            throw new RuntimeException('Another module maintenance operation is active.');
+        }
+
+        @chmod($lockDirectory . '/' . $module . '.lock', 0600);
+        return $lock;
+    }
+
+    /**
+     * Verify a developer-signed release statement against locally pinned
+     * module trust metadata.
+     *
+     * CMSEC-2026-4828-M — Developer release authenticity
+     */
+    private function verifyModuleReleaseSignature(
+        array $manifest,
+        array $config,
+        string $module,
+        string $version,
+        string $downloadUrl,
+        string $sha256
+    ): void {
+        $trusted = $config['signing'] ?? null;
+        $algorithm = is_array($trusted)
+            ? (string) ($trusted['algorithm'] ?? '')
+            : '';
+        $trustedKeyId = is_array($trusted)
+            ? (string) ($trusted['key_id'] ?? '')
+            : '';
+        $publicKey = is_array($trusted)
+            ? (string) ($trusted['public_key'] ?? '')
+            : '';
+        $manifestKeyId = (string) ($manifest['key_id'] ?? '');
+        $encodedSignature = (string) ($manifest['signature'] ?? '');
+
+        if (
+            $algorithm !== 'rsa-sha256'
+            || $trustedKeyId === ''
+            || !hash_equals($trustedKeyId, $manifestKeyId)
+            || $publicKey === ''
+        ) {
+            throw new RuntimeException('Module signing trust is missing or invalid.');
+        }
+
+        $signature = base64_decode($encodedSignature, true);
+        $key = openssl_pkey_get_public($publicKey);
+
+        if ($signature === false || $key === false) {
+            throw new RuntimeException('Module release signature is invalid.');
+        }
+
+        $keyDetails = openssl_pkey_get_details($key);
+
+        if (
+            !is_array($keyDetails)
+            || ($keyDetails['type'] ?? null) !== OPENSSL_KEYTYPE_RSA
+            || (int) ($keyDetails['bits'] ?? 0) < 3072
+        ) {
+            throw new RuntimeException('Module signing key must be RSA-3072 or stronger.');
+        }
+
+        $statement = implode("\n", [
+            'CHAOS-MVC-MODULE-RELEASE',
+            'module=' . $module,
+            'version=' . $version,
+            'download=' . $downloadUrl,
+            'sha256=' . $sha256,
+            'key_id=' . $manifestKeyId,
+        ]);
+
+        if (openssl_verify($statement, $signature, $key, OPENSSL_ALGO_SHA256) !== 1) {
+            throw new RuntimeException('Module release signature verification failed.');
+        }
+    }
+
+    /**
+     * Reject update destinations that cross the verified module root through
+     * an existing symbolic link, junction, or other resolved ancestor.
+     *
+     * CMSEC-2026-4828-N — Module write-path confinement
+     */
+    private function assertModuleWritePath(
+        string $moduleRoot,
+        string $destination
+    ): void {
+        $resolvedRoot = realpath($moduleRoot);
+
+        if ($resolvedRoot === false) {
+            throw new RuntimeException('Module write boundary is unavailable.');
+        }
+
+        $relative = substr($destination, strlen($moduleRoot));
+        $segments = array_values(array_filter(
+            explode(DIRECTORY_SEPARATOR, ltrim($relative, '/\\')),
+            static fn ($segment) => $segment !== ''
+        ));
+        $current = $resolvedRoot;
+
+        foreach ($segments as $segment) {
+            $current .= DIRECTORY_SEPARATOR . $segment;
+
+            if (is_link($current)) {
+                throw new RuntimeException('Module update encountered a linked destination.');
+            }
+
+            if (file_exists($current)) {
+                $resolved = realpath($current);
+
+                if (
+                    $resolved === false
+                    || (
+                        $resolved !== $resolvedRoot
+                        && !str_starts_with(
+                            $resolved,
+                            $resolvedRoot . DIRECTORY_SEPARATOR
+                        )
+                    )
+                ) {
+                    throw new RuntimeException('Module update escaped its owned directory.');
+                }
+            }
+        }
     }
 
     /**
@@ -946,6 +1244,7 @@ class admin extends controller
      *
      * CMSEC-2026-4828-C
      * CMSEC-2026-4828-K
+     * CMSEC-2026-4828-R — Portable archive path identity
      *
      * @return array<int, string>
      */
@@ -969,14 +1268,17 @@ class admin extends controller
         $controllerFound = false;
         $archivePrefix = $module . '/';
         $metadataFound = false;
+        $seenPaths = [];
 
         for ($index = 0; $index < $zip->numFiles; $index++) {
             $stat = $zip->statIndex($index);
             $name = is_array($stat) ? (string) ($stat['name'] ?? '') : '';
             $normalized = str_replace('\\', '/', $name);
+            $segments = explode('/', rtrim($normalized, '/'));
 
             if (
                 $normalized === ''
+                || str_contains($name, '\\')
                 || str_starts_with($normalized, '/')
                 || preg_match('/^[a-zA-Z]:\//', $normalized)
                 || in_array('..', explode('/', $normalized), true)
@@ -985,6 +1287,31 @@ class admin extends controller
                 $zip->close();
                 throw new RuntimeException('Update package contains an unsafe path.');
             }
+
+            foreach ($segments as $segment) {
+                if (
+                    $segment === ''
+                    || $segment === '.'
+                    || str_contains($segment, ':')
+                    || preg_match('/[. ]$/', $segment)
+                    || preg_match(
+                        '/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i',
+                        $segment
+                    )
+                ) {
+                    $zip->close();
+                    throw new RuntimeException('Update package path is not portable.');
+                }
+            }
+
+            $pathKey = strtolower(rtrim($normalized, '/'));
+
+            if (isset($seenPaths[$pathKey])) {
+                $zip->close();
+                throw new RuntimeException('Update package contains colliding paths.');
+            }
+
+            $seenPaths[$pathKey] = true;
 
             $attributes = 0;
             $operationsSystem = 0;
@@ -1142,6 +1469,8 @@ class admin extends controller
      * CMSEC-2026-4828-E — Authenticated module removal
      * CMSEC-2026-4828-F — Trusted module identity and owned resources
      * CMSEC-2026-4828-K — User module ownership boundary
+     * CMSEC-2026-4828-P — Transactional module uninstall
+     * CMSEC-2026-4830-E — Serialized module maintenance
      *
      * @return void
      */
@@ -1164,6 +1493,12 @@ class admin extends controller
 
         if ($this->isCore($module)) {
             $this->error_page('Core modules cannot be removed.');
+        }
+
+        try {
+            $maintenanceLock = $this->acquireModuleMaintenanceLock($module);
+        } catch (Throwable $error) {
+            $this->error_page('Another module maintenance operation is active.');
         }
 
         try {
@@ -1194,14 +1529,38 @@ class admin extends controller
          */
         $tables = $this->moduleOwnedTables($config, $module);
 
-        if ($tables !== []) {
-            $moduleModel = $this->model('modules_model');
+        $quarantineRoot = dirname($moduleRoot)
+            . DIRECTORY_SEPARATOR
+            . '.' . $module . '.uninstall-'
+            . bin2hex(random_bytes(8));
 
-            foreach ($tables as $table) {
-                $moduleModel->query(
-                    'DROP TABLE IF EXISTS `' . $table . '`'
-                );
+        /*
+         * CMSEC-2026-4828-P — Transactional module uninstall
+         *
+         * Disabled ordering dropped database tables before confirming that
+         * the installed module could be removed. The owned directory is now
+         * quarantined first and restored if database cleanup throws.
+         */
+        if (!rename($moduleRoot, $quarantineRoot)) {
+            $this->error_page('Installed module could not be quarantined.');
+        }
+
+        try {
+            if ($tables !== []) {
+                $moduleModel = $this->model('modules_model');
+
+                foreach ($tables as $table) {
+                    $moduleModel->query(
+                        'DROP TABLE IF EXISTS `' . $table . '`'
+                    );
+                }
             }
+        } catch (Throwable $error) {
+            if (!rename($quarantineRoot, $moduleRoot)) {
+                error_log('Module uninstall rollback failed.');
+            }
+
+            $this->error_page('Module database cleanup failed.');
         }
 
         /*
@@ -1222,7 +1581,7 @@ class admin extends controller
          *     APPROOT . '/views/public/' . $module
          * );
          */
-        $this->deleteModuleDirectory($moduleRoot);
+        $this->deleteModuleDirectory($quarantineRoot);
 
         header('Location: /admin/modules');
         exit;

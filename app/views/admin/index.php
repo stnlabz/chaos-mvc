@@ -39,19 +39,14 @@
 
     <div class="row g-4 justify-content-center mb-5">
         <?php
-        // Automation: Scan controllers directory
-        $controllers = glob(APPROOT . '/controllers/*.php');
-        $excluded = ['admin.php', 'pages.php', 'auth.php', 'error_handler.php'];
-
-        foreach ($controllers as $file) {
-            $name = basename($file, '.php');
-            if (in_array($name, $excluded)) continue;
-
-            require_once $file;
-            if (class_exists($name)) {
-                $reflect = new ReflectionClass($name);
-                // Only show a tile if the controller has an admin() method
-                if ($reflect->hasMethod('admin')) {
+        /*
+         * CMSEC-2026-4830-B — Inert administration discovery
+         *
+         * Disabled view-time controller scanning and require_once execution
+         * moved into the protected administration controller.
+         */
+        foreach (($data['modules'] ?? []) as $name) {
+            if (is_string($name)) {
                     ?>
                     <div class="col-md-6 col-lg-3 text-center">
                         <div class="card h-100 border-0 shadow-sm p-3">
@@ -63,7 +58,6 @@
                         </div>
                     </div>
                     <?php
-                }
             }
         }
         ?>

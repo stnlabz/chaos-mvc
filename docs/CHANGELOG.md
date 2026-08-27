@@ -37,6 +37,12 @@
 - Blocked module update connections to loopback, private, link-local, reserved, multicast, carrier-grade NAT, and mapped IPv6 destinations (`CMSEC-2026-4828-G`)
 - Added cumulative count and byte limits for module-server HTTP headers and chunked-response trailers (`CMSEC-2026-4828-J`)
 - Migrated module update and uninstall ownership from distributed `/app` paths to the self-contained `/user/modules/{slug}` boundary, including canonical slug validation and package identity checks (`CMSEC-2026-4828-K`)
+- Added exact-file module class ownership checks, pinned RSA-SHA256 developer signatures, link-aware destination confinement, portable ZIP path collision rejection, atomic whole-directory updates, transactional uninstall quarantine, and separation of signed release metadata from installation-local trust (`CMSEC-2026-4828-L` through `CMSEC-2026-4828-R`)
+- Migrated module discovery and administration navigation to verified `/user/modules/{slug}` metadata without executing user PHP during listing (`CMSEC-2026-4830-A`, `CMSEC-2026-4830-B`)
+- Added exact controller-file ownership and explicit `module.json` route declarations for user-module HTTP dispatch (`CMSEC-2026-4830-C`, `CMSEC-2026-4830-D`)
+- Serialized update and uninstall transactions with per-module locks (`CMSEC-2026-4830-E`)
+- Removed the internal traffic collector from HTTP routing, bounded request-derived traffic fields, and added retention pruning (`CMSEC-2026-4830-F`, `CMSEC-2026-4830-G`)
+- Escaped administrator health diagnostics contextually (`CMSEC-2026-4830-H`)
 - Connected PHPMailer to the installation-local SMTP configuration with strict validation and no source-embedded credentials (`CMSEC-2026-4829`)
 - Escaped and validated addon metadata, module links, and developer-domain links in the module administration interface
 - Removed installation database configuration and runtime authentication state from Git tracking

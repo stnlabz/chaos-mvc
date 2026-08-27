@@ -81,11 +81,20 @@ require APPROOT . '/views/inc/head.php';
              */
             $moduleSlug = trim((string) ($module['slug'] ?? ''));
 
-            if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/', $moduleSlug)) {
+            if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $moduleSlug)) {
                 continue;
             }
 
-            $configPath = APPROOT . '/data/modules/' . $moduleSlug . '.json';
+            /*
+             * CMSEC-2026-4830-A — Separated module discovery
+             *
+             * Disabled view-time behavior read legacy metadata from
+             * APPROOT . '/data/modules/' . $moduleSlug . '.json'. Metadata
+             * now arrives from the controller's verified user-module scan.
+             */
+            $config = is_array($module['config'] ?? null)
+                ? $module['config']
+                : [];
             $version = '0.0.0';
             $desc = '';
             $author = '';
@@ -94,9 +103,7 @@ require APPROOT . '/views/inc/head.php';
             $certified = '';
             $hasUpdate = false;
 
-            if (file_exists($configPath)) {
-                $config = json_decode(file_get_contents($configPath), true);
-                $config = is_array($config) ? $config : [];
+            if ($config !== []) {
                 $version = (string) ($config['version'] ?? '0.0.0');
                 $desc = (string) ($config['description'] ?? '');
                 $author = (string) ($config['creator'] ?? '');

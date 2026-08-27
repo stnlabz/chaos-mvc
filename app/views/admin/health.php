@@ -13,8 +13,8 @@
                 <div class="card-body text-center">
                     <i class="bi bi-cpu h1 text-primary d-block mb-3"></i>
                     <h6 class="fw-bold">Server</h6>
-                    <small class="d-block text-muted mb-2"><?= $server['software']; ?></small>
-                    <span class="badge bg-primary">PHP <?= $server['php_version']; ?></span>
+                    <small class="d-block text-muted mb-2"><?= htmlspecialchars((string) $server['software'], ENT_QUOTES, 'UTF-8'); ?></small>
+                    <span class="badge bg-primary">PHP <?= htmlspecialchars((string) $server['php_version'], ENT_QUOTES, 'UTF-8'); ?></span>
                 </div>
             </div>
         </div>
@@ -24,8 +24,8 @@
                 <div class="card-body text-center">
                     <i class="bi bi-hdd-network h1 text-primary d-block mb-3"></i>
                     <h6 class="fw-bold">Storage</h6>
-                    <small class="d-block text-muted mb-2"><?= $server['domain']; ?></small>
-                    <span class="badge bg-light text-dark border"><?= $server['disk_free']; ?> Free</span>
+                    <small class="d-block text-muted mb-2"><?= htmlspecialchars((string) $server['domain'], ENT_QUOTES, 'UTF-8'); ?></small>
+                    <span class="badge bg-light text-dark border"><?= htmlspecialchars((string) $server['disk_free'], ENT_QUOTES, 'UTF-8'); ?> Free</span>
                 </div>
             </div>
         </div>
@@ -35,7 +35,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-database-check h1 text-primary d-block mb-3"></i>
                     <h6 class="fw-bold">MySQL</h6>
-                    <small class="d-block text-muted mb-2">v<?= explode('-', $mysql['version'])[0]; ?></small>
+                    <small class="d-block text-muted mb-2">v<?= htmlspecialchars((string) explode('-', (string) $mysql['version'])[0], ENT_QUOTES, 'UTF-8'); ?></small>
                     <span class="badge bg-success">Connected</span>
                 </div>
             </div>
@@ -64,10 +64,11 @@
                 <div class="card-body p-4">
                     <h6 class="fw-bold mb-3">Environment Paths</h6>
                     <table class="table table-sm mb-0 small">
-                        <tr><td class="text-muted border-0"></td><td class="fw-mono border-0"><?= $server['root']; ?></td></tr>
-                        <tr><td class="text-muted">Log Directory</td><td class="fw-mono"><?= $logs['path']; ?></td></tr>
-                        <tr><td class="text-muted">Database Type</td><td class="fw-mono"><?= $mysql['type']; ?></td></tr>
-                        <tr><td class="text-muted">Full SQL Version</td><td class="fw-mono"><?= $mysql['version']; ?></td></tr>
+                        <!-- CMSEC-2026-4830-H — Contextual health output escaping -->
+                        <tr><td class="text-muted border-0"></td><td class="fw-mono border-0"><?= htmlspecialchars((string) $server['root'], ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                        <tr><td class="text-muted">Log Directory</td><td class="fw-mono"><?= htmlspecialchars((string) $logs['path'], ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                        <tr><td class="text-muted">Database Type</td><td class="fw-mono"><?= htmlspecialchars((string) $mysql['type'], ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                        <tr><td class="text-muted">Full SQL Version</td><td class="fw-mono"><?= htmlspecialchars((string) $mysql['version'], ENT_QUOTES, 'UTF-8'); ?></td></tr>
                     </table>
                 </div>
             </div>
