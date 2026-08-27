@@ -41,6 +41,8 @@
 - Migrated module discovery and administration navigation to verified `/user/modules/{slug}` metadata without executing user PHP during listing (`CMSEC-2026-4830-A`, `CMSEC-2026-4830-B`)
 - Added exact controller-file ownership and explicit `module.json` route declarations for user-module HTTP dispatch (`CMSEC-2026-4830-C`, `CMSEC-2026-4830-D`)
 - Preserved `/admin/{module}` dispatch for router-prevalidated user controllers while continuing to reject classes owned by any other file (`CMSEC-2026-4830-C1`)
+- Required administrator authentication before `/admin/{module}` can load user-module PHP, and reserved module `admin()` methods from direct public routing
+- Confined user-module controllers, models, and views to real, unlinked files beneath the selected `/user/modules/{slug}` ownership boundary
 - Serialized update and uninstall transactions with per-module locks (`CMSEC-2026-4830-E`)
 - Removed the internal traffic collector from HTTP routing, bounded request-derived traffic fields, and added retention pruning (`CMSEC-2026-4830-F`, `CMSEC-2026-4830-G`)
 - Escaped administrator health diagnostics contextually (`CMSEC-2026-4830-H`)
@@ -58,6 +60,8 @@
 - Preserved password-reset tokens when translating clean authentication aliases
 - Removed synchronous third-party update checks from module administration page rendering; update discovery now occurs only after an authenticated administrator action (`CMSEC-2026-4828-H`)
 - Added explicit failures for missing, unreadable, or invalid installation SMTP configuration
+- Consolidated duplicate error controllers into one bootstrap-registered Core handler for intentional HTTP errors, uncaught exceptions, reportable PHP errors, and fatal shutdown failures
+- Added safe site-styled error responses, dependency-free emergency rendering, private incident logging, reference identifiers, and removal of partial response output
 
 ## Module Update Contract
 - Defined remote addon manifests as authenticated release metadata containing `module`, `version`, `download`, the downloadable ZIP package’s `sha256`, `key_id`, and an embedded Base64 `signature`
