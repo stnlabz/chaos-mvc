@@ -120,19 +120,43 @@ final class theme
         }
 
         $root = self::root($slug);
-        $candidate = $root !== null ? $root . '/' . $part . '.php' : '';
 
-        if ($candidate === '' || is_link($candidate)) {
+        if ($root === null) {
             return null;
         }
 
-        $resolved = realpath($candidate);
-        return $root !== null
-            && $resolved !== false
-            && str_starts_with($resolved, $root . DIRECTORY_SEPARATOR)
-            && is_file($resolved)
-                ? $resolved
-                : null;
+        /*
+         * CMSEC-2026-4830-J — Theme Builder layout compatibility.
+         *
+         * Installation themes conventionally group their PHP layout parts
+         * under /inc. Retain root-level lookup as a compatibility fallback
+         * for themes created against the initial theme contract.
+         */
+        $candidates = [
+            $root . '/inc/' . $part . '.php',
+            $root . '/' . $part . '.php',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_link($candidate)) {
+                continue;
+            }
+
+            $resolved = realpath($candidate);
+
+            if (
+                $resolved !== false
+                && str_starts_with(
+                    $resolved,
+                    $root . DIRECTORY_SEPARATOR
+                )
+                && is_file($resolved)
+            ) {
+                return $resolved;
+            }
+        }
+
+        return null;
     }
 
     private static function root(string $slug): ?string

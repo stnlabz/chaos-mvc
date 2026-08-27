@@ -79,7 +79,19 @@ class router
         /*
          * Resolve controller ownership.
          */
-        if (
+        if ($url === []) {
+            $homeController = USERROOT
+                . '/modules/home/controllers/home.php';
+
+            if (!$this->isConfinedUserModuleFile('home', $homeController)) {
+                $this->notFound();
+                return;
+            }
+
+            $this->controller = 'home';
+            $this->controller_scope = 'user';
+            $this->module_context = 'home';
+        } elseif (
             isset($url[0])
             && $url[0] !== ''
         ) {
@@ -94,10 +106,12 @@ class router
                 return;
             }
 
-            $coreController = APPROOT
-                . '/controllers/'
-                . $requestedController
-                . '.php';
+            $coreController = $requestedController === 'home'
+                ? ''
+                : APPROOT
+                    . '/controllers/'
+                    . $requestedController
+                    . '.php';
 
             $userController = USERROOT
                 . '/modules/'
@@ -194,15 +208,40 @@ class router
 
         $controllerClass = $this->controller;
 
-        $controllerObject = new $controllerClass();
-
+        /*
+         * CMSEC-2026-4830-I — Establish user ownership before construction.
+         *
+         * A module constructor may legitimately load its own model or other
+         * module-local service. Instantiating it normally would run that
+         * constructor while the base controller still identified itself as
+         * Core, causing those lookups to resolve against /app.
+         */
         if (
             $this->controller_scope === 'user'
             && $this->module_context !== null
         ) {
+            $controllerObject = $controllerReflection
+                ->newInstanceWithoutConstructor();
+
             $controllerObject->setModuleContext(
                 $this->module_context
             );
+
+            $constructor = $controllerReflection->getConstructor();
+
+            if ($constructor !== null) {
+                if (
+                    !$constructor->isPublic()
+                    || $constructor->getNumberOfRequiredParameters() > 0
+                ) {
+                    $this->notFound();
+                    return;
+                }
+
+                $constructor->invoke($controllerObject);
+            }
+        } else {
+            $controllerObject = $controllerReflection->newInstance();
         }
 
         $this->controller = $controllerObject;

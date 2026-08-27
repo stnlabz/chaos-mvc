@@ -7,9 +7,10 @@ Chaos MVC themes are installation-owned PHP layouts stored outside Core.
 ```text
 user/themes/{theme}/
 ├── theme.json
-├── head.php
-├── nav.php
-├── foot.php
+├── inc/
+│   ├── head.php
+│   ├── nav.php
+│   └── foot.php
 └── assets/
 ```
 
@@ -29,7 +30,10 @@ letters, numbers, underscores, and hyphens.
 ```
 
 The `theme` value must exactly match the theme directory name. All three PHP
-layout files are required before a theme appears in administration.
+layout files are required before a theme appears in administration. For
+compatibility with the initial theme implementation, Core also recognizes
+layout files placed directly in the theme root, but new themes should use
+`inc/`.
 
 ## Layout Context
 
@@ -76,6 +80,8 @@ Navigate to:
 Select an installed theme and choose **Apply Theme**. The request requires an
 administrator session, POST, and CSRF verification. Chaos MVC records the
 selected slug as `active_theme` in the installation-owned `app/data/site.json`.
+
+The built-in Core fallback is a neutral Classic layout and has no dependency on `/public/assets/`.
 
 Selecting **Chaos MVC** restores the built-in Core layout. An absent, invalid,
 or incomplete selected theme also falls back to the Core layout.

@@ -390,6 +390,51 @@ class controller
     }
 
     /**
+     * Load a model explicitly owned by another user module.
+     */
+    public function module_model(string $module, string $model): object
+    {
+        if (
+            !$this->isUserModule()
+            || !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)
+            || !preg_match('/^[a-z][a-z0-9_]*$/', $model)
+        ) {
+            throw new InvalidArgumentException('Invalid module model request.');
+        }
+
+        $modulesRoot = realpath(USERROOT . '/modules');
+        $modulePath = USERROOT . '/modules/' . $module;
+        $moduleRoot = is_link($modulePath) ? false : realpath($modulePath);
+        $modelPath = $modulePath . '/models/' . $model . '.php';
+        $resolvedModel = is_link($modelPath) ? false : realpath($modelPath);
+
+        if (
+            $modulesRoot === false
+            || $moduleRoot === false
+            || $resolvedModel === false
+            || !str_starts_with($moduleRoot, $modulesRoot . DIRECTORY_SEPARATOR)
+            || !str_starts_with($resolvedModel, $moduleRoot . DIRECTORY_SEPARATOR)
+            || !is_file($resolvedModel)
+        ) {
+            throw new RuntimeException("Module model '{$module}/{$model}' was not found.");
+        }
+
+        require_once $resolvedModel;
+
+        if (!class_exists($model, false)) {
+            throw new RuntimeException("Module model class '{$model}' was not found.");
+        }
+
+        $reflection = new ReflectionClass($model);
+
+        if (realpath((string) $reflection->getFileName()) !== $resolvedModel) {
+            throw new RuntimeException("Module model class '{$model}' has conflicting ownership.");
+        }
+
+        return $reflection->newInstance();
+    }
+
+    /**
      * Render the Core error page.
      *
      * @param string $message Error message.

@@ -53,6 +53,11 @@
 - Updated the bundled PHPMailer dependency to v7.1.1
 
 ## Reliability
+- Reserved `/` and `/home` for the confined installation-owned Home module instead of mapping the protected Home route to `/app/controllers/home.php`
+- Added explicit, ownership-checked cross-module model loading for user modules that intentionally collaborate
+- Replaced site-specific shared includes with a neutral, self-contained Classic Core fallback that does not depend on `/public/assets/`
+- Established user-module ownership context before invoking module constructors, so constructor-time model and view resolution stays confined to `/user/modules/{slug}` instead of incorrectly falling back to Core (`CMSEC-2026-4830-I`)
+- Aligned the Core theme resolver with Theme Builder's `/user/themes/{slug}/inc` layout while retaining root-level theme-part compatibility (`CMSEC-2026-4830-J`)
 - Added installation-owned PHP themes under `/user/themes/{slug}`, authenticated theme selection at `/admin/themes`, Core layout fallback, and confined active-theme asset delivery
 - Exposed the established `$SITE`, page, Open Graph, renderer, URL, and session context to active theme `head.php`, `nav.php`, and `foot.php` layouts while preserving `active_theme` across site-identity edits
 - Updated authentication and logout forms to submit the required CSRF tokens and POST requests
