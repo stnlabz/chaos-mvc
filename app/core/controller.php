@@ -395,34 +395,29 @@ class controller
      *
      * @return never
      */
-    public function error_page($message)
+    public function error_page($message): never
     {
-        $data = [
-            'message' => $message,
-        ];
+        $code = http_response_code();
 
-        $file = APPROOT
-            . '/views/errors/error_page.php';
-
-        if (is_file($file)) {
-            extract(
-                $data,
-                EXTR_SKIP
-            );
-
-            require $file;
-            exit;
+        if ($code < 400 || $code > 599) {
+            $code = 500;
         }
 
-        http_response_code(500);
+        $titles = [
+            400 => 'Bad Request',
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            405 => 'Method Not Allowed',
+            409 => 'Conflict',
+            500 => 'Internal Error',
+            503 => 'Service Unavailable',
+        ];
 
-        echo htmlspecialchars(
-            (string) $message,
-            ENT_QUOTES,
-            'UTF-8'
+        error_handler::respond(
+            $code,
+            $titles[$code] ?? 'Request Error',
+            (string) $message
         );
-
-        exit;
     }
 
     /**

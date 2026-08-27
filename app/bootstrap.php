@@ -118,6 +118,12 @@ if ($debug) {
 }
 
 /**
+ * Register Core error handling before configuration and routing execute.
+ */
+require_once APPROOT . '/core/error_handler.php';
+error_handler::register();
+
+/**
  * Config
  */
 require_once APPROOT . '/core/config.php';

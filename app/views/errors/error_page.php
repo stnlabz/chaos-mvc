@@ -15,6 +15,13 @@
             <?= htmlspecialchars((string) ($data['msg'] ?? $data['message'] ?? 'The system encountered an unexpected issue.'), ENT_QUOTES, 'UTF-8') ?>
         </p>
 
+        <?php if (!empty($data['reference'])): ?>
+            <p class="text-muted">
+                Reference:
+                <?= htmlspecialchars((string) $data['reference'], ENT_QUOTES, 'UTF-8') ?>
+            </p>
+        <?php endif; ?>
+
         <hr class="my-4">
 
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">

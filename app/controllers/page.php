@@ -21,10 +21,6 @@ class page extends controller {
             return;
         }
 
-        require_once APPROOT . '/controllers/error_handler.php';
         (new error_handler())->not_found();
-        
-        // Inside page.php, right before the file_exists check:
-echo "DEBUG: Looking for: " . APPROOT . '/controllers/' . $controllerName . '.php';
     }
 }
