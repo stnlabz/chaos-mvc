@@ -423,11 +423,11 @@ Changes to these files require explicit approval through repository commits and 
 Chaos MVC expects contributors to maintain professional communication and respect project structure and development standards.
 
 # documentation
- - [CURRENT ISSUES](docs/CURRENT_ISSUES.md)
+
+ - [ISSUES](docs/CURRENT_ISSUES.md)
  - [CHANGELOG](docs/CHANGELOG.md)
- - [ChAoS MVC License](docs/LICENSE.md)
  - [CONTRIBUTING](docs/CONTRIBUTING.md)
 
 # License
 
-To be determined.
+The ChAoS MVC License is a [Proprietary License](docs/LICENSE.md)
