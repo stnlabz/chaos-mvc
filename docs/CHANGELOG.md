@@ -51,6 +51,7 @@
 - Escaped and validated addon metadata, module links, and developer-domain links in the module administration interface
 - Removed installation database configuration and runtime authentication state from Git tracking
 - Updated the bundled PHPMailer dependency to v7.1.1
+- Added signed-package, exact-version module database migrations with module-owned table confinement, durable replay prevention, and explicit partial-DDL failure reporting (`CMSEC-2026-4832-A` through `CMSEC-2026-4832-C`)
 
 ## Reliability
 - Reserved `/` and `/home` for the confined installation-owned Home module instead of mapping the protected Home route to `/app/controllers/home.php`
@@ -78,6 +79,10 @@
 - Standardized developer release signing on RSA-3072 with SHA-256 using one developer keypair across that developer’s products; private keys remain outside the repository and web root
 - Clarified that the local installed version changes only after a verified update succeeds
 - Kept Core Updater signing separate from the developer-module signing contract; no Core public-key file or Core signature requirement is currently imposed
+- Reserved `sql/schema.sql` for fresh installs and defined exact update patches as `sql/patches/{installed-version}-to-{target-version}.sql` in packaged `module.json` migrations metadata
+- Required migration SQL to travel inside the signed and hash-verified module ZIP; migration SQL is never downloaded independently or inferred
+- Limited migration statements to declared module-owned tables and records each completed transition with its signed package hash before activating updated source
+- Made retries skip only an identically recorded transition, preventing old migrations from replaying on later update checks
 
 ## Qualification Pending
 - Run live authentication coverage for login, logout, registration, password recovery, password reset, throttle limits, token replay rejection, and administrative account operations
@@ -87,6 +92,7 @@
 - Validate addon uninstall behavior with module-owned files and metadata-declared database tables
 - Migrate remaining addons and remote manifests to the self-contained `/user/modules/{slug}` and signed-manifest contract
 - Save production SMTP settings and verify password-recovery and post-notification delivery
+- Validate the Contact 1.0.0-to-1.1.0 signed migration preserves existing records, adds the required primary-key auto-increment behavior, and accepts a new submission
 
 ## Installer
 - Added the missing `password_resets` table to the fresh-install schema

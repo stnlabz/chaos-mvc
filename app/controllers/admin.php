@@ -240,6 +240,9 @@ class admin extends controller
      * CMSEC-2026-4828-O — Atomic module directory replacement
      * CMSEC-2026-4828-Q — Trust and release metadata separation
      * CMSEC-2026-4830-E — Serialized module maintenance
+     * CMSEC-2026-4832-A — Durable module migration journal
+     * CMSEC-2026-4832-B — Controlled signed module migration execution
+     * CMSEC-2026-4832-C — Exact transition and table confinement
      *
      * @return void
      */
@@ -317,6 +320,7 @@ class admin extends controller
         $moduleBackupRoot = $moduleParent . DIRECTORY_SEPARATOR
             . '.' . $module . '.backup-' . $transactionId;
         $moduleMoved = false;
+        $migrationState = 'none';
 
         try {
             if (!mkdir($workRoot, 0700, true)) {
@@ -430,6 +434,19 @@ class admin extends controller
                 );
             }
 
+            if ((string) ($stagedConfig['version'] ?? '') !== $new) {
+                throw new RuntimeException(
+                    'Packaged module version does not match the signed manifest.'
+                );
+            }
+
+            $migration = $this->resolveModuleMigration(
+                $stagedConfig,
+                $stagePath . DIRECTORY_SEPARATOR . $module,
+                $current,
+                $new
+            );
+
             if (!mkdir($incomingRoot, 0700, true)) {
                 throw new RuntimeException('Could not create incoming module directory.');
             }
@@ -488,6 +505,33 @@ class admin extends controller
                 throw new RuntimeException('Could not update module metadata.');
             }
 
+            if ($migration !== null) {
+                /*
+                 * CMSEC-2026-4832-A through CMSEC-2026-4832-C
+                 *
+                 * Apply only the exact transition carried inside the
+                 * authenticated package, before activating updated source.
+                 */
+                $ownedTables = array_values(array_unique(array_merge(
+                    $this->moduleOwnedTables($config, $module),
+                    $this->moduleOwnedTables($stagedConfig, $module)
+                )));
+                $statements = $this->readModuleMigrationStatements(
+                    $migration['absolute_path'],
+                    $ownedTables
+                );
+                $migrationState = 'started';
+                $migrationState = $this->applyModuleMigration(
+                    $this->model('modules_model'),
+                    $module,
+                    $current,
+                    $new,
+                    $migration['relative_path'],
+                    $expectedHash,
+                    $statements
+                );
+            }
+
             /*
              * CMSEC-2026-4828-O — Atomic module directory replacement
              *
@@ -542,7 +586,24 @@ class admin extends controller
 
             $this->cleanupModuleUpdate($workRoot);
             error_log('Module update failed: ' . $error->getMessage());
-            $this->respondModuleUpdate(false, null, $error->getMessage());
+
+            $message = $error->getMessage();
+
+            /*
+             * CMSEC-2026-4832-C — Honest non-transactional DDL reporting
+             *
+             * MySQL DDL may commit implicitly. Source rollback must not be
+             * represented as database rollback.
+             */
+            if (in_array($migrationState, ['applied', 'previously_applied'], true)) {
+                $message .= ' The database migration is recorded as complete; '
+                    . 'retry the same signed update to finish source activation.';
+            } elseif ($migrationState === 'started') {
+                $message .= ' The database migration did not complete and may '
+                    . 'have applied partially; inspect the module database before retrying.';
+            }
+
+            $this->respondModuleUpdate(false, null, $message);
         }
     }
 
@@ -611,6 +672,236 @@ class admin extends controller
         }
 
         return $data;
+    }
+
+    /**
+     * Resolve the exact signed-package migration for one update transition.
+     *
+     * CMSEC-2026-4832-C — Exact transition and path confinement
+     *
+     * @return array{relative_path: string, absolute_path: string}|null
+     */
+    private function resolveModuleMigration(
+        array $stagedConfig,
+        string $stagedModuleRoot,
+        string $fromVersion,
+        string $toVersion
+    ): ?array {
+        if (!array_key_exists('migrations', $stagedConfig)) {
+            return null;
+        }
+
+        $migrations = $stagedConfig['migrations'];
+
+        if (!is_array($migrations)) {
+            throw new RuntimeException('Module migrations metadata is invalid.');
+        }
+
+        $transition = $fromVersion . '-to-' . $toVersion;
+
+        if (!array_key_exists($transition, $migrations)) {
+            return null;
+        }
+
+        $expectedPath = 'sql/patches/' . $transition . '.sql';
+
+        if (
+            !is_string($migrations[$transition])
+            || $migrations[$transition] !== $expectedPath
+        ) {
+            throw new RuntimeException('Module migration path is invalid.');
+        }
+
+        $root = realpath($stagedModuleRoot);
+        $candidate = $stagedModuleRoot
+            . DIRECTORY_SEPARATOR
+            . str_replace('/', DIRECTORY_SEPARATOR, $expectedPath);
+
+        if ($root === false || is_link($candidate)) {
+            throw new RuntimeException('Module migration boundary is invalid.');
+        }
+
+        $resolved = realpath($candidate);
+
+        if (
+            $resolved === false
+            || !is_file($resolved)
+            || !str_starts_with($resolved, $root . DIRECTORY_SEPARATOR)
+        ) {
+            throw new RuntimeException('Declared module migration was not found.');
+        }
+
+        $size = filesize($resolved);
+
+        if ($size === false || $size < 1 || $size > 1048576) {
+            throw new RuntimeException('Module migration size is invalid.');
+        }
+
+        return [
+            'relative_path' => $expectedPath,
+            'absolute_path' => $resolved,
+        ];
+    }
+
+    /**
+     * Read and validate bounded module-owned SQL statements.
+     *
+     * CMSEC-2026-4832-B — Controlled signed module migration execution
+     * CMSEC-2026-4832-C — Module-owned table confinement
+     *
+     * @param array<int, string> $ownedTables
+     * @return array<int, string>
+     */
+    private function readModuleMigrationStatements(
+        string $patchPath,
+        array $ownedTables
+    ): array {
+        if ($ownedTables === []) {
+            throw new RuntimeException('Module migration declares no owned tables.');
+        }
+
+        $sql = file_get_contents($patchPath);
+
+        if (!is_string($sql) || trim($sql) === '' || str_contains($sql, "\0")) {
+            throw new RuntimeException('Module migration is empty or invalid.');
+        }
+
+        $sql = preg_replace(
+            [
+                '~/\\*.*?\\*/~s',
+                '/^[\\t ]*--[^\\r\\n]*(?:\\r?\\n|$)/m',
+                '/^[\\t ]*#[^\\r\\n]*(?:\\r?\\n|$)/m',
+            ],
+            '',
+            $sql
+        );
+
+        if (!is_string($sql)) {
+            throw new RuntimeException('Module migration could not be parsed.');
+        }
+
+        $parts = preg_split('/;[\\t ]*(?:\\r?\\n|$)/', trim($sql));
+
+        if (!is_array($parts)) {
+            throw new RuntimeException('Module migration could not be parsed.');
+        }
+
+        $statements = [];
+
+        foreach ($parts as $part) {
+            $statement = trim($part);
+
+            if ($statement === '') {
+                continue;
+            }
+
+            $this->assertModuleMigrationStatement($statement, $ownedTables);
+            $statements[] = $statement;
+        }
+
+        if ($statements === [] || count($statements) > 50) {
+            throw new RuntimeException('Module migration statement count is invalid.');
+        }
+
+        return $statements;
+    }
+
+    /**
+     * Confine one SQL statement to a directly targeted module-owned table.
+     *
+     * CMSEC-2026-4832-C — Statement and table confinement
+     *
+     * @param array<int, string> $ownedTables
+     */
+    private function assertModuleMigrationStatement(
+        string $statement,
+        array $ownedTables
+    ): void {
+        if (
+            preg_match(
+                '/\\b(?:DROP|TRUNCATE|RENAME|GRANT|REVOKE|LOAD|OUTFILE|INFILE|CALL|PROCEDURE|FUNCTION|TRIGGER|EVENT|PREPARE|EXECUTE|SELECT|JOIN|REFERENCES|INFORMATION_SCHEMA)\\b|@/i',
+                $statement
+            )
+        ) {
+            throw new RuntimeException(
+                'Module migration contains a prohibited operation.'
+            );
+        }
+
+        $patterns = [
+            '/^ALTER\\s+TABLE\\s+`?([a-z][a-z0-9_]*)`?\\s+/i',
+            '/^CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?`?([a-z][a-z0-9_]*)`?\\s*\\(/i',
+            '/^INSERT\\s+INTO\\s+`?([a-z][a-z0-9_]*)`?\\s+/i',
+            '/^UPDATE\\s+`?([a-z][a-z0-9_]*)`?\\s+SET\\s+/i',
+            '/^DELETE\\s+FROM\\s+`?([a-z][a-z0-9_]*)`?(?:\\s+|$)/i',
+        ];
+        $target = null;
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $statement, $matches)) {
+                $target = strtolower($matches[1]);
+                break;
+            }
+        }
+
+        if ($target === null || !in_array($target, $ownedTables, true)) {
+            throw new RuntimeException(
+                'Module migration targets an unauthorized database table.'
+            );
+        }
+    }
+
+    /**
+     * Apply or safely recognize one exact module migration transition.
+     *
+     * CMSEC-2026-4832-A — Durable replay prevention
+     * CMSEC-2026-4832-B — Controlled migration execution
+     *
+     * @param object $migrationModel
+     * @param array<int, string> $statements
+     */
+    private function applyModuleMigration(
+        object $migrationModel,
+        string $module,
+        string $fromVersion,
+        string $toVersion,
+        string $patchPath,
+        string $packageSha256,
+        array $statements
+    ): string {
+        $migrationModel->ensure_migration_journal();
+        $record = $migrationModel->get_migration(
+            $module,
+            $fromVersion,
+            $toVersion
+        );
+
+        if (is_array($record)) {
+            if (
+                !hash_equals((string) $record['package_sha256'], $packageSha256)
+                || (string) $record['patch_path'] !== $patchPath
+            ) {
+                throw new RuntimeException(
+                    'Recorded module migration does not match this signed package.'
+                );
+            }
+
+            return 'previously_applied';
+        }
+
+        foreach ($statements as $statement) {
+            $migrationModel->execute_migration_statement($statement);
+        }
+
+        $migrationModel->record_migration(
+            $module,
+            $fromVersion,
+            $toVersion,
+            $patchPath,
+            $packageSha256
+        );
+
+        return 'applied';
     }
 
     /**

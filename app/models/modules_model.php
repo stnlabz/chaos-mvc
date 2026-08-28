@@ -28,6 +28,61 @@ class modules_model extends model
     }
     /* [End AI:Gemini] */
 
+    /** CMSEC-2026-4832-A — Durable module migration journal. */
+    public function ensure_migration_journal(): void
+    {
+        $this->query(
+            "CREATE TABLE IF NOT EXISTS `module_migrations` (
+                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+                `module` varchar(63) NOT NULL,
+                `from_version` varchar(64) NOT NULL,
+                `to_version` varchar(64) NOT NULL,
+                `patch_path` varchar(255) NOT NULL,
+                `package_sha256` char(64) NOT NULL,
+                `applied_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `module_migration_transition_unique`
+                    (`module`, `from_version`, `to_version`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+              COLLATE=utf8mb4_general_ci"
+        );
+    }
+
+    /** CMSEC-2026-4832-A — Read one completed exact transition. */
+    public function get_migration(
+        string $module,
+        string $fromVersion,
+        string $toVersion
+    ) {
+        return $this->fetch(
+            "SELECT patch_path, package_sha256 FROM module_migrations
+             WHERE module = ? AND from_version = ? AND to_version = ? LIMIT 1",
+            [$module, $fromVersion, $toVersion]
+        );
+    }
+
+    /** CMSEC-2026-4832-B — Execute one prevalidated migration statement. */
+    public function execute_migration_statement(string $statement): void
+    {
+        $this->query($statement);
+    }
+
+    /** CMSEC-2026-4832-A — Record one completed exact transition. */
+    public function record_migration(
+        string $module,
+        string $fromVersion,
+        string $toVersion,
+        string $patchPath,
+        string $packageSha256
+    ): void {
+        $this->query(
+            "INSERT INTO module_migrations
+                (module, from_version, to_version, patch_path, package_sha256)
+             VALUES (?, ?, ?, ?, ?)",
+            [$module, $fromVersion, $toVersion, $patchPath, $packageSha256]
+        );
+    }
+
     /* [Human:Mei | 2026-03-10 18:32:00 UTC] */
     // Commented out CRUD operations to prevent unsanctioned DB writes
     /**

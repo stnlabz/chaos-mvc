@@ -67,6 +67,22 @@ CREATE TABLE `modules` (
 
 -- --------------------------------------------------------
 
+-- CMSEC-2026-4832-A — Durable module migration journal
+
+CREATE TABLE `module_migrations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `module` varchar(63) NOT NULL,
+  `from_version` varchar(64) NOT NULL,
+  `to_version` varchar(64) NOT NULL,
+  `patch_path` varchar(255) NOT NULL,
+  `package_sha256` char(64) NOT NULL,
+  `applied_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `module_migration_transition_unique` (`module`, `from_version`, `to_version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
 --
 -- Table structure for table `posts`
 --
