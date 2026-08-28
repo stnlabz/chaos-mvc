@@ -26,6 +26,7 @@ class admin extends controller
      * @var array
      */
     private const ADMIN_ACTIONS = [
+        'check_update',
         'update',
         'uninstall',
     ];
@@ -226,7 +227,124 @@ class admin extends controller
         sort($modules, SORT_STRING);
         return array_values(array_unique($modules));
     }
-    
+
+    /**
+     * Check one installed module's authenticated remote release manifest.
+     *
+     * CMSEC-2026-4833-A — Authenticated read-only update discovery
+     * CMSEC-2026-4833-B — Verified remote release presentation
+     *
+     * Discovery never downloads or installs the package. It verifies the
+     * manifest statement against installation-pinned developer trust before
+     * reporting that an update is available.
+     */
+    public function check_update(): void
+    {
+        header('Content-Type: application/json');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            header('Allow: POST');
+            $this->respondModuleCheck(false, null, null, 'POST required.');
+        }
+
+        $this->require_admin(9);
+        $this->require_csrf();
+
+        $module = trim((string) ($_POST['module'] ?? ''));
+
+        if (
+            !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)
+            || $this->isCore($module)
+        ) {
+            $this->respondModuleCheck(false, null, null, 'Invalid module.');
+        }
+
+        try {
+            $moduleRoot = $this->resolveInstalledModuleRoot($module);
+            $config = $this->readModuleJson($moduleRoot . '/module.json');
+            $current = (string) ($config['version'] ?? '0.0.0');
+            $updateUrl = (string) ($config['update_url'] ?? '');
+
+            if (!$this->isHttpsUrl($updateUrl)) {
+                throw new RuntimeException(
+                    'A valid HTTPS update URL is required.'
+                );
+            }
+
+            $manifestRaw = $this->downloadModuleResource($updateUrl, 1048576);
+            $manifest = json_decode($manifestRaw, true);
+
+            if (!is_array($manifest)) {
+                throw new RuntimeException('Update manifest is invalid.');
+            }
+
+            $available = (string) ($manifest['version'] ?? '');
+            $manifestModule = (string) ($manifest['module'] ?? '');
+            $downloadUrl = (string) ($manifest['download'] ?? '');
+            $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
+
+            if ($manifestModule !== $module || $available === '') {
+                throw new RuntimeException(
+                    'Update manifest does not match the installed module.'
+                );
+            }
+
+            if (!$this->isHttpsUrl($downloadUrl)) {
+                throw new RuntimeException(
+                    'Manifest package URL must use HTTPS.'
+                );
+            }
+
+            if (
+                !$this->isAuthorizedModulePackageHost(
+                    $updateUrl,
+                    $downloadUrl,
+                    $config
+                )
+            ) {
+                throw new RuntimeException(
+                    'Manifest package host is not authorized by module metadata.'
+                );
+            }
+
+            if (!preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
+                throw new RuntimeException(
+                    'Manifest SHA-256 is missing or invalid.'
+                );
+            }
+
+            $this->verifyModuleReleaseSignature(
+                $manifest,
+                $config,
+                $module,
+                $available,
+                $downloadUrl,
+                $expectedHash
+            );
+
+            $this->respondModuleCheck(
+                true,
+                $current,
+                $available,
+                null
+            );
+        } catch (Throwable $error) {
+            error_log(
+                'Module update discovery failed for '
+                . $module
+                . ': '
+                . $error->getMessage()
+            );
+            $this->respondModuleCheck(
+                false,
+                null,
+                null,
+                $error->getMessage()
+            );
+        }
+    }
+
     /**
      * Install an authenticated and verified module update.
      *
@@ -647,6 +765,38 @@ class admin extends controller
 
         if ($message !== null) {
             $response[$success ? 'message' : 'error'] = $message;
+        }
+
+        echo json_encode($response);
+        exit;
+    }
+
+    /**
+     * Return one verified module update-discovery response.
+     *
+     * CMSEC-2026-4833-A — Authenticated read-only update discovery
+     * CMSEC-2026-4833-B — Verified remote release presentation
+     */
+    private function respondModuleCheck(
+        bool $success,
+        ?string $currentVersion,
+        ?string $availableVersion,
+        ?string $message
+    ): void {
+        $response = ['success' => $success];
+
+        if ($currentVersion !== null && $availableVersion !== null) {
+            $response['current_version'] = $currentVersion;
+            $response['available_version'] = $availableVersion;
+            $response['update_available'] = version_compare(
+                $availableVersion,
+                $currentVersion,
+                '>'
+            );
+        }
+
+        if ($message !== null) {
+            $response['error'] = $message;
         }
 
         echo json_encode($response);

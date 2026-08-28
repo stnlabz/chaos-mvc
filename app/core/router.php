@@ -624,6 +624,13 @@ class router
                 'password',
             ],
             'admin' => [
+                /*
+                 * CMSEC-2026-4833-A
+                 *
+                 * Authenticated, CSRF-verified, read-only module release
+                 * discovery. Installation remains a separate update action.
+                 */
+                'check_update',
                 'update',
                 'uninstall',
             ],
