@@ -9,7 +9,7 @@
 > changes are deployed and tested on chaos-mvc.org.
 
 ## Remaining Issues
- ***Modules**
+ ***Modules***
   - Read Remote JSON
   - Verify with modules `module.json`
   - Update if needed
