@@ -219,6 +219,7 @@ class admin extends controller
                 && is_array($metadata)
                 && (string) ($metadata['module'] ?? '') === $name
                 && is_file($directory . '/controllers/' . $name . '.php')
+                && $this->moduleDeclaresPublicAdmin($name)
             ) {
                 $modules[] = $name;
             }
@@ -279,59 +280,27 @@ class admin extends controller
                 throw new RuntimeException('Update manifest is invalid.');
             }
 
-            $available = (string) ($manifest['version'] ?? '');
+            $available = trim((string) ($manifest['version'] ?? ''));
             $manifestModule = (string) ($manifest['module'] ?? '');
-            $downloadUrl = (string) ($manifest['download'] ?? '');
-            $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
 
-            error_log(
-                'Module update debug'
-                . ' requested=[' . $module . ']'
-                . ' manifest_module=[' . $manifestModule . ']'
-                . ' manifest_version=[' . $available . ']'
-                . ' update_url=[' . $updateUrl . ']'
-                . ' raw=[' . $manifestRaw . ']'
-            );
-
-            if ($manifestModule !== $module || $available === '') {
+            if (
+                $manifestModule !== $module
+                || !preg_match(
+                    '/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/',
+                    $available
+                )
+            ) {
                 throw new RuntimeException(
                     'Update manifest does not match the installed module.'
                 );
             }
 
-            if (!$this->isHttpsUrl($downloadUrl)) {
-                throw new RuntimeException(
-                    'Manifest package URL must use HTTPS.'
-                );
-            }
-
-            if (
-                !$this->isAuthorizedModulePackageHost(
-                    $updateUrl,
-                    $downloadUrl,
-                    $config
-                )
-            ) {
-                throw new RuntimeException(
-                    'Manifest package host is not authorized by module metadata.'
-                );
-            }
-
-            if (!preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
-                throw new RuntimeException(
-                    'Manifest SHA-256 is missing or invalid.'
-                );
-            }
-
-            $this->verifyModuleReleaseSignature(
-                $manifest,
-                $config,
-                $module,
-                $available,
-                $downloadUrl,
-                $expectedHash
-            );
-
+            /*
+             * Discovery compares only the installed version with the version
+             * advertised by the installation-pinned update URL. Package
+             * metadata and cryptographic verification remain mandatory in
+             * update().
+             */
             $this->respondModuleCheck(
                 true,
                 $current,
@@ -2049,8 +2018,17 @@ class admin extends controller
          *     APPROOT . '/views/public/' . $module
          * );
          */
-        $this->deleteModuleDirectory($quarantineRoot);
+        try {
+            $this->deleteModuleDirectory($quarantineRoot);
+        } catch (Throwable $error) {
+            error_log(
+                'Module uninstall file cleanup failed for ['
+                . $module . ']: ' . $error->getMessage()
+            );
+            $this->error_page('Module files could not be removed.');
+        }
 
+        $_SESSION['admin_status'] = 'Module ' . $module . ' was removed.';
         header('Location: /admin/modules');
         exit;
     }
@@ -2275,7 +2253,9 @@ class admin extends controller
          * }
          */
         if (is_link($dir)) {
-            unlink($dir);
+            if (!unlink($dir)) {
+                throw new RuntimeException('Module link could not be removed.');
+            }
             return;
         }
 
@@ -2287,14 +2267,18 @@ class admin extends controller
             $path = $dir . '/' . $item;
 
             if (is_link($path)) {
-                unlink($path);
+                if (!unlink($path)) {
+                    throw new RuntimeException('Module link could not be removed.');
+                }
             } elseif (is_dir($path)) {
                 $this->recursive_rmdir($path);
-            } else {
-                unlink($path);
+            } elseif (!unlink($path)) {
+                throw new RuntimeException('Module file could not be removed.');
             }
         }
 
-        rmdir($dir);
+        if (!rmdir($dir)) {
+            throw new RuntimeException('Module directory could not be removed.');
+        }
     }
 }

@@ -68,6 +68,7 @@ class modules extends controller
                 !is_array($metadata)
                 || (string) ($metadata['module'] ?? '') !== $name
                 || !is_file($controllerPath)
+                || !$this->moduleDeclaresPublicAdmin($name)
             ) {
                 continue;
             }

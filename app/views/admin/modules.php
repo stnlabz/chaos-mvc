@@ -102,6 +102,8 @@ require APPROOT . '/views/inc/head.php';
             $domain = '';
             $domainUrl = null;
             $certified = '';
+            $updateUrl = '';
+            $hasUpdateSource = false;
 
             if ($config !== []) {
                 $version = (string) ($config['version'] ?? '0.0.0');
@@ -135,6 +137,9 @@ require APPROOT . '/views/inc/head.php';
                  * );
                  */
                 $updateUrl = (string) ($config['update_url'] ?? '');
+                $hasUpdateSource =
+                    filter_var($updateUrl, FILTER_VALIDATE_URL) !== false
+                    && strtolower((string) parse_url($updateUrl, PHP_URL_SCHEME)) === 'https';
 
                 /*
                  * CMSEC-2026-4828-H
@@ -188,17 +193,19 @@ require APPROOT . '/views/inc/head.php';
                             Manage
                         </a>
 
-                        <!--
-                            CMSEC-2026-4833-C
-                            Every verified non-Core module delegates discovery
-                            to Core using its installed signed module metadata.
-                        -->
-                        <button class="btn btn-sm btn-secondary w-100 mb-2 btn-update"
-                            data-module="<?= htmlspecialchars((string) $module['slug'], ENT_QUOTES, 'UTF-8'); ?>"
-                            data-action="check"
-                            disabled>
-                            Checking for updates...
-                        </button>
+                        <?php if ($hasUpdateSource): ?>
+                            <button class="btn btn-sm btn-secondary w-100 mb-2 btn-update"
+                                data-module="<?= htmlspecialchars((string) $module['slug'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-action="check"
+                                disabled>
+                                Checking for updates...
+                            </button>
+                        <?php else: ?>
+                            <button class="btn btn-sm btn-outline-secondary w-100 mb-2" disabled
+                                title="Add a valid HTTPS update_url to module.json to enable update discovery.">
+                                Local Module
+                            </button>
+                        <?php endif; ?>
 
                         <form action="/admin/uninstall" method="POST"
                               onsubmit="return confirm('EXTREME DANGER: This will permanently remove all data and files for this module.');">

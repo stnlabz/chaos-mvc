@@ -390,6 +390,119 @@ class controller
     }
 
     /**
+     * Determine whether a user module controller declares public admin().
+     * The controller file is tokenized, never executed during discovery.
+     */
+    protected function moduleDeclaresPublicAdmin(string $module): bool
+    {
+        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
+            return false;
+        }
+
+        $modulesRoot = realpath(USERROOT . '/modules');
+        $modulePath = USERROOT . '/modules/' . $module;
+        $moduleRoot = is_link($modulePath) ? false : realpath($modulePath);
+        $controllerPath = $modulePath . '/controllers/' . $module . '.php';
+        $resolvedController = is_link($controllerPath)
+            ? false
+            : realpath($controllerPath);
+
+        if (
+            $modulesRoot === false
+            || $moduleRoot === false
+            || $resolvedController === false
+            || !str_starts_with($moduleRoot, $modulesRoot . DIRECTORY_SEPARATOR)
+            || !str_starts_with($resolvedController, $moduleRoot . DIRECTORY_SEPARATOR)
+            || !is_file($resolvedController)
+        ) {
+            return false;
+        }
+
+        $source = file_get_contents($resolvedController);
+
+        if (!is_string($source)) {
+            return false;
+        }
+
+        $tokens = token_get_all($source);
+        $depth = 0;
+        $classDepth = null;
+        $expectClassName = false;
+        $pendingTargetClass = false;
+        $visibility = T_PUBLIC;
+
+        foreach ($tokens as $index => $token) {
+            if (is_string($token)) {
+                if ($token === '{') {
+                    $depth++;
+
+                    if ($pendingTargetClass) {
+                        $classDepth = $depth;
+                        $pendingTargetClass = false;
+                        $visibility = T_PUBLIC;
+                    }
+                } elseif ($token === '}') {
+                    if ($classDepth === $depth) {
+                        $classDepth = null;
+                    }
+
+                    $depth--;
+                } elseif ($token === ';' && $classDepth === $depth) {
+                    $visibility = T_PUBLIC;
+                }
+
+                continue;
+            }
+
+            [$id, $text] = $token;
+
+            if ($id === T_CLASS) {
+                $expectClassName = true;
+                continue;
+            }
+
+            if ($expectClassName && $id === T_STRING) {
+                $pendingTargetClass = strtolower($text) === $module;
+                $expectClassName = false;
+                continue;
+            }
+
+            if ($classDepth === null || $depth !== $classDepth) {
+                continue;
+            }
+
+            if (in_array($id, [T_PUBLIC, T_PROTECTED, T_PRIVATE], true)) {
+                $visibility = $id;
+                continue;
+            }
+
+            if ($id !== T_FUNCTION) {
+                continue;
+            }
+
+            for ($next = $index + 1, $count = count($tokens); $next < $count; $next++) {
+                $candidate = $tokens[$next];
+
+                if (is_array($candidate) && $candidate[0] === T_STRING) {
+                    if (strtolower($candidate[1]) === 'admin') {
+                        return $visibility === T_PUBLIC;
+                    }
+
+                    break;
+                }
+
+                if (is_string($candidate) && $candidate === '(') {
+                    break;
+                }
+            }
+
+            $visibility = T_PUBLIC;
+        }
+
+        return false;
+    }
+
+    /**
      * Load a model explicitly owned by another user module.
      */
     public function module_model(string $module, string $model): object
