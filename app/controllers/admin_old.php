@@ -284,15 +284,6 @@ class admin extends controller
             $downloadUrl = (string) ($manifest['download'] ?? '');
             $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
 
-            error_log(
-                'Module update debug'
-                . ' requested=[' . $module . ']'
-                . ' manifest_module=[' . $manifestModule . ']'
-                . ' manifest_version=[' . $available . ']'
-                . ' update_url=[' . $updateUrl . ']'
-                . ' raw=[' . $manifestRaw . ']'
-            );
-
             if ($manifestModule !== $module || $available === '') {
                 throw new RuntimeException(
                     'Update manifest does not match the installed module.'
