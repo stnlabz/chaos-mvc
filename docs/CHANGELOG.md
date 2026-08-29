@@ -8,12 +8,19 @@
 > Pre-release maintenance only. The current release remains v1.1.9 until the
 > changes are deployed and tested on chaos-mvc.org.
 
-## RELEASED
- - V1.1.9 is officially released 20260829: 0807
-
 ## Security
 - Restricted Admin navigation and Admin → Modules listings to user modules whose own controller declares a public `admin()` method, using token inspection without executing user-land PHP
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
+
+## Reliability
+- Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
+- Removed the obsolete `app/controllers/admin_old.php` maintenance copy
+
+---
+
+## v1.1.9 Release — August 29, 2026
+
+## Security
 - Added CSRF verification to login, registration, password recovery, and password reset operations (`CMSEC-2026-4827-A`)
 - Restricted logout and protected account deletion to verified POST requests (`CMSEC-2026-4827-B`)
 - Replaced plaintext password-reset token storage with SHA-256 digests and single-use token consumption (`CMSEC-2026-4827-C`)
@@ -60,8 +67,6 @@
 - Added authenticated asynchronous module update discovery so Admin → Modules compares installed versions with each configured remote announcement and enables installation when a newer release is available (`CMSEC-2026-4833-A` through `CMSEC-2026-4833-C`)
 
 ## Reliability
-- Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
-- Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 - Reserved `/` and `/home` for the confined installation-owned Home module instead of mapping the protected Home route to `/app/controllers/home.php`
 - Added explicit, ownership-checked cross-module model loading for user modules that intentionally collaborate
 - Replaced site-specific shared includes with a neutral, self-contained Classic Core fallback that does not depend on `/public/assets/`
