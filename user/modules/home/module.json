@@ -1,0 +1,23 @@
+{
+    "name": "home",
+    "module": "home",
+    "version": "1.0.5",
+	"update_url": "https://poemei.com/updates/home.json",
+    "description": "The home module for the ChAoS MVC, supersedes the absence of /home in the core",
+    "creator": "PM",
+	    "domain": "www.poemei.com",
+		"certified": "Yes",
+    "signing": {
+        "rsa-sha256": "RSA-SHA256",
+        "key_id": "pm73-6753d9470509fdf0",
+        "public_key": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQm9qQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FZOEFNSUlCaWdLQ0FZRUF3dUxPWGE2TUNRY25TZ2pzMkJnLwpodmpJcG1URnY5eVozMEVNQThiZ3BXK3E3WjVyUS93ZEdJSDdlTVJ4Z0ZjN3JBOXFwSG80RmxNN0NHTU1RMnNWCkliZGFxQjZQR0dqTEh5eFVQQUNKejhvUDNMSUZwZDl6S3N3ZVhUYjAxeXJIWXBwM1QybGovYmlMcXhCWnpvSGsKVC9KNnBSRGtpQWsxaUIwNmRBY3crTVI4WkdjZWdFazNESVBXWHI1V0IzcnFEYjRWOGp2VHBhd0o0VmJzSjIvZgpzQmZ0Q0ZLMDAvajN1cVI2bTJneEx2cnhhTFJaY2d2YVFyZHdJSFZCZis3L25UYUczdFVoQzdCN0R5dE8zOThNCk9zcEQvVHd2bnJsVGsrVVZ2blVNTGRLd2dZbEt3SzNIM3hPL0hyTm0rTXlEbHlkZjRSbDdmcGdNZmlpSTNsb3YKVGptb0J3YWplZ1RyTXhQVDF5YXJ0ZWhKdWlQY3Vva1Exd2FuTDg5eUxCcTd5SlZuSWFzemtWWkVVREhZS2lSUgovSXJmKzBHekRmcVpoMGdZc3BIL24vd0JiUVU5Zi8za3JzRzR0bjN0UmsvTHE5OGF3UmJMSHFyaStneEgyV09SClo3WmU5Wlk4cDcxTkNHVFFsK0lQUXFlTlJCbnFmTEFYU2FSdE1vNGRacUx4QWdNQkFBRT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=="
+    },
+    "files": [
+        "controllers/home.php",
+        "models/home_model.php",
+        "views/admin/home.php"
+    ],
+	"routes": [
+	    "index"
+	]
+}
