@@ -12,6 +12,8 @@
  - V1.1.9 is officially released 20260829: 0807
 
 ## Security
+- Restricted Admin navigation and Admin → Modules listings to user modules whose own controller declares a public `admin()` method, using token inspection without executing user-land PHP
+- Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 - Added CSRF verification to login, registration, password recovery, and password reset operations (`CMSEC-2026-4827-A`)
 - Restricted logout and protected account deletion to verified POST requests (`CMSEC-2026-4827-B`)
 - Replaced plaintext password-reset token storage with SHA-256 digests and single-use token consumption (`CMSEC-2026-4827-C`)
@@ -55,9 +57,11 @@
 - Removed installation database configuration and runtime authentication state from Git tracking
 - Updated the bundled PHPMailer dependency to v7.1.1
 - Added signed-package, exact-version module database migrations with module-owned table confinement, durable replay prevention, and explicit partial-DDL failure reporting (`CMSEC-2026-4832-A` through `CMSEC-2026-4832-C`)
-- Added authenticated asynchronous Core update discovery so Admin → Modules verifies each configured remote manifest and enables installation only when a newer signed release is available (`CMSEC-2026-4833-A` through `CMSEC-2026-4833-C`)
+- Added authenticated asynchronous module update discovery so Admin → Modules compares installed versions with each configured remote announcement and enables installation when a newer release is available (`CMSEC-2026-4833-A` through `CMSEC-2026-4833-C`)
 
 ## Reliability
+- Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
+- Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 - Reserved `/` and `/home` for the confined installation-owned Home module instead of mapping the protected Home route to `/app/controllers/home.php`
 - Added explicit, ownership-checked cross-module model loading for user modules that intentionally collaborate
 - Replaced site-specific shared includes with a neutral, self-contained Classic Core fallback that does not depend on `/public/assets/`
@@ -71,7 +75,7 @@
 - Closed the installer database test connection after successful validation
 - Preserved password-reset tokens when translating clean authentication aliases
 - Removed synchronous third-party update checks from module administration page rendering; update discovery now occurs only after an authenticated administrator action (`CMSEC-2026-4828-H`)
-- Kept module discovery non-blocking by checking signed manifests asynchronously after Admin → Modules renders; unavailable developer servers no longer delay the initial page response
+- Kept module update discovery non-blocking by checking remote version announcements asynchronously after Admin → Modules renders; unavailable developer servers no longer delay the initial page response
 - Added explicit failures for missing, unreadable, or invalid installation SMTP configuration
 - Consolidated duplicate error controllers into one bootstrap-registered Core handler for intentional HTTP errors, uncaught exceptions, reportable PHP errors, and fatal shutdown failures
 - Added safe site-styled error responses, dependency-free emergency rendering, private incident logging, reference identifiers, and removal of partial response output
