@@ -1,12 +1,15 @@
 # Chaos MVC
 **CHANGELOG**
 
-**Current Version:** 1.1.8
+**Current Version:** 1.1.9
 
-## v1.1.9 Development — Unreleased
+## v1.1.10 Development — Unreleased
 
-> Pre-release maintenance only. The current release remains v1.1.8 until the
+> Pre-release maintenance only. The current release remains v1.1.9 until the
 > changes are deployed and tested on chaos-mvc.org.
+
+## RELEASED
+ - V1.1.9 is officially released 20260829: 0807
 
 ## Security
 - Added CSRF verification to login, registration, password recovery, and password reset operations (`CMSEC-2026-4827-A`)
