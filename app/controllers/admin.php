@@ -255,7 +255,7 @@ class admin extends controller
         $module = trim((string) ($_POST['module'] ?? ''));
 
         if (
-            !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)
+            !preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module)
             || $this->isCore($module)
         ) {
             $this->respondModuleCheck(false, null, null, 'Invalid module.');
@@ -357,7 +357,7 @@ class admin extends controller
 
         $module = trim((string) ($_POST['module'] ?? ''));
 
-        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
+        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module)) {
             $this->respondModuleUpdate(false, null, 'Invalid module.');
         }
 
@@ -1924,7 +1924,7 @@ class admin extends controller
 
         $module = trim((string) ($_POST['module'] ?? ''));
 
-        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
+        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module)) {
             $this->error_page('Invalid module.');
         }
 
