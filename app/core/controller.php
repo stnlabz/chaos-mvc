@@ -395,7 +395,7 @@ class controller
      */
     protected function moduleDeclaresPublicAdmin(string $module): bool
     {
-        if (!preg_match('/^[a-z][a-z0-9_]{1,62}$/', $module)) {
+        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module)) {
             return false;
         }
 

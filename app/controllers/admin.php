@@ -73,7 +73,7 @@ class admin extends controller
 
         if (
             !is_string($slug)
-            || !preg_match('/^[a-z][a-z0-9_]{1,62}$/', $slug)
+            || !preg_match('/^[a-z][a-z0-9_]{0,62}$/', $slug)
         ) {
             $this->view('admin/index', [
                 'modules' => $this->discoverAdminNavigationModules()
@@ -214,7 +214,7 @@ class admin extends controller
             $metadata = is_string($raw) ? json_decode($raw, true) : null;
 
             if (
-                preg_match('/^[a-z][a-z0-9_]{1,62}$/', $name)
+                preg_match('/^[a-z][a-z0-9_]{0,62}$/', $name)
                 && !is_link($directory)
                 && is_array($metadata)
                 && (string) ($metadata['module'] ?? '') === $name
