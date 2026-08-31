@@ -13,6 +13,8 @@
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Added explicit service-module parameter routing through `module.json`'s `index_parameters` declaration, allowing URLs such as `/s/{code}` to reach the module's declared `index()` action without treating the value as a method name
+- Aligned controller ownership validation with the router so one-character user-module slugs such as `s` can establish their confined module context
 - Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
 - Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 
