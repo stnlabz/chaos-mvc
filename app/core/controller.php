@@ -76,7 +76,7 @@ class controller
     {
         if (
             !preg_match(
-                '/^[a-z][a-z0-9_]{1,62}$/',
+                '/^[a-z][a-z0-9_]{0,62}$/',
                 $module
             )
         ) {

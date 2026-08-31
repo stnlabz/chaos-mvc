@@ -291,6 +291,22 @@ class router
 
                 $this->method = 'index';
             } elseif (
+                $this->controller_scope === 'user'
+                && $this->moduleUsesIndexParameters()
+                && !$this->isRoutableAction(
+                    $this->controller,
+                    $requestedMethod
+                )
+            ) {
+                /*
+                 * /{module}/{value}
+                 *
+                 * Service modules may explicitly route the remaining URL
+                 * segments to index() as parameters. The requested value is
+                 * deliberately retained in $url for parameter collection.
+                 */
+                $this->method = 'index';
+            } elseif (
                 $this->isRoutableAction(
                     $this->controller,
                     $requestedMethod
@@ -700,6 +716,40 @@ class router
             );
 
         return $authorized;
+    }
+
+    /**
+     * Determine whether the current user module explicitly accepts URL
+     * segments as parameters to index().
+     */
+    private function moduleUsesIndexParameters(): bool
+    {
+        if (
+            $this->controller_scope !== 'user'
+            || $this->module_context === null
+        ) {
+            return false;
+        }
+
+        $metadataPath = USERROOT
+            . '/modules/'
+            . $this->module_context
+            . '/module.json';
+
+        $raw = is_file($metadataPath)
+            ? file_get_contents($metadataPath)
+            : false;
+
+        $metadata = is_string($raw)
+            ? json_decode($raw, true)
+            : null;
+
+        return is_array($metadata)
+            && ($metadata['index_parameters'] ?? false) === true
+            && $this->isRoutableAction(
+                $this->controller,
+                'index'
+            );
     }
 
     /**
