@@ -9,6 +9,7 @@
 > changes are deployed and tested on chaos-mvc.org.
 
 ## Security
+- Added an optional bootstrap perimeter hook that invokes an installed Sentinel module's callable `inspect()` entry point before normal MVC initialization while allowing installations without Sentinel to continue unchanged
 - Restricted Admin navigation and Admin → Modules listings to user modules whose own controller declares a public `admin()` method, using token inspection without executing user-land PHP
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
