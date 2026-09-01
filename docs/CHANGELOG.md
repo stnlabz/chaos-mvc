@@ -22,6 +22,9 @@
 - Removed the obsolete Core example controller from the distributed application tree
 - Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 
+## Documentation
+- Added the public Module Creation Guide defining the supported user-module structure, Core boundary, database lifecycle, CSRF responsibilities, update integration, and removal contract for human developers and AI development agents
+
 ---
 
 ## v1.1.9 Release — August 29, 2026
