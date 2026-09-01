@@ -19,6 +19,7 @@
 - Aligned Admin dispatch, public `admin()` discovery, update checks, update execution, and Nuke with one-character module slugs, allowing service modules such as `s` to use their complete authorized administration lifecycle
 - Redirected successful logout requests to the site root instead of the login page
 - Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
+- Removed the obsolete Core example controller from the distributed application tree
 - Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 
 ---
