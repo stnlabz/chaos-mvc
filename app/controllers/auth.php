@@ -263,7 +263,7 @@ class auth extends controller
         session_destroy();
 
         header(
-            'Location: /login'
+            'Location: /'
         );
 
         exit;

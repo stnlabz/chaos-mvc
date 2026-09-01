@@ -17,6 +17,7 @@
 - Added explicit service-module parameter routing through `module.json`'s `index_parameters` declaration, allowing URLs such as `/s/{code}` to reach the module's declared `index()` action without treating the value as a method name
 - Aligned controller ownership validation with the router so one-character user-module slugs such as `s` can establish their confined module context
 - Aligned Admin dispatch, public `admin()` discovery, update checks, update execution, and Nuke with one-character module slugs, allowing service modules such as `s` to use their complete authorized administration lifecycle
+- Redirected successful logout requests to the site root instead of the login page
 - Made module uninstall filesystem cleanup fail explicitly when a file, link, or directory cannot be removed, and added administrator success confirmation after completed removal
 - Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 
