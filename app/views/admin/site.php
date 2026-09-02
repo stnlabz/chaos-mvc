@@ -11,6 +11,7 @@ require APPROOT . '/views/inc/head.php';
 
 $siteConfig = $data['site'] ?? [];
 $mailerConfig = $data['mailer'] ?? [];
+$maintenanceEnabled = !empty($data['maintenance']);
 ?>
 
 <p>
@@ -181,6 +182,58 @@ $mailerConfig = $data['mailer'] ?? [];
                     type="submit"
                 >
                     Save Site Configuration
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <div class="card mb-5">
+
+        <div class="card-body">
+
+            <h4 class="card-title mb-4">
+                Maintenance Mode
+            </h4>
+
+            <p class="text-muted">
+                Temporarily show the maintenance page to public visitors.
+                Administration and authentication remain available.
+            </p>
+
+            <p>
+                Current status:
+                <strong>
+                    <?= $maintenanceEnabled ? 'Enabled' : 'Disabled'; ?>
+                </strong>
+            </p>
+
+            <form action="/admin/site" method="POST">
+
+                <?= $this->csrf_field(); ?>
+
+                <input
+                    type="hidden"
+                    name="section"
+                    value="maintenance"
+                >
+
+                <input
+                    type="hidden"
+                    name="enabled"
+                    value="<?= $maintenanceEnabled ? '0' : '1'; ?>"
+                >
+
+                <button
+                    class="btn <?= $maintenanceEnabled
+                        ? 'btn-outline-success'
+                        : 'btn-warning'; ?>"
+                    type="submit"
+                >
+                    <?= $maintenanceEnabled
+                        ? 'Turn Maintenance Off'
+                        : 'Turn Maintenance On'; ?>
                 </button>
 
             </form>

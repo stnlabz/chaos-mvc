@@ -212,10 +212,21 @@ if (!file_exists($installLock)) {
    MAINTENANCE MODE
 -------------------------------------------------- */
 
-$maintenanceFile = APPROOT
-    . '/data/updater/maintenance.lock';
+$maintenanceFiles = [
+    APPROOT . '/data/maintenance.lock',
+    APPROOT . '/data/updater/maintenance.lock'
+];
 
-if (is_file($maintenanceFile)) {
+$maintenanceActive = false;
+
+foreach ($maintenanceFiles as $maintenanceFile) {
+    if (is_file($maintenanceFile)) {
+        $maintenanceActive = true;
+        break;
+    }
+}
+
+if ($maintenanceActive) {
     $requestPath = (string) parse_url(
         $_SERVER['REQUEST_URI'] ?? '/',
         PHP_URL_PATH

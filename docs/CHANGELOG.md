@@ -14,6 +14,7 @@
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Added an authenticated Site administration control for enabling and disabling public maintenance mode independently of updater-owned maintenance state
 - Added explicit service-module parameter routing through `module.json`'s `index_parameters` declaration, allowing URLs such as `/s/{code}` to reach the module's declared `index()` action without treating the value as a method name
 - Aligned controller ownership validation with the router so one-character user-module slugs such as `s` can establish their confined module context
 - Aligned Admin dispatch, public `admin()` discovery, update checks, update execution, and Nuke with one-character module slugs, allowing service modules such as `s` to use their complete authorized administration lifecycle

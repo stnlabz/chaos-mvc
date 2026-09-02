@@ -25,6 +25,7 @@ class site extends controller
 
         $siteFile = APPROOT . '/data/site.json';
         $mailerFile = APPROOT . '/data/mailer.json';
+        $maintenanceFile = APPROOT . '/data/maintenance.lock';
 
         $siteConfig = $this->loadJson(
             $siteFile,
@@ -54,6 +55,7 @@ class site extends controller
         $data = [
             'site' => $siteConfig,
             'mailer' => $mailerConfig,
+            'maintenance' => is_file($maintenanceFile),
             'success' => null,
             'error' => null
         ];
@@ -72,6 +74,10 @@ class site extends controller
                 $result = $this->saveMailerConfig(
                     $mailerFile,
                     $mailerConfig
+                );
+            } elseif ($section === 'maintenance') {
+                $result = $this->saveMaintenanceMode(
+                    $maintenanceFile
                 );
             } else {
                 $result = [
@@ -95,6 +101,9 @@ class site extends controller
 
                 $data['site'] = $siteConfig;
                 $data['mailer'] = $mailerConfig;
+                $data['maintenance'] = is_file(
+                    $maintenanceFile
+                );
 
                 $GLOBALS['SITE'] = array_replace(
                     $GLOBALS['SITE'] ?? [],
@@ -106,6 +115,89 @@ class site extends controller
         }
 
         $this->view('admin/site', $data);
+    }
+
+    /**
+     * Enable or disable installation-owned maintenance mode.
+     *
+     * The updater uses a separate lock which this control cannot remove.
+     *
+     * @param string $file Site maintenance marker.
+     * @return array
+     */
+    private function saveMaintenanceMode(string $file): array
+    {
+        $enabled = (string) ($_POST['enabled'] ?? '');
+
+        if (!in_array($enabled, ['0', '1'], true)) {
+            return [
+                'success' => false,
+                'message' => 'Invalid maintenance setting.'
+            ];
+        }
+
+        if ($enabled === '0') {
+            if (is_file($file) && !unlink($file)) {
+                return [
+                    'success' => false,
+                    'message' => 'Maintenance mode could not be disabled.'
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Maintenance mode disabled.'
+            ];
+        }
+
+        $directory = dirname($file);
+
+        if (
+            !is_dir($directory)
+            && !mkdir($directory, 0755, true)
+            && !is_dir($directory)
+        ) {
+            return [
+                'success' => false,
+                'message' => 'Maintenance mode could not be enabled.'
+            ];
+        }
+
+        $state = json_encode(
+            [
+                'maintenance' => true,
+                'enabled_at' => gmdate('c')
+            ],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+        );
+
+        $temporary = $file . '.tmp';
+
+        if (
+            $state === false
+            || file_put_contents(
+                $temporary,
+                $state . PHP_EOL,
+                LOCK_EX
+            ) === false
+            || !rename($temporary, $file)
+        ) {
+            if (is_file($temporary)) {
+                @unlink($temporary);
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Maintenance mode could not be enabled.'
+            ];
+        }
+
+        @chmod($file, 0600);
+
+        return [
+            'success' => true,
+            'message' => 'Maintenance mode enabled.'
+        ];
     }
 
     /**

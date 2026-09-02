@@ -19,7 +19,7 @@ $siteName = (string) ($SITE['name'] ?? 'Chaos MVC');
 <body>
 <main>
     <h1>Maintenance in progress</h1>
-    <p><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?> is being updated. Please check back shortly.</p>
+    <p><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?> is temporarily unavailable. Please check back shortly.</p>
 </main>
 </body>
 </html>

@@ -867,6 +867,7 @@ class updater_engine
             $normalized,
             [
                 'app/core/config.php',
+                'app/data/maintenance.lock',
                 'app/data/site.json',
                 'app/data/mailer.json'
             ],
