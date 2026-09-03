@@ -4,6 +4,7 @@
 app/data/*.json
 app/data/security/
 app/core/config.php
+user/data/*.json
 test
 test/*
 

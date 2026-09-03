@@ -279,6 +279,19 @@ class install extends controller
 
         $mysqli->close();
 
+        /*
+         * Establish the installation-owned identity and make one non-fatal
+         * registration attempt. Remote availability never controls whether
+         * an otherwise successful ChAoS MVC installation completes.
+         */
+        /* [AI:GPT-5.6 Sol | 2026-09-02 23:59:21 UTC] */
+        try {
+            (new installation_registry())->register();
+        } catch (Throwable $error) {
+            // Installation is complete; Admin can retry registration later.
+        }
+        /* [End AI:GPT-5.6 Sol] */
+
         header('Location: /login');
         exit;
     }

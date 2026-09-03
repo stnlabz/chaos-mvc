@@ -14,6 +14,9 @@
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Added persistent installation identity with non-fatal post-install registration and an authenticated manual retry/status control in Site administration
+- Limited explicit installation registration data to domain, ChAoS MVC version, and PHP version; normal requests never contact the registry
+- Separated optional Sentinel perimeter inspection from its HTTP controller so installed Sentinel modules retain `/admin/sentinel` availability while absent installations continue normally
 - Added an authenticated Site administration control for enabling and disabling public maintenance mode independently of updater-owned maintenance state
 - Added explicit service-module parameter routing through `module.json`'s `index_parameters` declaration, allowing URLs such as `/s/{code}` to reach the module's declared `index()` action without treating the value as a method name
 - Aligned controller ownership validation with the router so one-character user-module slugs such as `s` can establish their confined module context

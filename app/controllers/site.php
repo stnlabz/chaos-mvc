@@ -52,13 +52,18 @@ class site extends controller
             ]
         );
 
+        /* [AI:GPT-5.6 Sol | 2026-09-02 23:59:21 UTC] */
+        $registry = new installation_registry();
+
         $data = [
             'site' => $siteConfig,
             'mailer' => $mailerConfig,
             'maintenance' => is_file($maintenanceFile),
+            'installation' => $registry->getState(),
             'success' => null,
             'error' => null
         ];
+        /* [End AI:GPT-5.6 Sol] */
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->require_csrf();
@@ -79,6 +84,19 @@ class site extends controller
                 $result = $this->saveMaintenanceMode(
                     $maintenanceFile
                 );
+            /* [AI:GPT-5.6 Sol | 2026-09-02 23:59:21 UTC] */
+            } elseif ($section === 'registration') {
+                $registration = $registry->register();
+                $registered = ($registration['registration_status'] ?? '')
+                    === 'registered';
+                $result = [
+                    'success' => $registered,
+                    'message' => $registered
+                        ? 'Installation registration completed.'
+                        : 'Registration is pending; the site remains operational.'
+                ];
+                $data['installation'] = $registration;
+            /* [End AI:GPT-5.6 Sol] */
             } else {
                 $result = [
                     'success' => false,

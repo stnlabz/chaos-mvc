@@ -12,6 +12,11 @@ require APPROOT . '/views/inc/head.php';
 $siteConfig = $data['site'] ?? [];
 $mailerConfig = $data['mailer'] ?? [];
 $maintenanceEnabled = !empty($data['maintenance']);
+/* [AI:GPT-5.6 Sol | 2026-09-02 23:59:21 UTC] */
+$installation = is_array($data['installation'] ?? null)
+    ? $data['installation']
+    : [];
+/* [End AI:GPT-5.6 Sol] */
 ?>
 
 <p>
@@ -188,6 +193,31 @@ $maintenanceEnabled = !empty($data['maintenance']);
 
         </div>
     </div>
+
+    <!-- [AI:GPT-5.6 Sol | 2026-09-02 23:59:21 UTC] -->
+    <div class="card mb-5">
+        <div class="card-body">
+            <h4 class="card-title mb-4">Installation Registration</h4>
+
+            <dl class="row mb-4">
+                <dt class="col-sm-3">Installation ID</dt>
+                <dd class="col-sm-9"><code><?= htmlspecialchars((string) ($installation['installation_id'] ?? 'Not generated'), ENT_QUOTES, 'UTF-8'); ?></code></dd>
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9"><?= htmlspecialchars(ucfirst((string) ($installation['registration_status'] ?? 'unregistered')), ENT_QUOTES, 'UTF-8'); ?></dd>
+                <dt class="col-sm-3">Registered</dt>
+                <dd class="col-sm-9"><?= htmlspecialchars((string) ($installation['registered_at'] ?? 'Not yet'), ENT_QUOTES, 'UTF-8'); ?></dd>
+                <dt class="col-sm-3">Last attempt</dt>
+                <dd class="col-sm-9"><?= htmlspecialchars((string) ($installation['last_attempt_at'] ?? 'Never'), ENT_QUOTES, 'UTF-8'); ?></dd>
+            </dl>
+
+            <form action="/admin/site" method="POST">
+                <?= $this->csrf_field(); ?>
+                <input type="hidden" name="section" value="registration">
+                <button class="btn btn-outline-primary" type="submit">Retry Registration</button>
+            </form>
+        </div>
+    </div>
+    <!-- [End AI:GPT-5.6 Sol] -->
 
     <div class="card mb-5">
 
