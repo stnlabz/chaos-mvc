@@ -112,9 +112,12 @@ class posts extends controller {
         $body = trim((string) ($_POST['body'] ?? ''));
         $post = $postId > 0 ? $model->get_by_id($postId) : false;
 
-        if (!$post || $body === '') {
+        /* [AI:GPT-5.6 Sol | 2026-09-03 20:19:18 UTC] */
+        // Public comments may only target published posts.
+        if (!$post || (int) ($post['published'] ?? 0) !== 1 || $body === '') {
             $this->error_page('Invalid comment submission.');
         }
+        /* [End AI:GPT-5.6 Sol] */
 
         $payload = [
             'post_id'     => $postId,
