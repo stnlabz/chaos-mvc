@@ -371,6 +371,24 @@ class admin extends controller
             $this->respondModuleUpdate(false, null, $error->getMessage());
         }
 
+        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+        $operation = $_POST['operation'] ?? 'update';
+        if (!in_array($operation, ['update', 'rollback'], true)) {
+            $this->respondModuleUpdate(false, null, 'Invalid module update operation.');
+        }
+        if ($operation === 'rollback') {
+            if (($_POST['confirm_files_only'] ?? '') !== '1') {
+                $this->respondModuleUpdate(false, null, 'Confirm filesystem-only rollback. Database changes will not be reversed.');
+            }
+            try {
+                $result = $this->restorePreviousModuleFiles($module);
+            } catch (Throwable $error) {
+                $this->respondModuleUpdate(false, null, $error->getMessage());
+            }
+            $this->respondModuleUpdate(true, $result['version'], $result['message']);
+        }
+        /* [End AI:GPT-5.6 Sol] */
+
         try {
             $moduleRoot = $this->resolveInstalledModuleRoot($module);
         } catch (Throwable $error) {
@@ -415,6 +433,9 @@ class admin extends controller
             . '.' . $module . '.incoming-' . $transactionId;
         $moduleBackupRoot = $moduleParent . DIRECTORY_SEPARATOR
             . '.' . $module . '.backup-' . $transactionId;
+        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+        $previousRoot = $moduleParent . DIRECTORY_SEPARATOR . '.' . $module . '.previous';
+        /* [End AI:GPT-5.6 Sol] */
         $moduleMoved = false;
         $migrationState = 'none';
 
@@ -645,45 +666,57 @@ class admin extends controller
                 throw new RuntimeException('Could not activate the module update.');
             }
 
+            /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+            // Keep one previous release after activation, without loading its PHP.
+            // Retention is part of the transaction: failure restores this update's backup.
+            $this->deleteModuleDirectory($previousRoot);
+            if (!rename($moduleBackupRoot, $previousRoot)) {
+                throw new RuntimeException('Could not retain the previous module files.');
+            }
             $moduleMoved = false;
 
-            try {
-                $this->deleteModuleDirectory($moduleBackupRoot);
-            } catch (Throwable $cleanupError) {
-                error_log(
-                    'Module backup cleanup failed: '
-                    . $cleanupError->getMessage()
-                );
-            }
-
-            $this->cleanupModuleUpdate($workRoot);
-            $this->respondModuleUpdate(true, $new, null);
+            $this->cleanupModuleUpdateSafely($workRoot);
+            $this->respondModuleUpdate(true, $new, 'Updated. One previous filesystem version is available for rollback; database changes are not reversed by rollback.');
+            /* [End AI:GPT-5.6 Sol] */
         } catch (Throwable $error) {
+            /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+            $recoveryMessage = ' Installed module files were not replaced.';
             try {
-                if ($moduleMoved && is_dir($moduleBackupRoot)) {
+                if ($moduleMoved) {
+                    if (!is_dir($moduleBackupRoot)) {
+                        throw new RuntimeException('Previous module backup is missing.');
+                    }
                     if (is_dir($moduleRoot)) {
-                        $this->deleteModuleDirectory($moduleRoot);
+                        if (!rename($moduleRoot, $incomingRoot)) {
+                            throw new RuntimeException('Failed release could not be moved aside.');
+                        }
                     }
 
                     if (!rename($moduleBackupRoot, $moduleRoot)) {
                         throw new RuntimeException('Module directory rollback failed.');
                     }
+                    $moduleMoved = false;
+                    $recoveryMessage = ' Previous module files were restored.';
                 }
 
                 if (is_dir($incomingRoot)) {
                     $this->deleteModuleDirectory($incomingRoot);
                 }
             } catch (Throwable $rollbackError) {
+                $recoveryMessage = $moduleMoved
+                    ? ' Automatic file restoration failed. Preserve the backup and inspect the module directories before retrying.'
+                    : ' Installed files are intact, but update directory cleanup failed.';
                 error_log(
                     'Module update rollback failed: '
                     . $rollbackError->getMessage()
                 );
             }
 
-            $this->cleanupModuleUpdate($workRoot);
+            $this->cleanupModuleUpdateSafely($workRoot);
             error_log('Module update failed: ' . $error->getMessage());
 
-            $message = $error->getMessage();
+            $message = $error->getMessage() . $recoveryMessage;
+            /* [End AI:GPT-5.6 Sol] */
 
             /*
              * CMSEC-2026-4832-C — Honest non-transactional DDL reporting
@@ -1872,6 +1905,73 @@ class admin extends controller
         }
     }
 
+    /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+    /** Cleanup must never turn a completed activation/restoration into an error response. */
+    private function cleanupModuleUpdateSafely(string $workRoot): void
+    {
+        try {
+            $this->cleanupModuleUpdate($workRoot);
+        } catch (Throwable $error) {
+            error_log('Module update workspace cleanup failed: ' . $error->getMessage());
+        }
+    }
+
+    /** Caller holds the module maintenance lock and has confirmed filesystem-only recovery. */
+    private function restorePreviousModuleFiles(string $module): array
+    {
+        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module) || $this->isCore($module)) {
+            throw new RuntimeException('Invalid rollback target.');
+        }
+        $parent = realpath(USERROOT . '/modules');
+        if ($parent === false) {
+            throw new RuntimeException('Module directory is unavailable.');
+        }
+        $live = $parent . DIRECTORY_SEPARATOR . $module;
+        $previous = $parent . DIRECTORY_SEPARATOR . '.' . $module . '.previous';
+        $resolved = realpath($previous);
+        if (is_link($previous) || $resolved === false || !is_dir($previous)
+            || dirname($resolved) !== $parent || is_link($live)) {
+            throw new RuntimeException('No valid previous module files are available.');
+        }
+        $metadataFile = $previous . DIRECTORY_SEPARATOR . 'module.json';
+        if (is_link($metadataFile)) {
+            throw new RuntimeException('Previous module metadata is invalid.');
+        }
+        $metadata = $this->readModuleJson($metadataFile);
+        if (($metadata['module'] ?? '') !== $module || !is_string($metadata['version'] ?? null)) {
+            throw new RuntimeException('Previous module identity is invalid.');
+        }
+        $displaced = $parent . DIRECTORY_SEPARATOR . '.' . $module . '.rollback-' . bin2hex(random_bytes(8));
+        $moved = false;
+        if (file_exists($live)) {
+            if (!is_dir($live) || !rename($live, $displaced)) {
+                throw new RuntimeException('Current module files could not be moved aside.');
+            }
+            $moved = true;
+        }
+        try {
+            if (!rename($previous, $live)) {
+                throw new RuntimeException('Previous module files could not be activated.');
+            }
+        } catch (Throwable $error) {
+            if ($moved && !rename($displaced, $live)) {
+                throw new RuntimeException('Rollback failed and current files could not be restored. Preserve both recovery directories.');
+            }
+            throw $error;
+        }
+        $message = 'Previous module files restored. Database changes were NOT reversed; verify schema compatibility before using the module.';
+        if ($moved) {
+            try {
+                $this->deleteModuleDirectory($displaced);
+            } catch (Throwable $error) {
+                error_log('Rolled-back module cleanup failed: ' . $error->getMessage());
+                $message .= ' Removed-release directory cleanup requires attention.';
+            }
+        }
+        return ['version' => $metadata['version'], 'message' => $message];
+    }
+    /* [End AI:GPT-5.6 Sol] */
+
     /**
      * Copy a directory recursively.
      *
@@ -1982,7 +2082,15 @@ class admin extends controller
             $this->error_page('Installed module could not be quarantined.');
         }
 
+        /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
+        $cleanupStage = 'previous module backup';
         try {
+            // Remove retained source before database destruction. On failure,
+            // restore the quarantined live module and leave the database alone.
+            $this->deleteModuleDirectory(
+                dirname($moduleRoot) . DIRECTORY_SEPARATOR . '.' . $module . '.previous'
+            );
+            $cleanupStage = 'database';
             if ($tables !== []) {
                 $moduleModel = $this->model('modules_model');
 
@@ -1997,8 +2105,9 @@ class admin extends controller
                 error_log('Module uninstall rollback failed.');
             }
 
-            $this->error_page('Module database cleanup failed.');
+            $this->error_page('Module ' . $cleanupStage . ' cleanup failed.');
         }
+        /* [End AI:GPT-5.6 Sol] */
 
         /*
          * CMSEC-2026-4828-K

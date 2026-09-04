@@ -5,6 +5,16 @@ app/data/*.json
 app/data/security/
 app/core/config.php
 user/data/*.json
+# Installation-owned update locks, staging, and recovery snapshots
+/user/modules/.locks/
+/user/modules/.*.previous/
+/user/modules/.*.backup-*/
+/user/modules/.*.incoming-*/
+/user/modules/.*.rollback-*/
+/user/themes/.locks/
+/user/themes/.*.previous/
+/user/themes/.*.backup-*/
+/user/themes/.*.work-*/
 test
 test/*
 

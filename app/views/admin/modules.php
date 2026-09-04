@@ -207,6 +207,14 @@ require APPROOT . '/views/inc/head.php';
                             </button>
                         <?php endif; ?>
 
+                        <!-- [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] -->
+                        <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2 btn-rollback"
+                            data-module="<?= htmlspecialchars($moduleSlug, ENT_QUOTES, 'UTF-8'); ?>">
+                            Restore previous files
+                        </button>
+                        <p class="small module-recovery-result" role="status" aria-live="polite"></p>
+                        <!-- [End AI:GPT-5.6 Sol] -->
+
                         <form action="/admin/uninstall" method="POST"
                               onsubmit="return confirm('EXTREME DANGER: This will permanently remove all data and files for this module.');">
                             <!-- CMSEC-2026-4828-E: authenticate destructive intent. -->
@@ -325,6 +333,9 @@ async function installModuleUpdate(btn) {
 
         const card = btn.closest('.card');
         const versionEl = card.querySelector('p small strong');
+        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+        card.querySelector('.module-recovery-result').textContent = data.message || '';
+        /* [End AI:GPT-5.6 Sol] */
 
         if (versionEl) {
             versionEl.innerText = data.version;
@@ -335,8 +346,47 @@ async function installModuleUpdate(btn) {
         btn.title = error instanceof Error
             ? error.message
             : 'Module update failed.';
+        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+        btn.closest('.card').querySelector('.module-recovery-result').textContent = btn.title;
+        /* [End AI:GPT-5.6 Sol] */
     }
 }
+
+/* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
+document.querySelectorAll('.btn-rollback').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        if (!confirm('Restore the previous module files? Database changes will NOT be reversed. Confirm you have reviewed schema compatibility.')) return;
+        const card = btn.closest('.card');
+        const result = card.querySelector('.module-recovery-result');
+        const update = card.querySelector('.btn-update');
+        btn.disabled = true;
+        if (update) update.disabled = true;
+        result.textContent = 'Restoring previous files...';
+        try {
+            const response = await fetch('/admin/update', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({
+                    module: btn.dataset.module,
+                    operation: 'rollback',
+                    confirm_files_only: '1',
+                    csrf_token: moduleUpdateCsrfToken
+                }).toString()
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.error || 'Rollback failed.');
+            result.textContent = data.message;
+            const version = card.querySelector('p small strong');
+            if (version) version.textContent = data.version;
+        } catch (error) {
+            result.textContent = error instanceof Error ? error.message : 'Rollback failed.';
+        } finally {
+            btn.disabled = false;
+            if (update) checkModuleUpdate(update);
+        }
+    });
+});
+/* [End AI:GPT-5.6 Sol] */
 
 document.querySelectorAll('.btn-update').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -9,12 +9,18 @@
 > changes are deployed and tested on chaos-mvc.org.
 
 ## Security
+- Added theme package verification with theme-specific RSA-SHA256 signatures, pinned local trust, bounded public-only HTTPS downloads, SHA-256 checks, and confined archive validation
 - Rejected public comment submissions targeting unpublished posts, including authenticated requests with valid CSRF tokens
 - Added an optional bootstrap perimeter hook that invokes an installed Sentinel module's callable `inspect()` entry point before normal MVC initialization while allowing installations without Sentinel to continue unchanged
 - Restricted Admin navigation and Admin → Modules listings to user modules whose own controller declares a public `admin()` method, using token inspection without executing user-land PHP
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Added asynchronous theme update discovery, staged whole-theme replacement, automatic restoration on caught activation failures, and one previous theme filesystem version for manual rollback
+- Kept Themes administration on the Core fallback layout so broken active-theme PHP cannot prevent access to recovery; updates preserve the active-theme setting
+- Included retained module snapshots in Nuke cleanup, restoring the live module without dropping tables when snapshot cleanup fails
+- Retain one previous module filesystem release after updates and expose an authenticated, CSRF-verified restoration action through the existing module update endpoint; restoration does not reverse SQL migrations
+- Report module file restoration outcomes explicitly and prevent temporary-workspace cleanup errors from misreporting completed activation or restoration
 - Added persistent installation identity with non-fatal post-install registration and an authenticated manual retry/status control in Site administration
 - Limited explicit installation registration data to domain, ChAoS MVC version, and PHP version; normal requests never contact the registry
 - Separated optional Sentinel perimeter inspection from its HTTP controller so installed Sentinel modules retain `/admin/sentinel` availability while absent installations continue normally
@@ -28,6 +34,7 @@
 - Removed the obsolete `app/controllers/admin_old.php` maintenance copy
 
 ## Documentation
+- Documented the theme release JSON/signature/package contract, module/theme filesystem rollback limits, and live-domain verification checklist
 - Added the public Module Creation Guide defining the supported user-module structure, Core boundary, database lifecycle, CSRF responsibilities, update integration, and removal contract for human developers and AI development agents
 
 ---

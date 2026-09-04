@@ -10,9 +10,40 @@ class themes extends controller
         $this->require_admin(7);
         $message = null;
         $error = null;
+        /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
+        $updater = new theme_updater();
+        /* [End AI:GPT-5.6 Sol] */
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $this->require_csrf();
+            /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
+            $action = $_POST['action'] ?? 'apply';
+            if ($action !== 'apply') {
+                // Same authority as module installation, through the existing Admin route.
+                $this->require_admin(9);
+                header('Content-Type: application/json');
+                header('Cache-Control: no-store');
+                try {
+                    if (!in_array($action, ['check_update', 'update', 'rollback'], true)
+                        || !is_string($_POST['theme'] ?? null)) {
+                        throw new RuntimeException('Invalid theme maintenance action.');
+                    }
+                    $slug = trim($_POST['theme']);
+                    if ($action === 'rollback' && ($_POST['confirm_rollback'] ?? '') !== '1') {
+                        throw new RuntimeException('Confirm replacement with the previous theme files.');
+                    }
+                    $result = match ($action) {
+                        'check_update' => $updater->check($slug),
+                        'update' => $updater->update($slug),
+                        'rollback' => $updater->rollback($slug),
+                    };
+                } catch (Throwable $exception) {
+                    $result = ['success' => false, 'error' => $exception->getMessage()];
+                }
+                echo json_encode($result);
+                exit;
+            }
+            /* [End AI:GPT-5.6 Sol] */
             $selected = trim((string) ($_POST['theme'] ?? ''));
 
             if ($selected !== '' && theme::details($selected) === null) {
@@ -27,12 +58,21 @@ class themes extends controller
             }
         }
 
+        /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
+        try {
+            $installed = $updater->installed();
+        } catch (Throwable $exception) {
+            $installed = [];
+            $error = $exception->getMessage();
+        }
         $this->view('admin/themes', [
-            'themes' => theme::installed(),
+            'themes' => $installed,
+            'can_update' => (int) ($_SESSION['user_level'] ?? 0) >= 9,
             'active_theme' => theme::activeSlug(),
             'message' => $message,
             'error' => $error,
         ]);
+        /* [End AI:GPT-5.6 Sol] */
     }
 
     private function saveActiveTheme(string $slug): bool
