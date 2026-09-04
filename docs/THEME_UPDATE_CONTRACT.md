@@ -8,7 +8,7 @@ Status: 1.1.10 development. The current release remains 1.1.9.
 - Theme updates operate only under `user/themes/{theme}`, through POST actions on `/admin/themes`.
 - Core updating, routing, authentication, and Sentinel are unchanged.
 - Theme selection still requires administrator level 7. Theme checking, installation, and rollback require level 9 and valid Core CSRF protection, matching module maintenance authority.
-- The Themes administration page uses the existing Classic Core layout. It does not execute the active theme's header/navigation/footer, keeping recovery reachable when the active theme is broken.
+- The Themes administration page uses the shared ChAoS MVC header and footer and inherits the active theme. It does not load a separate Bootstrap layout. A broken active theme can therefore affect this page as well; repair its files or select the Core fallback through installation configuration before using the interface if necessary.
 - Listing installed themes performs no network requests on the server. The page initiates separate asynchronous version checks for themes with an HTTPS update source.
 
 ## Installed theme.json
@@ -63,7 +63,7 @@ sha256=<64 lowercase hexadecimal characters>
 key_id=developer-release-key
 ```
 
-Use RSA-3072 or stronger with SHA-256, then base64-encode the signature bytes. The different prefix and `theme=` identity prevent module signatures from authorizing theme packages. Module signing statements remain unchanged.
+Use RSA-3072 or stronger with SHA-256, or an OpenPGP detached signature, then base64-encode the signature bytes. The different prefix and `theme=` identity prevent module signatures from authorizing theme packages. Module signing statements remain unchanged. Both updaters accept base64 public keys and use the same [release signature contract](RELEASE_SIGNATURE_CONTRACT.md). PGP requires PHP GnuPG 1.5+; there is no checksum-only fallback.
 
 ## Package contract
 
@@ -111,7 +111,7 @@ Local fixture tests do not qualify a deployment. On an authorized test domain:
 2. Configure a developer-signed theme and verify “Up to date” and “Update available”.
 3. Update an active theme and verify its PHP, assets, version, and unchanged selection.
 4. Restore the previous theme and verify its rendering/assets, including the host's OPcache behavior.
-5. Confirm `/admin/themes` remains usable with a broken active theme.
+5. Confirm `/admin/themes` inherits the current theme's header, navigation, footer, and styling.
 6. Confirm a rejected/tampered package leaves the live theme unchanged.
 7. Update and roll back a module; separately inspect any SQL migration compatibility.
 8. Nuke a disposable module and confirm its owned tables, live files, and normal retained snapshot are removed.

@@ -9,6 +9,7 @@
 > changes are deployed and tested on chaos-mvc.org.
 
 ## Security
+- Unified module/theme publisher verification for RSA-SHA256 and OpenPGP, accepting base64 public keys while preserving existing RSA PEM trust; PGP requires PHP GnuPG 1.5+ and uses an isolated publisher keyring, with no checksum-only fallback
 - Added theme package verification with theme-specific RSA-SHA256 signatures, pinned local trust, bounded public-only HTTPS downloads, SHA-256 checks, and confined archive validation
 - Rejected public comment submissions targeting unpublished posts, including authenticated requests with valid CSRF tokens
 - Added an optional bootstrap perimeter hook that invokes an installed Sentinel module's callable `inspect()` entry point before normal MVC initialization while allowing installations without Sentinel to continue unchanged
@@ -16,8 +17,9 @@
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Aligned Themes administration with the Modules card layout and exposed theme metadata/update-source errors instead of mislabeling invalid metadata as a local-only theme
 - Added asynchronous theme update discovery, staged whole-theme replacement, automatic restoration on caught activation failures, and one previous theme filesystem version for manual rollback
-- Kept Themes administration on the Core fallback layout so broken active-theme PHP cannot prevent access to recovery; updates preserve the active-theme setting
+- Kept Themes administration on the shared ChAoS MVC header/footer so it inherits the active site theme; updates preserve the active-theme setting
 - Included retained module snapshots in Nuke cleanup, restoring the live module without dropping tables when snapshot cleanup fails
 - Retain one previous module filesystem release after updates and expose an authenticated, CSRF-verified restoration action through the existing module update endpoint; restoration does not reverse SQL migrations
 - Report module file restoration outcomes explicitly and prevent temporary-workspace cleanup errors from misreporting completed activation or restoration

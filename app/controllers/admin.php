@@ -1142,57 +1142,22 @@ class admin extends controller
         string $downloadUrl,
         string $sha256
     ): void {
-        $trusted = $config['signing'] ?? null;
-        $algorithm = is_array($trusted)
-            ? (string) ($trusted['algorithm'] ?? '')
-            : '';
-        $trustedKeyId = is_array($trusted)
-            ? (string) ($trusted['key_id'] ?? '')
-            : '';
-        $publicKey = is_array($trusted)
-            ? (string) ($trusted['public_key'] ?? '')
-            : '';
-        $manifestKeyId = (string) ($manifest['key_id'] ?? '');
-        $encodedSignature = (string) ($manifest['signature'] ?? '');
-
-        if (
-            $algorithm !== 'rsa-sha256'
-            || $trustedKeyId === ''
-            || !hash_equals($trustedKeyId, $manifestKeyId)
-            || $publicKey === ''
-        ) {
-            throw new RuntimeException('Module signing trust is missing or invalid.');
-        }
-
-        $signature = base64_decode($encodedSignature, true);
-        $key = openssl_pkey_get_public($publicKey);
-
-        if ($signature === false || $key === false) {
-            throw new RuntimeException('Module release signature is invalid.');
-        }
-
-        $keyDetails = openssl_pkey_get_details($key);
-
-        if (
-            !is_array($keyDetails)
-            || ($keyDetails['type'] ?? null) !== OPENSSL_KEYTYPE_RSA
-            || (int) ($keyDetails['bits'] ?? 0) < 3072
-        ) {
-            throw new RuntimeException('Module signing key must be RSA-3072 or stronger.');
-        }
-
+        require_once __DIR__ . '/../lib/release_signature.php';
         $statement = implode("\n", [
             'CHAOS-MVC-MODULE-RELEASE',
             'module=' . $module,
             'version=' . $version,
             'download=' . $downloadUrl,
             'sha256=' . $sha256,
-            'key_id=' . $manifestKeyId,
+            'key_id=' . (string) ($manifest['key_id'] ?? ''),
         ]);
 
-        if (openssl_verify($statement, $signature, $key, OPENSSL_ALGO_SHA256) !== 1) {
-            throw new RuntimeException('Module release signature verification failed.');
-        }
+        \release_signature::verify(
+            is_array($config['signing'] ?? null) ? $config['signing'] : [],
+            (string) ($manifest['key_id'] ?? ''),
+            (string) ($manifest['signature'] ?? ''),
+            $statement
+        );
     }
 
     /**

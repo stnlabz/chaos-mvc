@@ -25,13 +25,17 @@ final class theme_updater
         $items = [];
         foreach (array_keys($slugs) as $slug) {
             $config = [];
+            $metadataError = null;
             try { $config = $this->metadata($this->directory($slug), $slug); }
-            catch (Throwable $error) { /* Keep recovery visible for damaged installs. */ }
+            catch (Throwable $error) { $metadataError = $error->getMessage(); }
             $hasSource = false;
+            $sourceError = null;
             try {
                 $this->parseThemeRemoteUrl((string) ($config['update_url'] ?? ''));
                 $hasSource = true;
-            } catch (Throwable $error) { /* Local-only theme. */ }
+            } catch (Throwable $error) {
+                if (!empty($config['update_url'])) $sourceError = $error->getMessage();
+            }
             $items[] = [
                 'slug' => $slug,
                 'name' => (string) ($config['name'] ?? $slug),
@@ -39,6 +43,10 @@ final class theme_updater
                 'author' => (string) ($config['creator'] ?? $config['author'] ?? ''),
                 'description' => (string) ($config['description'] ?? ''),
                 'has_update_source' => $hasSource,
+                'metadata_error' => $metadataError,
+                'update_source_error' => $sourceError,
+                'domain' => (string) ($config['domain'] ?? ''),
+                'certified' => filter_var($config['certified'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'Yes' : 'No',
                 'rollback_available' => is_dir($root . '/.' . $slug . '.previous')
                     && !is_link($root . '/.' . $slug . '.previous'),
             ];
@@ -716,57 +724,22 @@ final class theme_updater
         string $downloadUrl,
         string $sha256
     ): void {
-        $trusted = $config['signing'] ?? null;
-        $algorithm = is_array($trusted)
-            ? (string) ($trusted['algorithm'] ?? '')
-            : '';
-        $trustedKeyId = is_array($trusted)
-            ? (string) ($trusted['key_id'] ?? '')
-            : '';
-        $publicKey = is_array($trusted)
-            ? (string) ($trusted['public_key'] ?? '')
-            : '';
-        $manifestKeyId = (string) ($manifest['key_id'] ?? '');
-        $encodedSignature = (string) ($manifest['signature'] ?? '');
-
-        if (
-            $algorithm !== 'rsa-sha256'
-            || $trustedKeyId === ''
-            || !hash_equals($trustedKeyId, $manifestKeyId)
-            || $publicKey === ''
-        ) {
-            throw new RuntimeException('Theme signing trust is missing or invalid.');
-        }
-
-        $signature = base64_decode($encodedSignature, true);
-        $key = openssl_pkey_get_public($publicKey);
-
-        if ($signature === false || $key === false) {
-            throw new RuntimeException('Theme release signature is invalid.');
-        }
-
-        $keyDetails = openssl_pkey_get_details($key);
-
-        if (
-            !is_array($keyDetails)
-            || ($keyDetails['type'] ?? null) !== OPENSSL_KEYTYPE_RSA
-            || (int) ($keyDetails['bits'] ?? 0) < 3072
-        ) {
-            throw new RuntimeException('Theme signing key must be RSA-3072 or stronger.');
-        }
-
+        require_once __DIR__ . '/release_signature.php';
         $statement = implode("\n", [
             'CHAOS-MVC-THEME-RELEASE',
             'theme=' . $theme,
             'version=' . $version,
             'download=' . $downloadUrl,
             'sha256=' . $sha256,
-            'key_id=' . $manifestKeyId,
+            'key_id=' . (string) ($manifest['key_id'] ?? ''),
         ]);
 
-        if (openssl_verify($statement, $signature, $key, OPENSSL_ALGO_SHA256) !== 1) {
-            throw new RuntimeException('Theme release signature verification failed.');
-        }
+        \release_signature::verify(
+            is_array($config['signing'] ?? null) ? $config['signing'] : [],
+            (string) ($manifest['key_id'] ?? ''),
+            (string) ($manifest['signature'] ?? ''),
+            $statement
+        );
     }
 
     private function validateThemeArchive(
