@@ -192,6 +192,40 @@ class updater_engine
             ];
     }
 
+    public function canRollback(): bool
+    {
+        return is_file($this->backupRoot . '/previous/backup.json');
+    }
+
+    /** Restore and consume the one retained previous Core snapshot. */
+    public function rollback(): array
+    {
+        $backupDir = $this->backupRoot . '/previous';
+        if (!$this->canRollback()) {
+            throw new RuntimeException('No previous Core is available for rollback.');
+        }
+        $current = $this->getCurrentVersion();
+        $this->enterMaintenance($current);
+        try {
+            $this->restoreBackup($backupDir);
+            $restored = $this->getCurrentVersionFromDisk();
+            $this->leaveMaintenance();
+            $this->setStatus('complete', 'Rollback complete', 100, $restored, $restored, 'Previous Core restored.');
+            return ['success' => true, 'version' => $restored, 'message' => 'Previous Core restored.'];
+        } catch (Throwable $error) {
+            $this->setStatus('failed', 'Rollback failed', 100, $current, null, 'Previous Core could not be restored.', $error->getMessage());
+            throw $error;
+        }
+    }
+
+    private function getCurrentVersionFromDisk(): string
+    {
+        $source = @file_get_contents(APPROOT . '/core/version.php');
+        return is_string($source) && preg_match("/CHAOS_VERSION'\s*,\s*'([^']+)'/", $source, $match)
+            ? $match[1]
+            : 'unknown';
+    }
+
     /**
      * Execute the Core update lifecycle.
      *
@@ -212,6 +246,13 @@ class updater_engine
         $this->ensureDirectory(
             $this->backupRoot
         );
+
+        $target = null;
+        $packageFile = '';
+        $stageDir = $this->tempDir . '/stage';
+        $backupDir = $this->backupRoot . '/previous';
+
+        try {
 
         $this->setStatus(
             'running',
@@ -261,18 +302,7 @@ class updater_engine
             . $target
             . '.zip';
 
-        $stageDir =
-            $this->tempDir
-            . '/stage';
-
-        $backupDir =
-            $this->backupRoot
-            . '/'
-            . $current;
-
         $filesManifest = [];
-
-        try {
             /*
              * DOWNLOAD
              */
@@ -380,9 +410,7 @@ class updater_engine
                 'Backing up the currently installed Core.'
             );
 
-            $this->removeDirectory(
-                $backupDir
-            );
+            $this->removeDirectory($this->backupRoot);
 
             $this->backupFiles(
                 $backupDir,
@@ -423,25 +451,6 @@ class updater_engine
             );
 
             /*
-             * OPTIONAL DATABASE MIGRATION
-             */
-            if (!empty($manifest['migration'])) {
-                $this->setStatus(
-                    'running',
-                    'Updating database',
-                    93,
-                    $current,
-                    $target,
-                    'Applying required database migration.'
-                );
-
-                $this->runMigration(
-                    $stageDir,
-                    (string) $manifest['migration']
-                );
-            }
-
-            /*
              * FINAL FILE VERIFICATION
              */
             $this->verifyInstalledFiles(
@@ -467,13 +476,6 @@ class updater_engine
             if (is_file($packageFile)) {
                 unlink($packageFile);
             }
-
-            /*
-             * Backup is no longer required after successful verification.
-             */
-            $this->removeDirectory(
-                $backupDir
-            );
 
             $this->leaveMaintenance();
 
@@ -587,7 +589,8 @@ class updater_engine
         $required = [
             'package',
             'sha256',
-            'files_manifest'
+            'files_manifest',
+            'scope'
         ];
 
         foreach ($required as $field) {
@@ -618,6 +621,10 @@ class updater_engine
             throw new RuntimeException(
                 'Release package SHA-256 is invalid.'
             );
+        }
+
+        if ($manifest['scope'] !== 'app' || !empty($manifest['migration'])) {
+            throw new RuntimeException('Release scope must be app/ only.');
         }
     }
 
@@ -758,14 +765,11 @@ class updater_engine
             $core = [];
         }
 
-        if (!is_array($public)) {
-            $public = [];
+        if (!is_array($public) || $public !== []) {
+            throw new RuntimeException('Core release must not contain public files.');
         }
 
-        $files = array_merge(
-            $core,
-            $public
-        );
+        $files = $core;
 
         /*
          * Defense in depth: any code path consuming manifest files
@@ -773,6 +777,10 @@ class updater_engine
          */
         /* [AI:GPT-5.6 Sol | 2026-08-25 22:21:00 UTC] */
         foreach ($files as $path => $hash) {
+            $normalizedPath = str_replace('\\', '/', trim((string) $path, '/'));
+            if (!str_starts_with($normalizedPath, 'app/') || $normalizedPath === 'app/core/config.php') {
+                throw new RuntimeException('Core release path is outside app/ or protected: ' . $path . '.');
+            }
             if (
                 $this->isInstallationOwnedPath(
                     (string) $path
@@ -833,23 +841,11 @@ class updater_engine
             $segments
         );
 
-        if (
-            $normalized === 'app/views/public'
-            || str_starts_with(
-                $normalized,
-                'app/views/public/'
-            )
-        ) {
+        if ($normalized === 'app/views/public' || str_starts_with($normalized, 'app/views/public/')) {
             return true;
         }
 
-        if (
-            $normalized === 'app/data/updater'
-            || str_starts_with(
-                $normalized,
-                'app/data/updater/'
-            )
-        ) {
+        if ($normalized === 'app/data' || str_starts_with($normalized, 'app/data/')) {
             return true;
         }
 
@@ -866,10 +862,7 @@ class updater_engine
         return in_array(
             $normalized,
             [
-                'app/core/config.php',
-                'app/data/maintenance.lock',
-                'app/data/site.json',
-                'app/data/mailer.json'
+                'app/core/config.php'
             ],
             true
         );
@@ -923,10 +916,17 @@ class updater_engine
 
         $state = [];
 
-        foreach (
-            $this->getManifestFiles($manifest)
-            as $path => $hash
-        ) {
+        foreach ($this->installedCoreFiles() as $path) {
+            $state[$path] = true;
+        }
+
+        foreach ($this->getManifestFiles($manifest) as $path => $hash) {
+            if (!array_key_exists($path, $state)) {
+                $state[$path] = false;
+            }
+        }
+
+        foreach ($state as $path => $existed) {
             $source =
                 dirname(APPROOT)
                 . '/'
@@ -937,9 +937,7 @@ class updater_engine
                 . '/files/'
                 . $path;
 
-            $state[$path] = is_file($source);
-
-            if (!$state[$path]) {
+            if (!$existed) {
                 continue;
             }
 
@@ -985,8 +983,19 @@ class updater_engine
         string $stageDir,
         array $manifest
     ): void {
+        $releaseFiles = $this->getManifestFiles($manifest);
+
+        foreach ($this->installedCoreFiles() as $path) {
+            if (!array_key_exists($path, $releaseFiles)) {
+                $destination = dirname(APPROOT) . '/' . $path;
+                if (!unlink($destination)) {
+                    throw new RuntimeException('Could not remove obsolete Core file ' . $path . '.');
+                }
+            }
+        }
+
         foreach (
-            $this->getManifestFiles($manifest)
+            $releaseFiles
             as $path => $hash
         ) {
             $source =
@@ -1009,6 +1018,26 @@ class updater_engine
                 );
             }
         }
+    }
+
+    /** Return distributable files currently installed under app/. */
+    private function installedCoreFiles(): array
+    {
+        $files = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator(APPROOT, FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $item) {
+            if (!$item->isFile() || $item->isLink()) {
+                continue;
+            }
+            $path = 'app/' . str_replace('\\', '/', substr($item->getPathname(), strlen(APPROOT) + 1));
+            if (!$this->isInstallationOwnedPath($path)) {
+                $files[] = $path;
+            }
+        }
+        sort($files);
+        return $files;
     }
 
     /**

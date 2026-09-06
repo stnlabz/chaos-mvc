@@ -127,6 +127,7 @@ error_handler::register();
 /**
  * Config
  */
+require_once APPROOT . '/core/version.php';
 require_once APPROOT . '/core/config.php';
 
 /**
@@ -291,5 +292,7 @@ if ($maintenanceActive) {
  */
 $trafficEngine = new traffic();
 $trafficEngine->collect();
+
+
 
 /* [End AI:GPT-5.6 Sol] */

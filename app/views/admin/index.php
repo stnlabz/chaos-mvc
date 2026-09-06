@@ -4,6 +4,16 @@
     <div class="text-center mb-5">
         <h1 class="fw-bold text-uppercase">Admin</h1>
         <p class="text-muted small">Management Suite</p>
+		<p class="text-muted small">
+    Chaos MVC Core:
+    <strong>
+        v<?= htmlspecialchars(
+            defined('CHAOS_VERSION') ? CHAOS_VERSION : 'Unknown',
+            ENT_QUOTES,
+            'UTF-8'
+        ); ?>
+    </strong>
+</p>
     </div>
     
     <?php if (!empty($_SESSION['admin_status'])): ?>

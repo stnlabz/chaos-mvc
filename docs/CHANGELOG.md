@@ -1,12 +1,11 @@
 # Chaos MVC
 **CHANGELOG**
 
-**Current Version:** 1.1.9
+**Current Version:** 1.2.0
 
-## v1.1.10 Development — Unreleased
+## v1.2.0
 
-> Pre-release maintenance only. The current release remains v1.1.9 until the
-> changes are deployed and tested on chaos-mvc.org.
+Released after live Core-updater validation on chaos-mvc.org and downstream installations.
 
 ## Security
 - Unified module/theme publisher verification for RSA-SHA256 and OpenPGP, accepting base64 public keys while preserving existing RSA PEM trust; PGP requires PHP GnuPG 1.5+ and uses an isolated publisher keyring, with no checksum-only fallback
@@ -17,6 +16,11 @@
 - Separated module update discovery from installation verification: status checks compare local and remotely announced versions, while installation continues enforcing package host, SHA-256, signing, archive, and migration requirements
 
 ## Reliability
+- Kept `app/views/public` installation-owned and outside Core packages so release artifacts remain compatible with the established 1.1.9 updater boundary
+- Made the Core release builder require an explicit oldest-supported version instead of deriving compatibility from chaos-mvc.org's installed version, allowing a recovery release to update supported older installations
+- Require every generated Core release to contain bootstrap, routing, controller, error-handler, version, Admin and updater entry files, preventing a partial artifact from removing the framework bootstrap and causing a pre-handler HTTP 500
+- Record Core manifest-fetch and validation failures as failed updater status instead of leaving the administrator progress display frozen at 5%
+- Rebuilt the Core release boundary so release manifests and packages are limited to `app/`, reject public payloads and external migration payloads, preserve installation-owned configuration/data, remove obsolete Core files, and expose exactly one consumable previous-Core rollback after successful installation
 - Aligned Themes administration with the Modules card layout and exposed theme metadata/update-source errors instead of mislabeling invalid metadata as a local-only theme
 - Added asynchronous theme update discovery, staged whole-theme replacement, automatic restoration on caught activation failures, and one previous theme filesystem version for manual rollback
 - Kept Themes administration on the shared ChAoS MVC header/footer so it inherits the active site theme; updates preserve the active-theme setting

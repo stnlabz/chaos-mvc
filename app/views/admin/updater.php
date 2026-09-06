@@ -55,6 +55,20 @@ $targetVersion = (string) (
         </p>
     </div>
 
+    <?php if (!empty($data['rollback_available'])) : ?>
+        <div class="card border mb-4">
+            <div class="card-body">
+                <h3 class="h5">Previous Core</h3>
+                <p class="text-muted">Restore the one retained Core filesystem snapshot.</p>
+                <form action="/updater/rollback" method="POST">
+                    <?= $this->csrf_field(); ?>
+                    <input type="hidden" name="confirm_rollback" value="1">
+                    <button type="submit" class="btn btn-secondary">Restore Previous Core</button>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="card border mb-4">
         <div class="card-body">
 

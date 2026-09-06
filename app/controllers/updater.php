@@ -31,7 +31,8 @@ class updater extends controller
         $data = [
             'current_version' => $engine->getCurrentVersion(),
             'update' => $engine->checkForUpdate(),
-            'status' => $engine->getStatus()
+            'status' => $engine->getStatus(),
+            'rollback_available' => $engine->canRollback()
         ];
 
         $this->view('admin/updater', $data);
@@ -143,6 +144,35 @@ class updater extends controller
             JSON_UNESCAPED_SLASHES
         );
 
+        exit;
+    }
+
+    /** Restore the single retained previous Core snapshot. */
+    public function rollback(): never
+    {
+        $this->require_admin(7);
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Core rollback requires POST.']);
+            exit;
+        }
+        $this->require_csrf();
+        if ((string) ($_POST['confirm_rollback'] ?? '') !== '1') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Core rollback confirmation is required.']);
+            exit;
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        require_once APPROOT . '/lib/updater.php';
+        try {
+            echo json_encode((new updater_engine())->rollback(), JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $error) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $error->getMessage()]);
+        }
         exit;
     }
 }
