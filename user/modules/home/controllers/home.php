@@ -16,19 +16,8 @@ class home extends controller
      */
     public function index($url_params = null): void
     {
-        // 1. Load the models/plugins
-        $announcements = $this->module_model('announcements', 'announcements_model'); 
-
-        // 2. Fetch data from both sources
-        $latest = $announcements->get_latest_single();
-
-        // 3. Package everything into ONE data array
-        $data = [
-            'featured_announcement' => $latest
-        ];
-
-        // 4. Pass the combined $data to the view
-        $this->view('index', $data);
+        // 1. Pass the combined $data to the view
+        $this->view('index');
     }
 }
 /* [End AI:OpenAI Codex] */
