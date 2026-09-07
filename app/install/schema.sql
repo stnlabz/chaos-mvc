@@ -1,6 +1,4 @@
-/* [AI:GPT-5.6 Sol | 2026-08-25 02:19:00 UTC] */
-
-CREATE TABLE `accounts` (
+CREATE TABLE IF NOT EXISTS `accounts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
   `email_address` varchar(255) NOT NULL,
@@ -16,7 +14,7 @@ CREATE TABLE `accounts` (
 
 -- --------------------------------------------------------
 
-CREATE TABLE `password_resets` (
+CREATE TABLE IF NOT EXISTS `password_resets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `token` char(64) NOT NULL,
@@ -34,14 +32,13 @@ CREATE TABLE `password_resets` (
 -- Table structure for table `media`
 --
 
-CREATE TABLE `media` (
+CREATE TABLE IF NOT EXISTS `media` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `filename` varchar(255) NOT NULL,
   `file_type` varchar(50) DEFAULT NULL,
   `file_path` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `modules_slug_unique` (`slug`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -50,7 +47,7 @@ CREATE TABLE `media` (
 -- Table structure for table `modules`
 --
 
-CREATE TABLE `modules` (
+CREATE TABLE IF NOT EXISTS `modules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `slug` varchar(255) NOT NULL,
   `module_type` varchar(50) DEFAULT 'page',
@@ -62,14 +59,14 @@ CREATE TABLE `modules` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_core` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `posts_slug_unique` (`slug`)
+  UNIQUE KEY `modules_slug_unique` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 -- CMSEC-2026-4832-A — Durable module migration journal
 
-CREATE TABLE `module_migrations` (
+CREATE TABLE IF NOT EXISTS `module_migrations` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `module` varchar(63) NOT NULL,
   `from_version` varchar(64) NOT NULL,
@@ -87,7 +84,7 @@ CREATE TABLE `module_migrations` (
 -- Table structure for table `posts`
 --
 
-CREATE TABLE `posts` (
+CREATE TABLE IF NOT EXISTS `posts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
   `slug` varchar(255) NOT NULL,
@@ -96,7 +93,8 @@ CREATE TABLE `posts` (
   `published` tinyint(1) DEFAULT 0,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `posts_slug_unique` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -105,7 +103,7 @@ CREATE TABLE `posts` (
 -- Table structure for table `comments`
 --
 
-CREATE TABLE `comments` (
+CREATE TABLE IF NOT EXISTS `comments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `post_id` int(11) NOT NULL,
   `author_name` varchar(100) NOT NULL,
@@ -116,4 +114,23 @@ CREATE TABLE `comments` (
   KEY `comments_post_approval_index` (`post_id`, `is_approved`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-/* [End AI:GPT-5.6 Sol] */
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `traffic`
+--
+
+CREATE TABLE IF NOT EXISTS `traffic` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `host` varchar(255) NOT NULL,
+  `uri` varchar(2048) NOT NULL,
+  `method` varchar(16) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `user_agent` varchar(1024) DEFAULT NULL,
+  `referer` varchar(2048) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `traffic_created_at_index` (`created_at`),
+  KEY `traffic_user_id_index` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
