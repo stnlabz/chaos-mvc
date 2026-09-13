@@ -8,8 +8,7 @@
  * Core controllers are resolved from /app/controllers.
  * User modules are resolved from /user/modules.
  *
- * No database calls belong here except the established DB-driven
- * page resolution fallback.
+ * Page resolution is filesystem-backed through /app/core/pages.php.
  *
  * LOCKED CORE FILE
  * Core Routing Infrastructure
@@ -97,28 +96,26 @@ class router
         ) {
             $requestedController = (string) $url[0];
 
-            if (
-                !$this->validControllerName(
-                    $requestedController
-                )
-            ) {
-                $this->notFound();
-                return;
-            }
+            $isControllerName = $this->validControllerName(
+                $requestedController
+            );
 
-            $coreController = $requestedController === 'home'
-                ? ''
-                : APPROOT
+            $coreController = $isControllerName
+                && $requestedController !== 'home'
+                    ? APPROOT
+                        . '/controllers/'
+                        . $requestedController
+                        . '.php'
+                    : '';
+
+            $userController = $isControllerName
+                ? USERROOT
+                    . '/modules/'
+                    . $requestedController
                     . '/controllers/'
                     . $requestedController
-                    . '.php';
-
-            $userController = USERROOT
-                . '/modules/'
-                . $requestedController
-                . '/controllers/'
-                . $requestedController
-                . '.php';
+                    . '.php'
+                : '';
 
             /*
              * Core owns the namespace first.
@@ -126,13 +123,17 @@ class router
              * A user module cannot silently override a Core controller
              * by using the same slug.
              */
-            if (is_file($coreController)) {
+            if (
+                $isControllerName
+                && is_file($coreController)
+            ) {
                 $this->controller = $requestedController;
                 $this->controller_scope = 'core';
 
                 unset($url[0]);
             } elseif (
-                $this->isConfinedUserModuleFile(
+                $isControllerName
+                && $this->isConfinedUserModuleFile(
                     $requestedController,
                     $userController
                 )
@@ -143,18 +144,19 @@ class router
 
                 unset($url[0]);
             } else {
-                /*
-                 * Preserve the established DB-driven page/module fallback.
+                /* [AI:GPT-5.6 Sol | 2026-09-13 03:45:00 UTC]
+                 * Filesystem-backed Core Page fallback.
+                 *
+                 * The original URL segment is intentionally retained so
+                 * page::index() receives the page slug as its parameter.
+                 * Page slugs may contain hyphens, but controller/module
+                 * names remain governed by validControllerName().
                  */
-                require_once APPROOT
-                    . '/models/modules_model.php';
-
-                $modules = new modules_model();
+                require_once APPROOT . '/core/pages.php';
 
                 if (
-                    $modules->get_by_slug(
-                        $requestedController
-                    )
+                    pages::validSlug($requestedController)
+                    && pages::exists($requestedController, true)
                 ) {
                     $this->controller = 'page';
                     $this->controller_scope = 'core';
@@ -163,6 +165,7 @@ class router
                     $this->notFound();
                     return;
                 }
+                /* [End AI:GPT-5.6 Sol] */
             }
         }
 
