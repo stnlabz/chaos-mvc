@@ -29,6 +29,10 @@ class admin extends controller
         'check_update',
         'update',
         'uninstall',
+        /* [AI:GPT-5.6 Sol | 2026-09-13 19:48:13 UTC] */
+        'refresh_indices',
+        'refresh_indexes',
+        /* [End AI:GPT-5.6 Sol] */
     ];
 
     /**
@@ -174,6 +178,102 @@ class admin extends controller
             'modules' => $this->discoverAdminNavigationModules()
         ]);
     }
+
+    /* [AI:GPT-5.6 Sol | 2026-09-13 20:06:31 UTC] */
+    /**
+     * Rebuild Core discovery/feed artifacts and return to Admin.
+     *
+     * Regenerates:
+     * - sitemap.xml
+     * - ror.xml
+     * - llms.txt
+     * - rss.xml
+     *
+     * @return void
+     */
+    public function refresh_indices(): void
+    {
+        $this->require_admin(7);
+
+        $generators = [
+            'sitemap',
+            'ror',
+            'llms',
+            'rss',
+        ];
+
+        try {
+            foreach ($generators as $generator) {
+                $path = APPROOT
+                    . '/controllers/'
+                    . $generator
+                    . '.php';
+
+                if (!is_file($path)) {
+                    throw new RuntimeException(
+                        'Missing Core generator: ' . $generator
+                    );
+                }
+
+                require_once $path;
+
+                if (
+                    !class_exists($generator, false)
+                    || !method_exists($generator, 'index')
+                ) {
+                    throw new RuntimeException(
+                        'Invalid Core generator: ' . $generator
+                    );
+                }
+
+                $controller = new $generator();
+
+                if (method_exists($controller, 'generate')) {
+                    $result = $controller->generate();
+
+                    if (!is_string($result) || $result === '') {
+                        throw new RuntimeException(
+                            'Core generator failed: ' . $generator
+                        );
+                    }
+                } else {
+                    $result = $controller->index();
+
+                    if ($result !== true) {
+                        throw new RuntimeException(
+                            'Core generator failed: ' . $generator
+                        );
+                    }
+                }
+            }
+
+            $_SESSION['admin_status'] =
+                'Sitemap, ROR, LLMS, and RSS indexes refreshed.';
+        } catch (Throwable $error) {
+            error_log(
+                'Core index refresh failed: '
+                . $error->getMessage()
+            );
+
+            $_SESSION['admin_status'] =
+                'Index refresh failed: '
+                . $error->getMessage();
+        }
+
+        header('Location: /admin');
+        exit;
+    }
+
+    /**
+     * Compatibility alias for the alternate refresh_indexes route name.
+     *
+     * @return void
+     */
+    public function refresh_indexes(): void
+    {
+        $this->refresh_indices();
+    }
+    /* [End AI:GPT-5.6 Sol] */
 
     /**
      * Discover administrative navigation without executing user module PHP.

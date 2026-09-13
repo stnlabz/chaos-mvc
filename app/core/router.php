@@ -652,6 +652,10 @@ class router
                 'check_update',
                 'update',
                 'uninstall',
+                /* [AI:GPT-5.6 Sol | 2026-09-13 20:10:02 UTC] */
+                'refresh_indices',
+                'refresh_indexes',
+                /* [End AI:GPT-5.6 Sol] */
             ],
             'auth' => [
                 'login',

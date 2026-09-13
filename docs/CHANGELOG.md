@@ -6,6 +6,9 @@
 ## v1.2.1 Development
 
 ## Features
+- Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table
+- Added a Core RSS controller that generates and serves the site's RSS feed from published Posts through the existing Posts model contract while retaining `/public/rss.xml` as the generated feed artifact
+- Added Admin index refresh orchestration so `/admin/refresh_indices` regenerates sitemap, ROR, LLMS, and RSS artifacts before returning to `/admin`
 - Added the Core Pages subsystem with filesystem-backed page ownership under `/user/pages/{slug}/`, using `page.json` metadata and `main.md`, `main.html`, `main.txt`, or `main.json` content files instead of database-backed page records
 - Added clean public page routing so published Pages resolve directly from root-level URLs such as `/about-us` after Core controller and user-module ownership checks
 - Added Core Pages administration at `/admin/page` with page discovery, creation, editing, slug changes, draft/published state, content-file selection, and deletion through the existing Admin controller delegation path
@@ -14,6 +17,10 @@
 - Added safe URL validation for explicit and automatic links while continuing to escape raw source HTML before supported Markdown is converted into generated markup
 
 ## Reliability
+- Added explicit Core Router authorization for the Admin `refresh_indices` maintenance action, with `refresh_indexes` retained as a compatibility alias, so maintenance requests reach the bounded Admin handler instead of falling through to 404 handling
+- Kept SEO module discovery inert and filesystem-authoritative by validating module directory identity, `module.json`, the matching confined controller, and the declared `index` route without executing user-module PHP
+- Limited public Page discovery in generated SEO artifacts to valid Pages whose filesystem metadata state is `published`
+- Separated RSS generation from HTTP presentation so Admin refresh can rebuild `rss.xml` without emitting feed XML, while `/rss` serves the generated RSS document with the appropriate content type
 - Kept filesystem Pages non-authoritative while in `draft` state so unpublished page directories remain inaccessible through public routing
 - Preserved controller and module naming validation while allowing hyphenated page slugs through the dedicated Pages fallback path
 - Added resolved page content paths so Markdown pages are rendered through the established `render_md::markdown_file()` pipeline instead of the lightweight `content_renderer`
@@ -22,6 +29,7 @@
 - Validated the expanded Markdown renderer against headings, emphasis, strikethrough, inline and fenced code, links, automatic URLs, blockquotes, alerts, horizontal rules, nested lists, task lists, tables, definition lists, footnotes, escaped characters, controlled small text, and named-color extensions
 
 ## Documentation
+- Added `SEO.md` documenting Core SEO/discovery ownership, generated artifacts, userland/Page discovery rules, RSS/Post integration, Admin refresh behavior, routing authorization, and implementation boundaries
 - Added Pages subsystem lifecycle documentation covering the filesystem contract, metadata authority, routing precedence, publication state, Admin lifecycle, Markdown renderer integration, and passive JSON publication
 - Expanded the Markdown renderer reference with supported syntax, examples, safety behavior, and implementation boundaries
 
