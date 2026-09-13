@@ -59,6 +59,10 @@ class rss extends controller
         $model = $this->model('posts_model');
         $posts = $model->get_public_feed();
 
+        $exclude = [
+            // Add published post slugs here to omit them from the RSS feed.
+        ];
+
         $xmlEscape = static fn (string $value): string => htmlspecialchars(
             $value,
             ENT_XML1 | ENT_QUOTES,
@@ -66,7 +70,11 @@ class rss extends controller
         );
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
-        $xml .= '<rss version="2.0">' . PHP_EOL;
+        $xml .= '<?xml-stylesheet type="text/xsl" href="/rss.xsl"?>'
+            . PHP_EOL;
+        $xml .= '<rss version="2.0"'
+            . ' xmlns:atom="http://www.w3.org/2005/Atom">'
+            . PHP_EOL;
         $xml .= '  <channel>' . PHP_EOL;
         $xml .= '    <title>'
             . $xmlEscape($siteName)
@@ -85,7 +93,7 @@ class rss extends controller
             . '</lastBuildDate>'
             . PHP_EOL;
         $xml .= '    <generator>Chaos MVC</generator>' . PHP_EOL;
-        $xml .= '    <atom:link xmlns:atom="http://www.w3.org/2005/Atom"'
+        $xml .= '    <atom:link'
             . ' href="'
             . $xmlEscape($host . '/rss.xml')
             . '" rel="self" type="application/rss+xml" />'
@@ -104,6 +112,10 @@ class rss extends controller
             $title = trim((string) ($post['title'] ?? ''));
 
             if ($slug === '' || $title === '') {
+                continue;
+            }
+
+            if (in_array($slug, $exclude, true)) {
                 continue;
             }
 

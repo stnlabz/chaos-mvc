@@ -73,8 +73,7 @@ class ror extends controller
                 strcmp($left['url'], $right['url'])
         );
 
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
-        $xml .= '<rss version="2.0">' . PHP_EOL;
+        $xml = '<rss xmlns:ror="http://rorweb.com/0.1/" version="2.0">' . PHP_EOL;
         $xml .= '  <channel>' . PHP_EOL;
         $xml .= '    <title>'
             . $xmlEscape($this->siteName() . ' Resources')
@@ -143,20 +142,25 @@ class ror extends controller
     private function discoverCoreRoutes(): array
     {
         $excluded = [
+            'accounts',
             'admin',
             'auth',
-            'health',
-            'sentinel',
-            'modules',
-            'ror',
-            'llms',
-            'sitemap',
-            'rss',
-            'page',
             'error_handler',
+            'health',
+            'install',
+            'llms',
             'media',
-            'accounts',
+            'modules',
+            'page',
+            'ror',
+            'rss',
+            'sentinel',
+            'sitemap',
+            'theme_assets',
             'traffic',
+            'updater',
+			'site',
+			'themes',
         ];
 
         $routes = [];

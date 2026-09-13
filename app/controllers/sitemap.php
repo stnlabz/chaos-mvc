@@ -88,20 +88,25 @@ class sitemap extends controller
     private function discoverCoreRoutes(): array
     {
         $excluded = [
+            'accounts',
             'admin',
             'auth',
-            'health',
-            'sentinel',
-            'modules',
-            'ror',
-            'llms',
-            'sitemap',
-            'rss',
-            'page',
             'error_handler',
+            'health',
+            'install',
+            'llms',
             'media',
-            'accounts',
+            'modules',
+            'page',
+            'ror',
+            'rss',
+            'sentinel',
+            'sitemap',
+            'theme_assets',
             'traffic',
+            'updater',
+			'site',
+			'themes',
         ];
 
         $routes = [];
