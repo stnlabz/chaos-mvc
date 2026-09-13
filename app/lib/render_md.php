@@ -5,6 +5,7 @@ declare(strict_types=1);
 /**
  * Chaos MVC — Markdown Renderer
  * KISS engine for docs, changelogs and internal pages.
+ * [HUMAN: PM | APPROVED UPGRADES | 2026-09-13 01:35:00 UTC]
  */
 
 if (!class_exists('render_md')) {
@@ -29,18 +30,31 @@ if (!class_exists('render_md')) {
             echo $this->markdown($raw);
         }
 
-        /*
-         * [AI:Gemini | 2026-03-16 19:21:00 UTC]
-         * Patched the markdown function in your renderer by adding a callback
-         * to replace underscores with HTML entities inside backticks,
-         * preventing the italics regex from mangling technical function names
-         * like password_hash().
-         *
-         * [Human: Mei | 2026-03-16 19:25 UTC | APPROVE]
-         */
-
         /**
          * Convert Markdown into safe HTML.
+         *
+         * Supported features include:
+         * - headings
+         * - heading anchors
+         * - bold
+         * - italics
+         * - strikethrough
+         * - inline code
+         * - fenced code
+         * - links
+         * - automatic links
+         * - blockquotes
+         * - GitHub-style alerts
+         * - horizontal rules
+         * - nested unordered lists
+         * - nested ordered lists
+         * - task lists
+         * - tables
+         * - definition lists
+         * - footnotes
+         * - escaped Markdown characters
+         * - controlled named colors
+         * - controlled small text
          *
          * @param string $text Markdown source.
          *
@@ -48,73 +62,301 @@ if (!class_exists('render_md')) {
          */
         public function markdown(string $text): string
         {
-            // 1) Escape HTML so we don't execute anything.
-            $html = htmlspecialchars(
-                $text,
-                ENT_QUOTES,
-                'UTF-8'
+            /* [AI:GPT-5.6 Sol | 2026-09-13 00:32:00 UTC] */
+
+            $text = str_replace(
+                [
+                    "\r\n",
+                    "\r",
+                ],
+                "\n",
+                $text
             );
 
-            // 2) Fenced code blocks FIRST.
-            $html = preg_replace_callback(
-                '/```(\w+)?\R([\s\S]*?)```/m',
-                static function (array $matches): string {
-                    $lang = trim(
+            $codeBlocks = [];
+            $inlineCode = [];
+            $escapedCharacters = [];
+            $footnotes = [];
+
+            /*
+             * Protect fenced code blocks before any Markdown processing.
+             */
+            $text = preg_replace_callback(
+                '/```([A-Za-z0-9_-]+)?\n([\s\S]*?)```/',
+                static function (array $matches) use (&$codeBlocks): string {
+                    $index = count($codeBlocks);
+                    $language = trim(
                         (string) ($matches[1] ?? '')
                     );
 
-                    $code = (string) $matches[2];
-
-                    /*
-                     * Protection: hide underscores in fenced blocks from
-                     * italics/bold regex.
-                     */
-                    $code = str_replace(
-                        '_',
-                        '&#95;',
-                        $code
+                    $code = htmlspecialchars(
+                        (string) ($matches[2] ?? ''),
+                        ENT_QUOTES,
+                        'UTF-8'
                     );
 
                     $class = '';
 
-                    if ($lang !== '') {
+                    if ($language !== '') {
                         $class = ' class="code-'
                             . htmlspecialchars(
-                                $lang,
+                                $language,
                                 ENT_QUOTES,
                                 'UTF-8'
                             )
                             . '"';
                     }
 
-                    return '<pre><code'
+                    $codeBlocks[$index] = '<pre><code'
                         . $class
                         . '>'
                         . $code
                         . '</code></pre>';
+
+                    return '@@CHAOS_CODE_BLOCK_'
+                        . $index
+                        . '@@';
+                },
+                $text
+            );
+
+            /*
+             * Protect inline code before emphasis and other inline parsing.
+             */
+            $text = preg_replace_callback(
+                '/`([^`\n]+)`/',
+                static function (array $matches) use (&$inlineCode): string {
+                    $index = count($inlineCode);
+
+                    $inlineCode[$index] = '<code>'
+                        . htmlspecialchars(
+                            (string) $matches[1],
+                            ENT_QUOTES,
+                            'UTF-8'
+                        )
+                        . '</code>';
+
+                    return '@@CHAOS_INLINE_CODE_'
+                        . $index
+                        . '@@';
+                },
+                $text
+            );
+
+            /*
+             * Protect explicitly escaped Markdown characters.
+             *
+             * Example:
+             * \*literal asterisk\*
+             * \# not a heading
+             * \- not a list
+             */
+            $text = preg_replace_callback(
+                '/\\\\([\\\\`*_{}\[\]()#+\-.!>|~])/',
+                static function (array $matches) use (&$escapedCharacters): string {
+                    $index = count($escapedCharacters);
+
+                    $escapedCharacters[$index] = htmlspecialchars(
+                        (string) $matches[1],
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    return '@@CHAOS_ESCAPE_'
+                        . $index
+                        . '@@';
+                },
+                $text
+            );
+
+            /*
+             * Extract footnote definitions.
+             *
+             * Markdown:
+             * [^1]: Footnote content.
+             */
+            $text = preg_replace_callback(
+                '/^\[\^([A-Za-z0-9_-]+)\]:\s*(.+)$/m',
+                static function (array $matches) use (&$footnotes): string {
+                    $id = strtolower(
+                        trim((string) $matches[1])
+                    );
+
+                    $footnotes[$id] = trim(
+                        (string) $matches[2]
+                    );
+
+                    return '';
+                },
+                $text
+            );
+
+            /*
+             * Escape all remaining source HTML.
+             */
+            $html = htmlspecialchars(
+                $text,
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            /*
+             * GitHub-style alerts.
+             *
+             * > [!NOTE]
+             * > Information here.
+             *
+             * Supported:
+             * NOTE
+             * TIP
+             * IMPORTANT
+             * WARNING
+             * CAUTION
+             */
+            $html = preg_replace_callback(
+                '/^&gt;\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n'
+                . '((?:&gt;.*(?:\n|$))*)/mi',
+                function (array $matches): string {
+                    $type = strtolower(
+                        (string) $matches[1]
+                    );
+
+                    $body = preg_replace(
+                        '/^&gt;\s?/m',
+                        '',
+                        trim((string) $matches[2])
+                    );
+
+                    $title = ucfirst($type);
+
+                    return '<div class="markdown-alert markdown-alert-'
+                        . $type
+                        . '">'
+                        . '<p class="markdown-alert-title">'
+                        . $title
+                        . '</p>'
+                        . '<div class="markdown-alert-body">'
+                        . nl2br(
+                            (string) $body
+                        )
+                        . '</div>'
+                        . '</div>';
                 },
                 $html
             );
 
             /*
-             * [Human: Mei | 2026-03-16 21:16:00 UTC]
-             * Adding Horizontal Rule --- or *** -> <hr>
+             * Tables.
+             *
+             * | Column | Column |
+             * | --- | --- |
+             * | Value | Value |
              */
-
-            // 3) Horizontal Rule.
-            $html = preg_replace(
-                '/^(?:---|\*\*\*)$/m',
-                '<hr>',
+            $html = preg_replace_callback(
+                '/^(\|?.+\|.+\|?)\n'
+                . '(\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?)'
+                . '((?:\n\|?.+\|.+\|?)+)/m',
+                function (array $matches): string {
+                    return $this->renderTable(
+                        (string) $matches[1],
+                        (string) $matches[2],
+                        (string) $matches[3]
+                    );
+                },
                 $html
             );
 
-            // 4) Blockquotes.
+            /*
+             * Definition lists.
+             *
+             * Term
+             * : Definition
+             */
             $html = preg_replace_callback(
-                '/^(?:&gt;\s?.+\R?)+/m',
+                '/^(?![#>\-*+\d])([^\n]+)\n'
+                . '((?::\s+.+(?:\n|$))+)/m',
+                static function (array $matches): string {
+                    $term = trim(
+                        (string) $matches[1]
+                    );
+
+                    $definitionLines = preg_split(
+                        '/\n/',
+                        trim((string) $matches[2])
+                    );
+
+                    if ($definitionLines === false) {
+                        return $matches[0];
+                    }
+
+                    $out = '<dl>';
+                    $out .= '<dt>'
+                        . $term
+                        . '</dt>';
+
+                    foreach ($definitionLines as $line) {
+                        $definition = preg_replace(
+                            '/^:\s+/',
+                            '',
+                            $line
+                        );
+
+                        if (
+                            $definition !== null
+                            && trim($definition) !== ''
+                        ) {
+                            $out .= '<dd>'
+                                . trim($definition)
+                                . '</dd>';
+                        }
+                    }
+
+                    $out .= '</dl>';
+
+                    return $out;
+                },
+                $html
+            );
+
+            /*
+             * Nested unordered lists.
+             */
+            $html = preg_replace_callback(
+                '/^(?:[ \t]*[-*+]\s+.+(?:\n|$))+/m',
+                function (array $matches): string {
+                    return $this->renderNestedList(
+                        (string) $matches[0],
+                        'ul',
+                        '/^([ \t]*)[-*+]\s+(.+)$/'
+                    );
+                },
+                $html
+            );
+
+            /*
+             * Nested ordered lists.
+             */
+            $html = preg_replace_callback(
+                '/^(?:[ \t]*\d+\.\s+.+(?:\n|$))+/m',
+                function (array $matches): string {
+                    return $this->renderNestedList(
+                        (string) $matches[0],
+                        'ol',
+                        '/^([ \t]*)\d+\.\s+(.+)$/'
+                    );
+                },
+                $html
+            );
+
+            /*
+             * Normal blockquotes.
+             */
+            $html = preg_replace_callback(
+                '/^(?:&gt;\s?.+(?:\n|$))+/m',
                 static function (array $matches): string {
                     $lines = preg_split(
-                        '/\R/',
-                        trim($matches[0])
+                        '/\n/',
+                        trim((string) $matches[0])
                     );
 
                     if ($lines === false) {
@@ -130,8 +372,12 @@ if (!class_exists('render_md')) {
                             $line
                         );
 
-                        if ($clean !== null && $clean !== '') {
-                            $output .= $clean . '<br>';
+                        if (
+                            $clean !== null
+                            && $clean !== ''
+                        ) {
+                            $output .= $clean
+                                . '<br>';
                         }
                     }
 
@@ -143,100 +389,141 @@ if (!class_exists('render_md')) {
                 $html
             );
 
-            /* [AI:GPT-5.6 Sol | 2026-09-13 00:12:00 UTC] */
+            /*
+             * Horizontal rules.
+             */
+            $html = preg_replace(
+                '/^(?:---|\*\*\*|___)\s*$/m',
+                '<hr>',
+                $html
+            );
 
-            // 5) Unordered lists, including nested lists.
+            /*
+             * Headings with GitHub-style anchor IDs.
+             */
             $html = preg_replace_callback(
-                '/^(?:[ \t]*[-*+]\s+.+(?:\R|$))+/m',
+                '/^(#{1,6})\s+(.+)$/m',
                 function (array $matches): string {
-                    return $this->renderNestedList(
-                        (string) $matches[0],
-                        'ul',
-                        '/^([ \t]*)[-*+]\s+(.+)$/'
+                    $level = strlen(
+                        (string) $matches[1]
                     );
+
+                    $content = trim(
+                        (string) $matches[2]
+                    );
+
+                    $id = $this->slugifyHeading(
+                        $content
+                    );
+
+                    return '<h'
+                        . $level
+                        . ' id="'
+                        . $id
+                        . '">'
+                        . $content
+                        . '</h'
+                        . $level
+                        . '>';
                 },
                 $html
             );
 
-            // 6) Ordered lists, including nested lists.
-            $html = preg_replace_callback(
-                '/^(?:[ \t]*\d+\.\s+.+(?:\R|$))+/m',
-                function (array $matches): string {
-                    return $this->renderNestedList(
-                        (string) $matches[0],
-                        'ol',
-                        '/^([ \t]*)\d+\.\s+(.+)$/'
-                    );
-                },
-                $html
-            );
-
-            /* [End AI:GPT-5.6 Sol] */
-
-            // 7) PROTECTED Inline code: `code`
-            $html = preg_replace_callback(
-                '/`([^`]+)`/',
-                static function (array $matches): string {
-                    $inner = str_replace(
-                        '_',
-                        '&#95;',
-                        $matches[1]
-                    );
-
-                    return '<code>'
-                        . $inner
-                        . '</code>';
-                },
-                $html
-            );
-
-            // 8) Headings.
+            /*
+             * Remove a newline immediately following a heading.
+             */
             $html = preg_replace(
-                '/^######\s*(.+)$/m',
-                '<h6>$1</h6>',
-                $html
-            );
-
-            $html = preg_replace(
-                '/^#####\s*(.+)$/m',
-                '<h5>$1</h5>',
-                $html
-            );
-
-            $html = preg_replace(
-                '/^####\s*(.+)$/m',
-                '<h4>$1</h4>',
-                $html
-            );
-
-            $html = preg_replace(
-                '/^###\s*(.+)$/m',
-                '<h3>$1</h3>',
-                $html
-            );
-
-            $html = preg_replace(
-                '/^##\s*(.+)$/m',
-                '<h2>$1</h2>',
-                $html
-            );
-
-            $html = preg_replace(
-                '/^#\s*(.+)$/m',
-                '<h1>$1</h1>',
-                $html
-            );
-
-            // 9) PATCH: Remove newlines after headings.
-            $html = preg_replace(
-                '/(<\/h[1-6]>)(\r\n|\n|\r)/',
+                '/(<\/h[1-6]>)\n/',
                 '$1',
                 $html
             );
 
             /*
+             * Explicit Markdown links.
+             */
+            $html = preg_replace_callback(
+                '/\[([^\]]+)\]\(([^)]+)\)/',
+                static function (array $matches): string {
+                    $label = (string) $matches[1];
+
+                    $url = html_entity_decode(
+                        (string) $matches[2],
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    if (!self::isSafeUrl($url)) {
+                        return $label;
+                    }
+
+                    return '<a href="'
+                        . htmlspecialchars(
+                            $url,
+                            ENT_QUOTES,
+                            'UTF-8'
+                        )
+                        . '" target="_blank" rel="noopener noreferrer">'
+                        . $label
+                        . '</a>';
+                },
+                $html
+            );
+
+            /*
+             * Automatic links.
+             *
+             * https://chaos-mvc.org
+             */
+            $html = preg_replace_callback(
+                '~(?<!["\'=])(https?://[^\s<]+)~i',
+                static function (array $matches): string {
+                    $url = html_entity_decode(
+                        rtrim(
+                            (string) $matches[1],
+                            '.,;:!?)]'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    if (!self::isSafeUrl($url)) {
+                        return $matches[0];
+                    }
+
+                    $suffix = substr(
+                        (string) $matches[1],
+                        strlen($url)
+                    );
+
+                    return '<a href="'
+                        . htmlspecialchars(
+                            $url,
+                            ENT_QUOTES,
+                            'UTF-8'
+                        )
+                        . '" target="_blank" rel="noopener noreferrer">'
+                        . htmlspecialchars(
+                            $url,
+                            ENT_QUOTES,
+                            'UTF-8'
+                        )
+                        . '</a>'
+                        . $suffix;
+                },
+                $html
+            );
+
+            /*
+             * Bold.
+             */
+            $html = preg_replace(
+                '/\*\*(.+?)\*\*/s',
+                '<strong>$1</strong>',
+                $html
+            );
+
+            /*
              * Italics.
-             * Safe because underscores in code are converted to entities.
              */
             $html = preg_replace(
                 '/(?<!\*)\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\*)/m',
@@ -250,32 +537,35 @@ if (!class_exists('render_md')) {
                 $html
             );
 
-            // 10) Bold: **text**
+            /*
+             * GitHub-style strikethrough.
+             *
+             * ~~deprecated text~~
+             *
+             * Previous ChAoS behavior used this syntax for <small>.
+             * Small text now uses:
+             *
+             * {small}small text{/small}
+             */
             $html = preg_replace(
-                '/\*\*(.+?)\*\*/s',
-                '<strong>$1</strong>',
+                '/~~(.+?)~~/s',
+                '<del>$1</del>',
                 $html
             );
 
-            // 11) Small: ~~text~~
+            /*
+             * Controlled small text extension.
+             */
             $html = preg_replace(
-                '/~~(.+?)~~/s',
+                '/\{small\}(.+?)\{\/small\}/is',
                 '<small>$1</small>',
                 $html
             );
 
-            /* [AI:GPT-5.6 Sol | 2026-09-13 00:12:00 UTC] */
-
             /*
-             * 12) Controlled text colors.
+             * Controlled named text colors.
              *
-             * Markdown:
-             *
-             * {color:red}Red text{/color}
-             * {color:huntergreen}Hunter Green text{/color}
-             *
-             * Only explicitly approved color names are accepted.
-             * Arbitrary CSS values are not accepted from Markdown.
+             * {color:red}Red{/color}
              */
             $html = preg_replace_callback(
                 '/\{color:([a-z]+)\}(.+?)\{\/color\}/is',
@@ -286,12 +576,9 @@ if (!class_exists('render_md')) {
 
                     $content = (string) $matches[2];
 
-                    /*
-                     * Markdown-facing names remain simple human-readable
-                     * color names. CSS values are controlled here.
-                     */
                     $colors = [
                         'grey' => 'grey',
+                        'gray' => 'gray',
                         'white' => 'white',
                         'huntergreen' => '#355e3b',
                         'purple' => 'purple',
@@ -315,69 +602,84 @@ if (!class_exists('render_md')) {
                 $html
             );
 
-            /* [End AI:GPT-5.6 Sol] */
-
-            // 13) Links [text](url), limited to safe web and email schemes.
+            /*
+             * Footnote references.
+             *
+             * Example:
+             * Some statement.[^1]
+             */
             $html = preg_replace_callback(
-                '/\[([^\]]+)\]\(([^)]+)\)/',
-                static function (array $matches): string {
-                    $url = html_entity_decode(
-                        $matches[2],
+                '/\[\^([A-Za-z0-9_-]+)\]/',
+                static function (array $matches) use ($footnotes): string {
+                    $id = strtolower(
+                        trim((string) $matches[1])
+                    );
+
+                    if (!isset($footnotes[$id])) {
+                        return $matches[0];
+                    }
+
+                    $safeId = htmlspecialchars(
+                        $id,
                         ENT_QUOTES,
                         'UTF-8'
                     );
 
-                    $scheme = strtolower(
-                        (string) parse_url(
-                            $url,
-                            PHP_URL_SCHEME
-                        )
-                    );
-
-                    $isRelative = str_starts_with(
-                        $url,
-                        '/'
-                    ) && !str_starts_with(
-                        $url,
-                        '//'
-                    );
-
-                    if (
-                        !$isRelative
-                        && !in_array(
-                            $scheme,
-                            [
-                                'http',
-                                'https',
-                                'mailto',
-                            ],
-                            true
-                        )
-                    ) {
-                        return $matches[1];
-                    }
-
-                    return '<a href="'
-                        . htmlspecialchars(
-                            $url,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        )
-                        . '" target="_blank" rel="noopener noreferrer">'
-                        . $matches[1]
-                        . '</a>';
+                    return '<sup class="footnote-ref" id="fnref-'
+                        . $safeId
+                        . '">'
+                        . '<a href="#fn-'
+                        . $safeId
+                        . '">'
+                        . $safeId
+                        . '</a>'
+                        . '</sup>';
                 },
                 $html
             );
 
-            // 14) Hard Rule.
-            $html = preg_replace(
-                '/^(?:---|\*\*\*|___)\s*$/m',
-                '<hr>',
-                $html
-            );
+            /*
+             * Restore escaped Markdown characters.
+             */
+            foreach ($escapedCharacters as $index => $character) {
+                $html = str_replace(
+                    '@@CHAOS_ESCAPE_'
+                    . $index
+                    . '@@',
+                    $character,
+                    $html
+                );
+            }
 
-            // 15) Newlines outside <pre>.
+            /*
+             * Restore protected inline code.
+             */
+            foreach ($inlineCode as $index => $code) {
+                $html = str_replace(
+                    '@@CHAOS_INLINE_CODE_'
+                    . $index
+                    . '@@',
+                    $code,
+                    $html
+                );
+            }
+
+            /*
+             * Restore fenced code blocks.
+             */
+            foreach ($codeBlocks as $index => $code) {
+                $html = str_replace(
+                    '@@CHAOS_CODE_BLOCK_'
+                    . $index
+                    . '@@',
+                    $code,
+                    $html
+                );
+            }
+
+            /*
+             * Convert remaining line breaks outside fenced code blocks.
+             */
             $parts = preg_split(
                 '/(<pre><code.*?<\/code><\/pre>)/s',
                 $html,
@@ -386,45 +688,236 @@ if (!class_exists('render_md')) {
             );
 
             if ($parts === false) {
-                return nl2br($html);
+                $out = nl2br($html);
+            } else {
+                $out = '';
+
+                foreach ($parts as $part) {
+                    if ($part === '') {
+                        continue;
+                    }
+
+                    if (
+                        strpos(
+                            $part,
+                            '<pre><code'
+                        ) === 0
+                    ) {
+                        $out .= $part;
+                        continue;
+                    }
+
+                    $out .= nl2br($part);
+                }
             }
 
-            $out = '';
-
-            foreach ($parts as $part) {
-                if ($part === '') {
-                    continue;
-                }
-
-                if (strpos($part, '<pre><code') === 0) {
-                    $out .= $part;
-                    continue;
-                }
-
-                $out .= nl2br($part);
+            /*
+             * Append footnotes.
+             */
+            if ($footnotes !== []) {
+                $out .= $this->renderFootnotes(
+                    $footnotes
+                );
             }
 
-            // 16) Adjust line spacing with a wrapper.
-            return '<div style="line-height: 1.4;">'
+            return '<div class="markdown-body" style="line-height: 1.4;">'
                 . $out
                 . '</div>';
+
+            /* [End AI:GPT-5.6 Sol] */
         }
 
         /**
-		 * [AI:GPT-5.6 Sol | 2026-09-13 00:12:00 UTC]
-		 * [HUMAN: PM | APPROVE | 2026-09-13 00:15:00 UTC]
-		*/
+         * Render a Markdown table.
+         *
+         * @param string $headerLine    Header row.
+         * @param string $separatorLine Alignment row.
+         * @param string $bodyBlock     Table body rows.
+         *
+         * @return string
+         */
+        private function renderTable(
+            string $headerLine,
+            string $separatorLine,
+            string $bodyBlock
+        ): string {
+            $headers = $this->splitTableRow(
+                $headerLine
+            );
+
+            $separators = $this->splitTableRow(
+                $separatorLine
+            );
+
+            if (
+                $headers === []
+                || count($headers) !== count($separators)
+            ) {
+                return $headerLine
+                    . "\n"
+                    . $separatorLine
+                    . $bodyBlock;
+            }
+
+            $alignments = [];
+
+            foreach ($separators as $separator) {
+                $separator = trim($separator);
+
+                $left = str_starts_with(
+                    $separator,
+                    ':'
+                );
+
+                $right = str_ends_with(
+                    $separator,
+                    ':'
+                );
+
+                if ($left && $right) {
+                    $alignments[] = 'center';
+                    continue;
+                }
+
+                if ($right) {
+                    $alignments[] = 'right';
+                    continue;
+                }
+
+                if ($left) {
+                    $alignments[] = 'left';
+                    continue;
+                }
+
+                $alignments[] = '';
+            }
+
+            $bodyLines = preg_split(
+                '/\n/',
+                trim($bodyBlock)
+            );
+
+            if ($bodyLines === false) {
+                $bodyLines = [];
+            }
+
+            $out = '<table class="markdown-table">';
+            $out .= '<thead><tr>';
+
+            foreach ($headers as $index => $header) {
+                $align = $alignments[$index] ?? '';
+
+                $attribute = $align !== ''
+                    ? ' style="text-align: '
+                        . $align
+                        . ';"'
+                    : '';
+
+                $out .= '<th'
+                    . $attribute
+                    . '>'
+                    . trim($header)
+                    . '</th>';
+            }
+
+            $out .= '</tr></thead>';
+            $out .= '<tbody>';
+
+            foreach ($bodyLines as $line) {
+                if (trim($line) === '') {
+                    continue;
+                }
+
+                $cells = $this->splitTableRow(
+                    $line
+                );
+
+                $out .= '<tr>';
+
+                foreach ($headers as $index => $unused) {
+                    $cell = trim(
+                        (string) ($cells[$index] ?? '')
+                    );
+
+                    $align = $alignments[$index] ?? '';
+
+                    $attribute = $align !== ''
+                        ? ' style="text-align: '
+                            . $align
+                            . ';"'
+                        : '';
+
+                    $out .= '<td'
+                        . $attribute
+                        . '>'
+                        . $cell
+                        . '</td>';
+                }
+
+                $out .= '</tr>';
+            }
+
+            $out .= '</tbody>';
+            $out .= '</table>';
+
+            return $out;
+        }
+
+        /**
+         * Split a Markdown table row into individual cells.
+         *
+         * @param string $line Table row.
+         *
+         * @return array<int, string>
+         */
+        private function splitTableRow(
+            string $line
+        ): array {
+            $line = trim($line);
+
+            if (str_starts_with($line, '|')) {
+                $line = substr(
+                    $line,
+                    1
+                );
+            }
+
+            if (str_ends_with($line, '|')) {
+                $line = substr(
+                    $line,
+                    0,
+                    -1
+                );
+            }
+
+            $cells = preg_split(
+                '/(?<!\\\\)\|/',
+                $line
+            );
+
+            if ($cells === false) {
+                return [];
+            }
+
+            foreach ($cells as &$cell) {
+                $cell = str_replace(
+                    '\|',
+                    '|',
+                    $cell
+                );
+            }
+
+            unset($cell);
+
+            return $cells;
+        }
 
         /**
          * Render a Markdown list block while preserving indentation nesting.
          *
-         * Indentation widths are mapped relative to the indentation actually
-         * present in the block. This supports conventional four-space nesting
-         * while remaining tolerant of existing Markdown using other widths.
-         *
-         * @param string $block         Raw escaped Markdown list block.
-         * @param string $tag           HTML list element, ul or ol.
-         * @param string $markerPattern Regex used to extract indent and text.
+         * @param string $block         Raw Markdown list block.
+         * @param string $tag           HTML list element.
+         * @param string $markerPattern List marker pattern.
          *
          * @return string
          */
@@ -434,7 +927,7 @@ if (!class_exists('render_md')) {
             string $markerPattern
         ): string {
             $lines = preg_split(
-                '/\R/',
+                '/\n/',
                 rtrim($block)
             );
 
@@ -467,7 +960,10 @@ if (!class_exists('render_md')) {
                 );
 
                 $width = strlen($indent);
-                $content = (string) ($matches[2] ?? '');
+
+                $content = (string) (
+                    $matches[2] ?? ''
+                );
 
                 $items[] = [
                     'indent' => $width,
@@ -481,7 +977,9 @@ if (!class_exists('render_md')) {
                 return '';
             }
 
-            $levels = array_keys($indentWidths);
+            $levels = array_keys(
+                $indentWidths
+            );
 
             sort(
                 $levels,
@@ -504,11 +1002,18 @@ if (!class_exists('render_md')) {
 
             $position = 0;
 
+            $class = $this->containsTaskItems(
+                $items
+            )
+                ? ' class="task-list"'
+                : '';
+
             return $this->renderNestedListLevel(
                 $items,
                 $position,
                 0,
-                $tag
+                $tag,
+                $class
             );
         }
 
@@ -520,9 +1025,10 @@ if (!class_exists('render_md')) {
          *     content:string,
          *     level:int
          * }> $items
-         * @param int    $position Current item position.
-         * @param int    $level    Nesting level being rendered.
-         * @param string $tag      HTML list element, ul or ol.
+         * @param int    $position Current list position.
+         * @param int    $level    Current nesting level.
+         * @param string $tag      HTML list element.
+         * @param string $class    Optional list class.
          *
          * @return string
          */
@@ -530,13 +1036,20 @@ if (!class_exists('render_md')) {
             array $items,
             int &$position,
             int $level,
-            string $tag
+            string $tag,
+            string $class = ''
         ): string {
-            $out = '<' . $tag . '>';
+            $out = '<'
+                . $tag
+                . $class
+                . '>';
+
             $count = count($items);
 
             while ($position < $count) {
-                $itemLevel = (int) $items[$position]['level'];
+                $itemLevel = (int) $items[
+                    $position
+                ]['level'];
 
                 if ($itemLevel < $level) {
                     break;
@@ -546,16 +1059,53 @@ if (!class_exists('render_md')) {
                     break;
                 }
 
-                $out .= '<li>'
-                    . $items[$position]['content'];
+                $content = (string) $items[
+                    $position
+                ]['content'];
+
+                $itemClass = '';
+
+                /*
+                 * GitHub-style task lists.
+                 *
+                 * - [ ] Pending
+                 * - [x] Complete
+                 */
+                if (
+                    preg_match(
+                        '/^\[([ xX])\]\s+(.+)$/',
+                        $content,
+                        $task
+                    ) === 1
+                ) {
+                    $checked = strtolower(
+                        (string) $task[1]
+                    ) === 'x';
+
+                    $content = '<input type="checkbox" disabled'
+                        . ($checked ? ' checked' : '')
+                        . '> '
+                        . $task[2];
+
+                    $itemClass = ' class="task-list-item"';
+                }
+
+                $out .= '<li'
+                    . $itemClass
+                    . '>'
+                    . $content;
 
                 $position++;
 
                 while (
                     $position < $count
-                    && (int) $items[$position]['level'] > $level
+                    && (int) $items[
+                        $position
+                    ]['level'] > $level
                 ) {
-                    $childLevel = (int) $items[$position]['level'];
+                    $childLevel = (int) $items[
+                        $position
+                    ]['level'];
 
                     $out .= $this->renderNestedListLevel(
                         $items,
@@ -568,11 +1118,177 @@ if (!class_exists('render_md')) {
                 $out .= '</li>';
             }
 
-            $out .= '</' . $tag . '>';
+            $out .= '</'
+                . $tag
+                . '>';
 
             return $out;
         }
 
+        /**
+         * Determine whether a parsed list contains task-list items.
+         *
+         * @param array<int, array<string, mixed>> $items Parsed list items.
+         *
+         * @return bool
+         */
+        private function containsTaskItems(
+            array $items
+        ): bool {
+            foreach ($items as $item) {
+                if (
+                    preg_match(
+                        '/^\[[ xX]\]\s+/',
+                        (string) ($item['content'] ?? '')
+                    ) === 1
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Generate a heading anchor.
+         *
+         * @param string $heading Heading content.
+         *
+         * @return string
+         */
+        private function slugifyHeading(
+            string $heading
+        ): string {
+            $heading = html_entity_decode(
+                strip_tags($heading),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $heading = preg_replace(
+                '/[`*_~{}\[\]()]/',
+                '',
+                $heading
+            );
+
+            $heading = strtolower(
+                trim((string) $heading)
+            );
+
+            $heading = preg_replace(
+                '/[^a-z0-9\s-]/',
+                '',
+                $heading
+            );
+
+            $heading = preg_replace(
+                '/[\s-]+/',
+                '-',
+                (string) $heading
+            );
+
+            $heading = trim(
+                (string) $heading,
+                '-'
+            );
+
+            return $heading !== ''
+                ? htmlspecialchars(
+                    $heading,
+                    ENT_QUOTES,
+                    'UTF-8'
+                )
+                : 'section';
+        }
+
+        /**
+         * Render collected footnotes.
+         *
+         * @param array<string, string> $footnotes Footnote definitions.
+         *
+         * @return string
+         */
+        private function renderFootnotes(
+            array $footnotes
+        ): string {
+            $out = '<section class="footnotes">';
+            $out .= '<hr>';
+            $out .= '<ol>';
+
+            foreach ($footnotes as $id => $content) {
+                $safeId = htmlspecialchars(
+                    $id,
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+
+                $safeContent = htmlspecialchars(
+                    $content,
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+
+                $out .= '<li id="fn-'
+                    . $safeId
+                    . '">'
+                    . $safeContent
+                    . ' '
+                    . '<a href="#fnref-'
+                    . $safeId
+                    . '" class="footnote-backref">'
+                    . '↩'
+                    . '</a>'
+                    . '</li>';
+            }
+
+            $out .= '</ol>';
+            $out .= '</section>';
+
+            return $out;
+        }
+
+        /**
+         * Determine whether a URL is permitted.
+         *
+         * @param string $url URL to inspect.
+         *
+         * @return bool
+         */
+        private static function isSafeUrl(
+            string $url
+        ): bool {
+            $scheme = strtolower(
+                (string) parse_url(
+                    $url,
+                    PHP_URL_SCHEME
+                )
+            );
+
+            $isRelative = str_starts_with(
+                $url,
+                '/'
+            ) && !str_starts_with(
+                $url,
+                '//'
+            );
+
+            if ($isRelative) {
+                return true;
+            }
+
+            return in_array(
+                $scheme,
+                [
+                    'http',
+                    'https',
+                    'mailto',
+                ],
+                true
+            );
+        }
+
         /* [End AI:GPT-5.6 Sol] */
+
+        /* [END AI: Gemini] */
     }
 }
