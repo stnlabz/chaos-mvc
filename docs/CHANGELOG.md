@@ -3,6 +3,20 @@
 
 **Current Version:** 1.2.0
 
+## v1.2.1 Development
+
+## Features
+- Expanded the Markdown renderer with heading anchors, bold, italics, strikethrough, inline code, variable-length fenced code blocks, automatic links, blockquotes, GitHub-style alerts, horizontal rules, nested ordered and unordered lists, task lists, tables, definition lists, footnotes, escaped Markdown characters, controlled small text, and an allowlisted named-color extension
+- Added safe URL validation for explicit and automatic links while continuing to escape raw source HTML before supported Markdown is converted into generated markup
+
+## Reliability
+- Corrected rendering regressions introduced during the expanded Markdown implementation and retained protected placeholders for fenced code, inline code, and escaped characters throughout later formatting passes
+
+## Documentation
+- Expanded the Markdown renderer reference with supported syntax, examples, safety behavior, and implementation boundaries
+
+---
+
 ## v1.2.0
 
 Released after live Core-updater validation on chaos-mvc.org and downstream installations.
