@@ -34,6 +34,32 @@ $content = (string) ($data['content'] ?? '');
                     ?>
                 <?php elseif ($contentFile === 'main.html'): ?>
                     <?= $content; ?>
+                <?php elseif ($contentFile === 'main.json'): ?>
+                    <?php
+                    /* [AI:GPT-5.6 Sol | 2026-09-13 19:30:45 UTC] */
+                    $decodedJson = json_decode($content, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $displayJson = json_encode(
+                            $decodedJson,
+                            JSON_PRETTY_PRINT
+                            | JSON_UNESCAPED_SLASHES
+                            | JSON_UNESCAPED_UNICODE
+                        );
+
+                        if (!is_string($displayJson)) {
+                            $displayJson = $content;
+                        }
+                    } else {
+                        $displayJson = $content;
+                    }
+                    /* [End AI:GPT-5.6 Sol] */
+                    ?>
+                    <pre><code class="language-json"><?= htmlspecialchars(
+                        $displayJson,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ); ?></code></pre>
                 <?php else: ?>
                     <pre><?= htmlspecialchars(
                         $content,

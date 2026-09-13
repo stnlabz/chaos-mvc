@@ -17,6 +17,7 @@
   - `main.md`
   - `main.html`
   - `main.txt`
+  - `main.json`
 - Kept Pages independent of the database and removed the previous database-driven page/module fallback from the public page-resolution path.
 
 ## Page Metadata
@@ -63,22 +64,27 @@
 - Added the public Pages view at `/app/views/pages/dynamic.php`.
 - Integrated Pages with the existing site header/footer rendering path.
 - Changed Markdown Page rendering to use the established Markdown renderer against the actual content file:
-  ```php
-  $render_md->markdown_file($contentPath);
-  ```
+  `$render_md->markdown_file($contentPath);`
+ 
 - Added resolved `content_path` data from the Core Pages subsystem so Markdown rendering operates on the source file rather than reparsing content through `content_renderer`.
-- Kept HTML and plain-text page handling separate from Markdown rendering.
+- Kept HTML, plain-text, and JSON page handling separate from Markdown rendering.
+- Added passive JSON publication through `main.json`.
+- Valid JSON documents are decoded, pretty-printed, escaped, and rendered inside a JSON code block.
+- JSON Pages do not execute source content and do not use JSON as a Pages configuration or layout language.
+- PHP page execution is not part of the current Pages content contract.
 
 ## Validation
 - Verified filesystem creation of:
-  ```text
-  /user/pages/test-page/
-  ├── page.json
-  └── main.md
-  ```
+ 
+  `/user/pages/test-page/`
+  ├── `page.json`
+  └── `main.md`
+  
 - Verified draft pages remain inaccessible publicly.
 - Verified published Pages resolve from their clean root-level route.
 - Verified Markdown Pages reach the established Markdown rendering pipeline.
+- Verified JSON Pages accept and render valid JSON documents through `main.json`.
+- Verified JSON content remains passive data and is safely escaped for browser output.
 - Verified the Pages subsystem was pushed to the project repository after live testing.
 
 ## Files Introduced or Updated
@@ -91,4 +97,4 @@
 ## Notes
 - Pages originated conceptually from the JSON-lite Pages subsystem used by the earlier ChAoS CMS.
 - The current ChAoS MVC implementation is filesystem-authoritative and does not use the database as a Pages registry.
-- Core Pages is considered operational after successful public routing and Markdown-rendering validation.
+- Core Pages is considered operational after successful public routing, Markdown rendering, and JSON publication validation.

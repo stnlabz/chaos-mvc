@@ -37,10 +37,13 @@ final class pages
     /**
      * Valid page body filename.
      *
-     * Page content must remain a direct child named main.*. PHP and other
+     * Page content must remain a direct child named main.*. Supported passive
+     * formats are Markdown, HTML, plain text, and JSON. PHP and other
      * executable filenames are not permitted by this contract.
      */
-    private const CONTENT_FILE_PATTERN = '/^main\.(md|html|txt)$/';
+    /* [AI:GPT-5.6 Sol | 2026-09-13 19:30:45 UTC] */
+    private const CONTENT_FILE_PATTERN = '/^main\.(md|html|txt|json)$/';
+    /* [End AI:GPT-5.6 Sol] */
 
     /**
      * Supported publication states.
@@ -821,7 +824,7 @@ final class pages
             ) !== 1
         ) {
             throw new InvalidArgumentException(
-                'Page content file must be main.md, main.html, or main.txt.'
+                'Page content file must be main.md, main.html, main.txt, or main.json.'
             );
         }
 

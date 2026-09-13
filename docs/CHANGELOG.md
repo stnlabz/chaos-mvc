@@ -6,9 +6,10 @@
 ## v1.2.1 Development
 
 ## Features
-- Added the Core Pages subsystem with filesystem-backed page ownership under `/user/pages/{slug}/`, using `page.json` metadata and `main.md`, `main.html`, or `main.txt` content files instead of database-backed page records
+- Added the Core Pages subsystem with filesystem-backed page ownership under `/user/pages/{slug}/`, using `page.json` metadata and `main.md`, `main.html`, `main.txt`, or `main.json` content files instead of database-backed page records
 - Added clean public page routing so published Pages resolve directly from root-level URLs such as `/about-us` after Core controller and user-module ownership checks
 - Added Core Pages administration at `/admin/page` with page discovery, creation, editing, slug changes, draft/published state, content-file selection, and deletion through the existing Admin controller delegation path
+- Added passive JSON Page publication through `main.json`, with valid JSON decoded, pretty-printed, escaped, and rendered as JSON code without executable interpretation
 - Expanded the Markdown renderer with heading anchors, bold, italics, strikethrough, inline code, variable-length fenced code blocks, automatic links, blockquotes, GitHub-style alerts, horizontal rules, nested ordered and unordered lists, task lists, tables, definition lists, footnotes, escaped Markdown characters, controlled small text, and an allowlisted named-color extension
 - Added safe URL validation for explicit and automatic links while continuing to escape raw source HTML before supported Markdown is converted into generated markup
 
@@ -17,10 +18,11 @@
 - Preserved controller and module naming validation while allowing hyphenated page slugs through the dedicated Pages fallback path
 - Added resolved page content paths so Markdown pages are rendered through the established `render_md::markdown_file()` pipeline instead of the lightweight `content_renderer`
 - Made page deletion move the page directory into `/user/pages/.trash/` rather than immediately destroying the filesystem record
-- Corrected rendering regressions introduced during the expanded Markdown implementation and retained protected placeholders for fenced code, inline code, and escaped characters throughout later formatting passes
+- Corrected rendering regressions introduced during the expanded Markdown implementation, including numeric footnote identifier type handling, generated-link protection from later emphasis passes, inline-code placeholders inside footnotes, intraword underscore handling, and blockquote trailing-break cleanup; retained protected placeholders for fenced code, inline code, and escaped characters throughout later formatting passes
+- Validated the expanded Markdown renderer against headings, emphasis, strikethrough, inline and fenced code, links, automatic URLs, blockquotes, alerts, horizontal rules, nested lists, task lists, tables, definition lists, footnotes, escaped characters, controlled small text, and named-color extensions
 
 ## Documentation
-- Added Pages subsystem lifecycle documentation covering the filesystem contract, metadata authority, routing precedence, publication state, Admin lifecycle, and Markdown renderer integration
+- Added Pages subsystem lifecycle documentation covering the filesystem contract, metadata authority, routing precedence, publication state, Admin lifecycle, Markdown renderer integration, and passive JSON publication
 - Expanded the Markdown renderer reference with supported syntax, examples, safety behavior, and implementation boundaries
 
 ---

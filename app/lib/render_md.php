@@ -74,6 +74,7 @@ if (!class_exists('render_md')) {
 
             $codeBlocks = [];
             $inlineCode = [];
+            $links = [];
             $escapedCharacters = [];
             $footnotes = [];
 
@@ -137,6 +138,32 @@ if (!class_exists('render_md')) {
             );
 
             /*
+             * Extract footnote definitions after fenced code is protected but
+             * before inline-code and escape placeholders are introduced.
+             * This keeps Markdown inside footnotes intact while preventing a
+             * footnote-looking line inside a code fence from being consumed.
+             *
+             * Markdown:
+             *
+             * [^1]: Footnote content.
+             */
+            $text = preg_replace_callback(
+                '/^\[\^([A-Za-z0-9_-]+)\]:\s*(.+)$/m',
+                static function (array $matches) use (&$footnotes): string {
+                    $id = strtolower(
+                        trim((string) $matches[1])
+                    );
+
+                    $footnotes[$id] = trim(
+                        (string) $matches[2]
+                    );
+
+                    return '';
+                },
+                $text
+            );
+
+            /*
              * Protect inline code before emphasis and other inline parsing.
              */
             $text = preg_replace_callback(
@@ -186,29 +213,6 @@ if (!class_exists('render_md')) {
                     return 'CHAOSESCAPETOKEN'
                         . $index
                         . 'ENDTOKEN';
-                },
-                $text
-            );
-
-            /*
-             * Extract footnote definitions.
-             *
-             * Markdown:
-             *
-             * [^1]: Footnote content.
-             */
-            $text = preg_replace_callback(
-                '/^\[\^([A-Za-z0-9_-]+)\]:\s*(.+)$/m',
-                static function (array $matches) use (&$footnotes): string {
-                    $id = strtolower(
-                        trim((string) $matches[1])
-                    );
-
-                    $footnotes[$id] = trim(
-                        (string) $matches[2]
-                    );
-
-                    return '';
                 },
                 $text
             );
@@ -403,10 +407,11 @@ if (!class_exists('render_md')) {
                         }
                     }
 
-                    return rtrim(
-                        $output,
-                        '<br>'
-                    ) . '</blockquote>';
+                    if (str_ends_with($output, '<br>')) {
+                        $output = substr($output, 0, -4);
+                    }
+
+                    return $output . '</blockquote>';
                 },
                 $html
             );
@@ -462,10 +467,14 @@ if (!class_exists('render_md')) {
 
             /*
              * Explicit Markdown links.
+             *
+             * Generated anchors are protected behind alphanumeric tokens so
+             * later emphasis passes cannot reinterpret attributes such as
+             * target="_blank" as Markdown italics.
              */
             $html = preg_replace_callback(
                 '/\[([^\]]+)\]\(([^)]+)\)/',
-                static function (array $matches): string {
+                static function (array $matches) use (&$links): string {
                     $label = (string) $matches[1];
 
                     $url = html_entity_decode(
@@ -478,7 +487,9 @@ if (!class_exists('render_md')) {
                         return $label;
                     }
 
-                    return '<a href="'
+                    $index = count($links);
+
+                    $links[$index] = '<a href="'
                         . htmlspecialchars(
                             $url,
                             ENT_QUOTES,
@@ -487,6 +498,10 @@ if (!class_exists('render_md')) {
                         . '" target="_blank" rel="noopener noreferrer">'
                         . $label
                         . '</a>';
+
+                    return 'CHAOSLINKTOKEN'
+                        . $index
+                        . 'ENDTOKEN';
                 },
                 $html
             );
@@ -500,24 +515,26 @@ if (!class_exists('render_md')) {
              */
             $html = preg_replace_callback(
                 '~(?<!["\'=])(https?://[^\s<]+)~i',
-                static function (array $matches): string {
+                static function (array $matches) use (&$links): string {
                     $original = (string) $matches[1];
 
+                    $trimmed = rtrim(
+                        $original,
+                        '.,;:!?)]'
+                    );
+
                     $url = html_entity_decode(
-                        rtrim(
-                            $original,
-                            '.,;:!?)]'
-                        ),
+                        $trimmed,
                         ENT_QUOTES,
                         'UTF-8'
                     );
 
                     if (!self::isSafeUrl($url)) {
-                        return $matches[0];
+                        return (string) $matches[0];
                     }
 
                     $suffixLength = strlen($original)
-                        - strlen($url);
+                        - strlen($trimmed);
 
                     $suffix = $suffixLength > 0
                         ? substr(
@@ -526,20 +543,23 @@ if (!class_exists('render_md')) {
                         )
                         : '';
 
-                    return '<a href="'
-                        . htmlspecialchars(
-                            $url,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        )
+                    $index = count($links);
+                    $safeUrl = htmlspecialchars(
+                        $url,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    $links[$index] = '<a href="'
+                        . $safeUrl
                         . '" target="_blank" rel="noopener noreferrer">'
-                        . htmlspecialchars(
-                            $url,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        )
+                        . $safeUrl
                         . '</a>'
                         . $suffix;
+
+                    return 'CHAOSLINKTOKEN'
+                        . $index
+                        . 'ENDTOKEN';
                 },
                 $html
             );
@@ -563,7 +583,7 @@ if (!class_exists('render_md')) {
             );
 
             $html = preg_replace(
-                '/(?<!_)_(?!\s)([^_\n]+?)(?<!\s)_(?!_)/m',
+                '/(?<![A-Za-z0-9_])_(?![\s_])([^_\n]+?)(?<!\s)_(?![A-Za-z0-9_])/m',
                 '<em>$1</em>',
                 $html
             );
@@ -679,6 +699,20 @@ if (!class_exists('render_md')) {
                     . $index
                     . 'ENDTOKEN',
                     $character,
+                    $html
+                );
+            }
+
+            /*
+             * Restore protected generated links after all emphasis rules have
+             * finished so anchor attributes cannot be parsed as Markdown.
+             */
+            foreach ($links as $index => $link) {
+                $html = str_replace(
+                    'CHAOSLINKTOKEN'
+                    . $index
+                    . 'ENDTOKEN',
+                    $link,
                     $html
                 );
             }
@@ -1249,15 +1283,13 @@ if (!class_exists('render_md')) {
 
             foreach ($footnotes as $id => $content) {
                 $safeId = htmlspecialchars(
-                    $id,
+                    (string) $id,
                     ENT_QUOTES,
                     'UTF-8'
                 );
 
-                $safeContent = htmlspecialchars(
-                    $content,
-                    ENT_QUOTES,
-                    'UTF-8'
+                $safeContent = $this->renderFootnoteContent(
+                    (string) $content
                 );
 
                 $out .= '<li id="fn-'
@@ -1277,6 +1309,39 @@ if (!class_exists('render_md')) {
             $out .= '</section>';
 
             return $out;
+        }
+
+        /**
+         * Render inline/block Markdown used by a footnote definition.
+         *
+         * Footnotes are extracted before the main document creates inline
+         * placeholders, so rendering them independently prevents placeholder
+         * leakage while preserving normal safe Markdown behavior.
+         *
+         * @param string $content Footnote source content.
+         *
+         * @return string
+         */
+        private function renderFootnoteContent(
+            string $content
+        ): string {
+            $rendered = $this->markdown($content);
+
+            $prefix = '<div class="markdown-body" style="line-height: 1.4;">';
+            $suffix = '</div>';
+
+            if (
+                str_starts_with($rendered, $prefix)
+                && str_ends_with($rendered, $suffix)
+            ) {
+                return substr(
+                    $rendered,
+                    strlen($prefix),
+                    -strlen($suffix)
+                );
+            }
+
+            return $rendered;
         }
 
         /**

@@ -251,6 +251,13 @@ $content = (string) ($current['content'] ?? '');
                 value="main.txt"
                 <?= $contentFile === 'main.txt' ? 'selected' : ''; ?>
             >Plain Text</option>
+
+            <?php /* [AI:GPT-5.6 Sol | 2026-09-13 19:30:45 UTC] */ ?>
+            <option
+                value="main.json"
+                <?= $contentFile === 'main.json' ? 'selected' : ''; ?>
+            >JSON</option>
+            <?php /* [End AI:GPT-5.6 Sol] */ ?>
         </select>
     </p>
 
