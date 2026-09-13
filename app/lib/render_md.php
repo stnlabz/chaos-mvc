@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Chaos MVC — Markdown Renderer
+ * ChAoS MVC — Markdown Renderer
  * KISS engine for docs, changelogs and internal pages.
- * [HUMAN: PM | APPROVED UPGRADES | 2026-09-13 01:35:00 UTC]
  */
 
 if (!class_exists('render_md')) {
@@ -39,8 +38,10 @@ if (!class_exists('render_md')) {
          * - bold
          * - italics
          * - strikethrough
+         * - small text
+         * - controlled named colors
          * - inline code
-         * - fenced code
+         * - variable-length fenced code blocks
          * - links
          * - automatic links
          * - blockquotes
@@ -53,8 +54,6 @@ if (!class_exists('render_md')) {
          * - definition lists
          * - footnotes
          * - escaped Markdown characters
-         * - controlled named colors
-         * - controlled small text
          *
          * @param string $text Markdown source.
          *
@@ -62,7 +61,7 @@ if (!class_exists('render_md')) {
          */
         public function markdown(string $text): string
         {
-            /* [AI:GPT-5.6 Sol | 2026-09-13 00:32:00 UTC] */
+            /* [AI:GPT-5.6 Sol | 2026-09-13 00:20:00 UTC] */
 
             $text = str_replace(
                 [
@@ -80,17 +79,30 @@ if (!class_exists('render_md')) {
 
             /*
              * Protect fenced code blocks before any Markdown processing.
+             *
+             * Fences may contain three or more backticks.
+             *
+             * This allows a longer outer fence to document shorter fences:
+             *
+             *     ````
+             *     ```php
+             *     echo 'Example';
+             *     ```
+             *     ````
              */
             $text = preg_replace_callback(
-                '/```([A-Za-z0-9_-]+)?\n([\s\S]*?)```/',
+                '/^(`{3,})([A-Za-z0-9_-]*)[ \t]*\n'
+                . '([\s\S]*?)'
+                . '^\1[ \t]*$/m',
                 static function (array $matches) use (&$codeBlocks): string {
                     $index = count($codeBlocks);
+
                     $language = trim(
-                        (string) ($matches[1] ?? '')
+                        (string) ($matches[2] ?? '')
                     );
 
                     $code = htmlspecialchars(
-                        (string) ($matches[2] ?? ''),
+                        (string) ($matches[3] ?? ''),
                         ENT_QUOTES,
                         'UTF-8'
                     );
@@ -113,9 +125,13 @@ if (!class_exists('render_md')) {
                         . $code
                         . '</code></pre>';
 
-                    return '@@CHAOS_CODE_BLOCK_'
+                    /*
+                     * Placeholder intentionally contains only alphanumeric
+                     * characters so later Markdown rules cannot alter it.
+                     */
+                    return 'CHAOSCODEBLOCKTOKEN'
                         . $index
-                        . '@@';
+                        . 'ENDTOKEN';
                 },
                 $text
             );
@@ -136,9 +152,13 @@ if (!class_exists('render_md')) {
                         )
                         . '</code>';
 
-                    return '@@CHAOS_INLINE_CODE_'
+                    /*
+                     * Alphanumeric placeholder prevents italic and other
+                     * Markdown rules from corrupting protected inline code.
+                     */
+                    return 'CHAOSINLINECODETOKEN'
                         . $index
-                        . '@@';
+                        . 'ENDTOKEN';
                 },
                 $text
             );
@@ -146,7 +166,8 @@ if (!class_exists('render_md')) {
             /*
              * Protect explicitly escaped Markdown characters.
              *
-             * Example:
+             * Examples:
+             *
              * \*literal asterisk\*
              * \# not a heading
              * \- not a list
@@ -162,9 +183,9 @@ if (!class_exists('render_md')) {
                         'UTF-8'
                     );
 
-                    return '@@CHAOS_ESCAPE_'
+                    return 'CHAOSESCAPETOKEN'
                         . $index
-                        . '@@';
+                        . 'ENDTOKEN';
                 },
                 $text
             );
@@ -173,6 +194,7 @@ if (!class_exists('render_md')) {
              * Extract footnote definitions.
              *
              * Markdown:
+             *
              * [^1]: Footnote content.
              */
             $text = preg_replace_callback(
@@ -216,7 +238,7 @@ if (!class_exists('render_md')) {
             $html = preg_replace_callback(
                 '/^&gt;\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n'
                 . '((?:&gt;.*(?:\n|$))*)/mi',
-                function (array $matches): string {
+                static function (array $matches): string {
                     $type = strtolower(
                         (string) $matches[1]
                     );
@@ -399,7 +421,7 @@ if (!class_exists('render_md')) {
             );
 
             /*
-             * Headings with GitHub-style anchor IDs.
+             * Headings with URL-friendly anchor IDs.
              */
             $html = preg_replace_callback(
                 '/^(#{1,6})\s+(.+)$/m',
@@ -470,16 +492,20 @@ if (!class_exists('render_md')) {
             );
 
             /*
-             * Automatic links.
+             * Automatic HTTP and HTTPS links.
+             *
+             * Example:
              *
              * https://chaos-mvc.org
              */
             $html = preg_replace_callback(
                 '~(?<!["\'=])(https?://[^\s<]+)~i',
                 static function (array $matches): string {
+                    $original = (string) $matches[1];
+
                     $url = html_entity_decode(
                         rtrim(
-                            (string) $matches[1],
+                            $original,
                             '.,;:!?)]'
                         ),
                         ENT_QUOTES,
@@ -490,10 +516,15 @@ if (!class_exists('render_md')) {
                         return $matches[0];
                     }
 
-                    $suffix = substr(
-                        (string) $matches[1],
-                        strlen($url)
-                    );
+                    $suffixLength = strlen($original)
+                        - strlen($url);
+
+                    $suffix = $suffixLength > 0
+                        ? substr(
+                            $original,
+                            -$suffixLength
+                        )
+                        : '';
 
                     return '<a href="'
                         . htmlspecialchars(
@@ -541,11 +572,6 @@ if (!class_exists('render_md')) {
              * GitHub-style strikethrough.
              *
              * ~~deprecated text~~
-             *
-             * Previous ChAoS behavior used this syntax for <small>.
-             * Small text now uses:
-             *
-             * {small}small text{/small}
              */
             $html = preg_replace(
                 '/~~(.+?)~~/s',
@@ -554,7 +580,9 @@ if (!class_exists('render_md')) {
             );
 
             /*
-             * Controlled small text extension.
+             * Controlled small-text extension.
+             *
+             * {small}small text{/small}
              */
             $html = preg_replace(
                 '/\{small\}(.+?)\{\/small\}/is',
@@ -606,6 +634,7 @@ if (!class_exists('render_md')) {
              * Footnote references.
              *
              * Example:
+             *
              * Some statement.[^1]
              */
             $html = preg_replace_callback(
@@ -640,12 +669,15 @@ if (!class_exists('render_md')) {
 
             /*
              * Restore escaped Markdown characters.
+             *
+             * Tokens use no Markdown-significant punctuation and therefore
+             * survive all preceding parser stages unchanged.
              */
             foreach ($escapedCharacters as $index => $character) {
                 $html = str_replace(
-                    '@@CHAOS_ESCAPE_'
+                    'CHAOSESCAPETOKEN'
                     . $index
-                    . '@@',
+                    . 'ENDTOKEN',
                     $character,
                     $html
                 );
@@ -656,22 +688,22 @@ if (!class_exists('render_md')) {
              */
             foreach ($inlineCode as $index => $code) {
                 $html = str_replace(
-                    '@@CHAOS_INLINE_CODE_'
+                    'CHAOSINLINECODETOKEN'
                     . $index
-                    . '@@',
+                    . 'ENDTOKEN',
                     $code,
                     $html
                 );
             }
 
             /*
-             * Restore fenced code blocks.
+             * Restore protected fenced code blocks.
              */
             foreach ($codeBlocks as $index => $code) {
                 $html = str_replace(
-                    '@@CHAOS_CODE_BLOCK_'
+                    'CHAOSCODEBLOCKTOKEN'
                     . $index
-                    . '@@',
+                    . 'ENDTOKEN',
                     $code,
                     $html
                 );
@@ -1288,7 +1320,5 @@ if (!class_exists('render_md')) {
         }
 
         /* [End AI:GPT-5.6 Sol] */
-
-        /* [END AI: Gemini] */
     }
 }
