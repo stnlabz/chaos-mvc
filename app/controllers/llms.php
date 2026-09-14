@@ -113,12 +113,13 @@ class llms extends controller
             'ror',
             'rss',
             'sentinel',
+            'site',
+            'site_json',
             'sitemap',
             'theme_assets',
+            'themes',
             'traffic',
             'updater',
-			'site',
-			'themes',
         ];
 
         $routes = [];

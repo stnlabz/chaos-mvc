@@ -188,6 +188,7 @@ class admin extends controller
      * - ror.xml
      * - llms.txt
      * - rss.xml
+     * - site.json
      *
      * @return void
      */
@@ -200,6 +201,7 @@ class admin extends controller
             'ror',
             'llms',
             'rss',
+            'site_json',
         ];
 
         try {
@@ -248,7 +250,7 @@ class admin extends controller
             }
 
             $_SESSION['admin_status'] =
-                'Sitemap, ROR, LLMS, and RSS indexes refreshed.';
+                'Sitemap, ROR, LLMS, RSS, and site.json refreshed.';
         } catch (Throwable $error) {
             error_log(
                 'Core index refresh failed: '
