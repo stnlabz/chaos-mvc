@@ -466,45 +466,95 @@ if (!class_exists('render_md')) {
             );
 
             /*
-             * Explicit Markdown links.
-             *
-             * Generated anchors are protected behind alphanumeric tokens so
-             * later emphasis passes cannot reinterpret attributes such as
-             * target="_blank" as Markdown italics.
-             */
-            $html = preg_replace_callback(
-                '/\[([^\]]+)\]\(([^)]+)\)/',
-                static function (array $matches) use (&$links): string {
-                    $label = (string) $matches[1];
+ * Explicit Markdown links.
+ *
+ * Internal links remain in the current browsing context.
+ * External links open in a new tab and are protected with
+ * noopener/noreferrer.
+ *
+ * Generated anchors are protected behind alphanumeric tokens so
+ * later emphasis passes cannot reinterpret anchor attributes as
+ * Markdown italics.
+ */
+$html = preg_replace_callback(
+    '/\[([^\]]+)\]\(([^)]+)\)/',
+    static function (array $matches) use (&$links): string {
+        $label = (string) $matches[1];
 
-                    $url = html_entity_decode(
-                        (string) $matches[2],
-                        ENT_QUOTES,
-                        'UTF-8'
-                    );
+        $url = html_entity_decode(
+            (string) $matches[2],
+            ENT_QUOTES,
+            'UTF-8'
+        );
 
-                    if (!self::isSafeUrl($url)) {
-                        return $label;
-                    }
+        if (!self::isSafeUrl($url)) {
+            return $label;
+        }
 
-                    $index = count($links);
+        $index = count($links);
 
-                    $links[$index] = '<a href="'
-                        . htmlspecialchars(
-                            $url,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        )
-                        . '" target="_blank" rel="noopener noreferrer">'
-                        . $label
-                        . '</a>';
+        $escapedUrl = htmlspecialchars(
+            $url,
+            ENT_QUOTES,
+            'UTF-8'
+        );
 
-                    return 'CHAOSLINKTOKEN'
-                        . $index
-                        . 'ENDTOKEN';
-                },
-                $html
-            );
+        /*
+         * Relative/root-relative URLs are internal.
+         *
+         * Absolute URLs are internal when their host matches
+         * the current request host.
+         */
+        $isInternal = false;
+
+        if (
+            str_starts_with($url, '/')
+            || str_starts_with($url, './')
+            || str_starts_with($url, '../')
+            || str_starts_with($url, '#')
+            || str_starts_with($url, '?')
+        ) {
+            $isInternal = true;
+        } else {
+            $urlHost = parse_url($url, PHP_URL_HOST);
+            $siteHost = $_SERVER['HTTP_HOST'] ?? '';
+
+            if (
+                is_string($urlHost)
+                && $urlHost !== ''
+                && $siteHost !== ''
+            ) {
+                $siteHost = preg_replace(
+                    '/:\d+$/',
+                    '',
+                    $siteHost
+                );
+
+                $isInternal = strcasecmp(
+                    $urlHost,
+                    (string) $siteHost
+                ) === 0;
+            }
+        }
+
+        $links[$index] = '<a href="'
+            . $escapedUrl
+            . '"'
+            . (
+                $isInternal
+                    ? ''
+                    : ' target="_blank" rel="noopener noreferrer"'
+            )
+            . '>'
+            . $label
+            . '</a>';
+
+        return 'CHAOSLINKTOKEN'
+            . $index
+            . 'ENDTOKEN';
+    },
+    $html
+);
 
             /*
              * Automatic HTTP and HTTPS links.

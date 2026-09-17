@@ -304,6 +304,30 @@ Email link:
 [Contact](mailto:example@example.com)
 ```
 
+### Internal and External Link Behavior
+
+The renderer distinguishes between internal and external links.
+
+Internal links remain in the current browsing context and do not receive `target="_blank"`.
+
+Internal links include root-relative, relative, fragment, and query URLs:
+
+```text
+/downloads
+./docs
+../releases
+#section
+?view=all
+```
+
+Absolute HTTP or HTTPS URLs are also treated as internal when their host matches the current request host.
+
+External links open in a new tab and are rendered with:
+
+```html
+target="_blank" rel="noopener noreferrer"
+```
+
 ### Supported URL Types
 
 The renderer permits links using:
@@ -314,12 +338,14 @@ http:
 mailto:
 ```
 
-It also permits root-relative internal URLs:
+It also permits internal and relative URLs:
 
 ```text
 /downloads
-/releases
-/docs
+./docs
+../releases
+#section
+?view=all
 ```
 
 For example:
@@ -1004,6 +1030,10 @@ For pages within the same ChAoS MVC installation, root-relative links are prefer
 
 This keeps internal documentation independent of the installation's domain name.
 
+Internal links remain in the current browsing context and do not receive `target="_blank"`.
+
+The renderer recognizes root-relative, relative, fragment, and query links as internal. Absolute HTTP or HTTPS URLs whose host matches the current request host are also treated as internal.
+
 Heading anchors may be combined with internal links.
 
 ```text
@@ -1025,6 +1055,14 @@ External HTTPS links use normal Markdown syntax.
 ```text
 [Project Repository](https://github.com/stnlabz/chaos-mvc)
 ```
+
+External links open in a new tab and are rendered with:
+
+```html
+target="_blank" rel="noopener noreferrer"
+```
+
+An absolute HTTP or HTTPS URL is considered external when its host does not match the current request host.
 
 HTTP links are also accepted by the current renderer:
 
@@ -1125,7 +1163,15 @@ https://example.com
 http://example.com
 mailto:user@example.com
 /internal/path
+./relative/path
+../relative/path
+#section
+?view=active
 ```
+
+Internal links remain in the current browsing context. Absolute HTTP and HTTPS links whose host matches the current request host are also treated as internal.
+
+External links open in a new tab with `target="_blank"` and `rel="noopener noreferrer"`.
 
 Unsafe or unsupported schemes are rejected.
 
