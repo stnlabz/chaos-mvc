@@ -1,0 +1,37 @@
+{
+    "name": "Example",
+    "module": "example",
+    "version": "2.0.0",
+    "schema_version": "2.0.0",
+    "description": "Canonical ChAoS MVC user Module reference for MVC structure, Module and Data Lifecycles, Data Reset, and complete CRUD.",
+    "update_url": "https://yourdomain.com/updates/modules/example.json",
+    "creator": "Your Initials",
+    "domain": "www.yourdomain.com",
+    "certified": "No",
+    "signing": {
+        "sha256": "SHA-256",
+        "key_id": "Your-keys-id",
+        "public_key": "your base64 public key from public.pem"
+    },
+    "files": [
+        "controllers/example.php",
+        "models/example_model.php",
+        "views/index.php",
+        "views/admin/index.php",
+        "sql/schema.sql",
+        "sql/references.sql",
+        "sql/patches/1.9.0-to-2.0.0.sql",
+        "docs/README.md",
+        "docs/CHANGELOG.md"
+    ],
+    "routes": [
+        "index"
+    ],
+    "database_tables": [
+        "example_schema",
+        "example_records"
+    ],
+    "migrations": {
+        "1.9.0-to-2.0.0": "sql/patches/1.9.0-to-2.0.0.sql"
+    }
+}

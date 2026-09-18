@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS example_schema (
+    id TINYINT UNSIGNED NOT NULL,
+    schema_version VARCHAR(64) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO example_schema (id, schema_version)
+VALUES (1, '2.0.0')
+ON DUPLICATE KEY UPDATE schema_version = VALUES(schema_version);
+
+CREATE TABLE IF NOT EXISTS example_records (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    title VARCHAR(150) NOT NULL,
+    body TEXT NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY example_records_active_index (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
