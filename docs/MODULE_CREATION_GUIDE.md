@@ -164,6 +164,8 @@ Example:
         'update',
         'delete',
         'delete_data',
+        'reset_data',
+        'recover_data',
         'install_schema',
         'update_schema',
     ];
@@ -373,6 +375,130 @@ Delete Data must not be used to delete unrelated application data.
 
 Where multiple module-owned tables have dependencies, records must be removed in an order that preserves database integrity.
 
+
+### 9.2 Reset Data
+
+Where appropriate, a module may provide:
+
+    Reset Data
+
+Reset Data is a **module-owned, reversible data lifecycle operation**.
+
+Its purpose is:
+
+    Reset Data
+        ↓
+    Remove active module records from normal operation
+        ↓
+    Preserve those records in a recoverable state
+        ↓
+    Preserve module schema
+        ↓
+    Preserve installed module
+
+Reset Data is not Delete Data and is not Nuke.
+
+After Reset Data completes:
+
+- the module remains installed
+- its required tables remain installed
+- reset records are excluded from normal module operation
+- reset records remain available to the module's Recover Data operation
+- the Admin interface remains available
+
+A module must use a deterministic mechanism to distinguish active records from recoverable records.
+
+For example, a module may use a module-owned archive marker such as:
+
+    archived_at
+
+The exact implementation belongs to the module and must remain confined to module-owned data.
+
+### 9.3 Recover Data
+
+A module that implements Reset Data must also provide a corresponding:
+
+    Recover Data
+
+operation unless the module's documented lifecycle explicitly establishes another recovery mechanism.
+
+Its purpose is:
+
+    Recover Data
+        ↓
+    Locate reset/recoverable module records
+        ↓
+    Return them to normal operation
+        ↓
+    Preserve module schema
+        ↓
+    Preserve installed module
+
+Recover Data must restore only data placed into the module's recoverable state by its established Reset Data lifecycle.
+
+It must not recover unrelated records or data owned by another module.
+
+### 9.4 Reset and Recover Requirements
+
+Reset Data and Recover Data are state-changing module-owned operations.
+
+They therefore require:
+
+- authenticated Admin access
+- POST
+- valid CSRF protection
+- explicit Admin action selection
+- deterministic eligibility based on current data state
+
+GET requests must never reset or recover data.
+
+Admin controls should reflect the actual state of the module.
+
+For example:
+
+    Active records exist
+        → Reset Data available
+
+    No active records
+        → Reset Data unavailable
+
+    Recoverable records exist
+        → Recover Data available
+
+    No recoverable records
+        → Recover Data unavailable
+
+Reset and Recover must affect only module-owned records.
+
+### 9.5 Delete Data, Reset Data, and Recover Data
+
+These operations have different purposes:
+
+    Delete Data
+        → permanently removes module-owned records
+        → preserves schema
+        → preserves module
+
+    Reset Data
+        → removes active records from normal operation
+        → preserves them in a recoverable state
+        → preserves schema
+        → preserves module
+
+    Recover Data
+        → restores reset records to normal operation
+        → preserves schema
+        → preserves module
+
+Delete Data is destructive.
+
+Reset Data is reversible.
+
+Recover Data reverses Reset Data.
+
+None of these operations is Nuke.
+
+
 ---
 
 ## 10. Module Nuke
@@ -493,6 +619,8 @@ Examples include:
 - Enable
 - Disable
 - Delete Data
+- Reset Data
+- Recover Data
 - Install SQL
 - Update SQL
 - configuration changes
@@ -602,36 +730,39 @@ Every database-backed Chaos MVC module follows a predictable lifecycle:
                          │
                   Normal Operation
                          │
-              ┌──────────┴──────────┐
-              │                     │
-              ▼                     ▼
-         Delete Data          Schema Update
-              │                     │
-       Records removed          Update SQL
-       Schema preserved             │
-       Module preserved             ▼
-              │               Current Schema
-              │                     │
-              └──────────┬──────────┘
-                         │
-                         ▼
-                       Nuke
-                         │
-                         ▼
-               Core validates module
-                         │
-                         ▼
-              Core validates ownership
-                         │
-                         ▼
-                 Drop owned tables
-                         │
-                         ▼
-                   Remove module
+        ┌────────────────┼────────────────┐
+        │                │                │
+        ▼                ▼                ▼
+   Delete Data       Reset Data      Schema Update
+        │                │                │
+ Records removed   Active records      Update SQL
+ Schema preserved  become recoverable      │
+ Module preserved       │                  ▼
+        │                ▼            Current Schema
+        │           Recover Data           │
+        │                │                 │
+        │         Records restored         │
+        │                │                 │
+        └────────────────┴────────┬────────┘
+                                 │
+                                 ▼
+                               Nuke
+                                 │
+                                 ▼
+                       Core validates module
+                                 │
+                                 ▼
+                      Core validates ownership
+                                 │
+                                 ▼
+                         Drop owned tables
+                                 │
+                                 ▼
+                           Remove module
 
 The lifecycle can be summarized as:
 
-> **Unavailable → Install SQL → Operate → Update SQL when required → Delete Data when requested → Core Nuke when uninstalling.**
+> **Unavailable → Install SQL → Operate → Update SQL when required → Delete Data when permanent clearing is requested → Reset Data when recoverable clearing is requested → Recover Data when reset records are restored → Core Nuke when uninstalling.**
 
 Each transition that changes persistent state is deliberate.
 
@@ -653,6 +784,8 @@ The ownership of each lifecycle operation must remain clear.
 | Apply supported schema update | Established lifecycle mechanism |
 | CRUD | Module |
 | Delete Data | Module |
+| Reset Data | Module |
+| Recover Data | Module |
 | Present Nuke control | Module Admin |
 | Authorize Nuke | Core |
 | Validate table ownership | Core |
@@ -661,7 +794,7 @@ The ownership of each lifecycle operation must remain clear.
 
 The most important distinction is:
 
-> **Delete Data belongs to the module. Nuke belongs to Core.**
+> **Delete Data, Reset Data, and Recover Data belong to the module. Nuke belongs to Core.**
 
 ---
 
@@ -678,7 +811,7 @@ An AI agent developing a Chaos MVC module must:
 7. Use the existing Chaos MVC CSRF helpers.
 8. Keep Nuke Core-owned.
 9. Declare module-owned tables accurately in `module.json`.
-10. Never use Nuke or Delete Data to target unrelated tables.
+10. Never use Nuke, Delete Data, Reset Data, or Recover Data to target unrelated data or tables.
 11. Keep database and business logic out of views.
 12. Use prepared SQL parameters.
 13. Use explicit action allowlists for Admin mutations.
@@ -717,6 +850,15 @@ Before considering a database-backed module ready for release, verify:
 - [ ] Delete Data preserves schema.
 - [ ] Delete Data preserves the installed module.
 - [ ] Delete Data uses POST + CSRF.
+- [ ] Reset Data moves only module-owned active records into a recoverable state.
+- [ ] Reset Data preserves schema.
+- [ ] Reset Data preserves the installed module.
+- [ ] Reset Data uses POST + CSRF.
+- [ ] Recover Data restores only records placed into the recoverable state by Reset Data.
+- [ ] Recover Data preserves schema.
+- [ ] Recover Data preserves the installed module.
+- [ ] Recover Data uses POST + CSRF.
+- [ ] Reset and Recover controls reflect the current data state deterministically.
 - [ ] Nuke is exposed through the Core uninstall lifecycle.
 - [ ] Nuke is not independently implemented by the module.
 - [ ] `module.json` accurately declares owned database tables.
@@ -747,7 +889,17 @@ A database-backed module should be tested through the complete lifecycle:
         ↓
     CRUD operations
         ↓
+    Reset Data
+        ↓
+    Active records become recoverable
+        ↓
+    Recover Data
+        ↓
+    Reset records return to operation
+        ↓
     Delete Data
+        ↓
+    Records permanently removed
         ↓
     Schema remains
         ↓

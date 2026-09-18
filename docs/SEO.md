@@ -11,8 +11,9 @@ The Core SEO/discovery layer covers:
 - `ror.xml`
 - `llms.txt`
 - `rss.xml`
+- `site.json`
 
-The sitemap, ROR, and LLMS generators describe routable public resources. RSS is content-oriented and publishes Posts through the existing Posts subsystem.
+The sitemap, ROR, and LLMS generators describe routable public resources. RSS is content-oriented and publishes Posts through the existing Posts subsystem. `site.json` provides a machine-readable site resource declaration covering public resources exposed by the installation.
 
 ---
 
@@ -225,6 +226,73 @@ This allows `/rss` to act as the live Core feed endpoint while permitting admini
 
 ---
 
+## Site JSON
+
+Controller:
+
+```text
+/app/controllers/site_json.php
+```
+
+Generated artifact:
+
+```text
+/public/site.json
+```
+
+`site.json` is the machine-readable site resource declaration for the installation.
+
+Its structure is validated against the authoritative remote schema:
+
+```text
+https://schema.stn-labz.com/site/v1/schema.json
+```
+
+The authoritative schema is retrieved during generation. Chaos MVC does not maintain a local authoritative copy of the schema.
+
+### Resource Discovery
+
+The generated declaration may contain resources from:
+
+- public Core routes
+- valid user Modules
+- published Core Pages
+- published Posts
+- the public RSS feed
+
+Resource entries use the schema-defined types appropriate to their owner:
+
+```text
+page
+other
+article
+feed
+```
+
+Public Core routes and published Pages are represented as `page` resources. Valid user Modules are represented as `other` resources. Published Posts are represented as `article` resources. RSS is represented as a `feed`.
+
+Resources are de-duplicated by URL and sorted deterministically before the candidate document is validated and published.
+
+### Schema Validation
+
+Generation is fail-closed.
+
+Before replacing the existing `/public/site.json`, the generator must successfully obtain the authoritative schema and validate the candidate declaration against it.
+
+The existing known-good artifact is preserved when:
+
+- the authoritative schema cannot be retrieved
+- the schema response is malformed
+- the schema `$id` does not identify the expected authoritative schema
+- the candidate `site.json` does not satisfy the schema
+- generation otherwise cannot deterministically establish a valid replacement
+
+A failed refresh therefore does not replace a known-good `site.json` with an unvalidated or partially generated document.
+
+The remote schema is authoritative. A local schema copy is not used as fallback authority.
+
+---
+
 ## Admin Refresh
 
 Administrative maintenance route:
@@ -246,6 +314,7 @@ The refresh action regenerates:
 /public/ror.xml
 /public/llms.txt
 /public/rss.xml
+/public/site.json
 ```
 
 The operation is restricted to the established Admin authorization boundary.
@@ -289,6 +358,9 @@ The SEO/discovery subsystem will not:
 - invent values for dynamic module route parameters
 - expose administrative or internal Core controllers as public resources
 - independently redefine Post publication state for RSS
+- publish an unvalidated `site.json`
+- treat a local schema copy as authoritative for `site.json`
+- replace a known-good `site.json` when remote schema retrieval or candidate validation fails
 - allow discovery output to override Router ownership or routing rules
 
 Generated discovery files describe resources that are already authorized by their owning subsystem. They do not create routes or grant authority.
@@ -304,6 +376,7 @@ Core files involved in the SEO/discovery subsystem include:
 /app/controllers/ror.php
 /app/controllers/llms.php
 /app/controllers/rss.php
+/app/controllers/site_json.php
 /app/controllers/admin.php
 /app/core/router.php
 ```
@@ -315,6 +388,7 @@ Generated public artifacts are:
 /public/ror.xml
 /public/llms.txt
 /public/rss.xml
+/public/site.json
 ```
 
 ---

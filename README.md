@@ -11,7 +11,9 @@ Chaos MVC is a lightweight PHP MVC framework focused on **discipline, traceabili
 
 **NOTICE** Current Source does **NOT** mean Current Version. Please see the [Releases](https://github.com/stnlabz/chaos-mvc/releases) for current version.
 
-**Current Version**: 1.2.0
+**Current Release**: 1.2.0
+
+**Current Source**: 1.2.1 development
 
 The framework was designed to remain predictable and maintainable while avoiding the complexity that often grows inside large CMS systems.
 On the Webz at [Chaos MVC](https://www.chaos-mvc.org)
@@ -65,7 +67,7 @@ If you prefer:
 - minimal dependencies
 - transparent execution flow
 
-then the Chaos MVC may be the framework you are looking for.
+then ChAoS MVC may be the framework you are looking for.
 
 ---
 
@@ -195,7 +197,7 @@ This predictable execution flow keeps application behavior easy to understand an
 
 # Core Features
 
-Chaos MVC includes several modules out of the box to support common application needs.
+Chaos MVC provides a protected Core together with installation-owned userland for Modules, Themes, Pages, and site data. Current development emphasizes keeping reusable application behavior outside Core unless it belongs to framework infrastructure.
 
 ## Authentication
 
@@ -208,65 +210,141 @@ User authentication system providing:
 - Password reset
 
 ## Updating
-The ChAoS MVC **Core** can be updated whenever a release has been published.
- - `Updater` now comes default
- - **Entire** `Core` gets over written to keep the core, **protected**.
+
+The ChAoS MVC Core includes an authenticated updater for published releases.
+
+Current update architecture includes:
+
+- whole-Core replacement within the established Core release boundary
+- signed release verification
+- SHA-256 integrity verification
+- bounded HTTPS retrieval
+- maintenance handling during update operations
+- rollback/recovery support
+- preservation of installation-owned configuration and userland
+- release artifact validation before deployment
+
+Core updates do not overwrite installation-owned user Modules, Themes, Pages, or user data.
+
 ---
 
 ## Administration Panel
 
-The administration interface provides tools for managing the system and monitoring runtime behavior.
+The administration interface provides authenticated controls for framework and installation management.
 
-Administrative modules include:
+Current administrative facilities include:
 
-### Health
-Displays system diagnostics and environment checks.
+- site and installation management
+- users and authentication
+- Posts
+- Media
+- Pages
+- Modules
+- Themes
+- Core updates
+- health/runtime information
+- SEO and discovery refresh operations
 
-### Users
-Manage user accounts and authentication roles.
-
-### Modules
-Install, enable, disable, or update framework modules.
-
-### Media
-Handles file uploads and media storage.
-
-### Posts
-Content and article management.
-
-### Updater
-Check for new releases, click to update, update is automated.
+User Modules may also expose their own authenticated Admin interfaces without moving module-specific behavior into Core.
 
 ---
 
-# SEO Tools
+# SEO and Discovery
 
-Chaos MVC includes built-in tools for generating SEO and AI discovery resources.
+Chaos MVC includes Core generation for public search, feed, and machine-discovery resources.
 
-These tools scan controllers and modules to automatically build updated files.
+Generated artifacts include:
 
-Generated files include:
-- `ror.xml`
 - `sitemap.xml`
+- `ror.xml`
 - `llms.txt`
-  
-These resources help search engines and AI systems understand the structure of the site.
+- `rss.xml`
+- `site.json`
+
+Public Core routes, valid filesystem-backed user Modules, and published filesystem-backed Pages are discovered from their established ownership boundaries rather than treating the legacy modules database table as authoritative.
+
+RSS publishes content through the existing Posts publication contract.
+
+`site.json` provides a machine-readable site resource declaration and is validated against the authoritative remote schema before a known-good generated artifact is replaced.
+
+The Admin refresh operation regenerates the discovery artifacts through the established administrative boundary.
 
 ---
 
 # Developer Documentation
 
-Chaos-MVC.com now has documentation available.
+Current repository documentation covers the framework architecture and the systems added or expanded during current development, including:
 
-Certification portal pages include:
-- `/certification`
-- `/certification/flow`
-- `/certification/example`
-- `/certification/database`
-- `/certification/markdown`
-- `/certification/rules`
-  
-  These pages explain the architecture, database wrapper, Markdown system, and development standards.
+- Module creation and lifecycle
+- Themes
+- filesystem-backed Pages
+- Markdown rendering
+- SEO and discovery
+- RSS
+- `site.json`
+- installation and updating
+- development and contribution rules
+
+The ChAoS MVC website also provides developer, Forge, and certification material for developers learning or building against the framework.
+
+Certification is emphasized for developers who intend to publish signed work within the ChAoS MVC ecosystem. The Forge provides a practical starting point for learning the development and submission process.
+
+---
+
+# Current Extension Architecture
+
+## User Modules
+
+User Modules live under:
+
+```text
+/user/modules/{slug}/
+```
+
+Modules may own controllers, models, views, libraries, SQL lifecycle files, documentation, and module-specific data.
+
+Reusable userland libraries do not automatically belong in Core. A Module may own reusable domain libraries that another Module consumes while the owning Module retains responsibility for that implementation.
+
+## Module and Data Lifecycles
+
+Current Module development distinguishes schema/module lifecycle from module-owned data lifecycle.
+
+Where applicable, a Module may provide deterministic operations for:
+
+- schema state detection
+- initial schema installation
+- exact-version schema migration
+- module-owned data deletion
+- canonical/reference-data restoration
+- explicit Data Reset
+
+Data Reset is distinct from uninstall: it can return module-managed data to its canonical initial state while leaving the Module and its schema installed.
+
+## Themes
+
+Installation-owned Themes live under:
+
+```text
+/user/themes/{theme}/
+```
+
+Themes own the surrounding presentation shell while Core and Module views continue to render page content. Core retains a built-in fallback layout.
+
+## Pages
+
+Filesystem-backed Pages live under:
+
+```text
+/user/pages/{slug}/
+├── page.json
+└── main.*
+```
+
+Pages support draft/published state and passive Markdown, HTML, text, or JSON content. Published Pages resolve through the established root-level routing fallback after Core controller and user-Module ownership checks.
+
+## Markdown
+
+The Core Markdown renderer supports the syntax documented by the project while escaping raw source HTML and validating generated links. Current support includes common GitHub-style Markdown facilities together with ChAoS MVC extensions documented in the Markdown reference.
 
 ---
 
@@ -311,48 +389,53 @@ Full documentation is available at:
 
 # Installation
 
-Typical installation steps:
+ChAoS MVC includes its own installation flow and persistent installation identity.
 
+A deployment requires:
 
-1. Clone the repository
-2. Configure database credentials in `/app/core/config.php`
-3. Import the database schema
-4. Configure web root to `/public`
-5. Ensure mod_rewrite is enabled
+1. the complete release artifact
+2. a supported PHP environment
+3. a configured web server with the document root directed to `/public`
+4. database access for installations using database-backed facilities
+5. writable installation-owned data/log locations required by the framework
 
-After installation, the framework is ready to run.
+Use the release artifact and installation documentation for the version being deployed rather than treating the development branch as a release package.
 
 ---
 
 # Project Structure
 
-```bash
-├── app
-│   ├── bootstrap.php
-│   ├── controllers
-│   ├── core
-│   ├── lib
-│   ├── models
-│   └── views
-│       ├── admin
-│       ├── auth
-│       ├── errors
-│       ├── inc
-│       └── public
-├── public
-│   ├── assets
-│   │   ├── css
-│   │   ├── icons
-|   │   ├── img
+```text
+├── app/
+│   ├── bootstrap.php
+│   ├── controllers/
+│   ├── core/
+│   ├── data/
+│   ├── lib/
+│   ├── models/
+│   └── views/
+├── public/
+├── user/
+│   ├── data/
+│   ├── modules/
+│   ├── pages/
+│   └── themes/
 └── README.md
 ```
+
+`app/` contains protected framework infrastructure.
+
+`user/` contains installation-owned extension and content space. User Modules, Themes, and Pages remain outside the protected Core boundary.
+
 ---
 
 # Project Status
 
-Chaos MVC is an actively developed framework and currently powers several live systems.
+Chaos MVC is an actively developed framework and currently powers live systems.
 
-The project continues to evolve with a focus on stability, maintainability, and developer clarity.
+The current source is the 1.2.1 development line. Development since 1.2.0 includes the filesystem-backed Pages subsystem, expanded Markdown support, modernized SEO/discovery generation, RSS, schema-validated `site.json`, Theme infrastructure, updater/release hardening, and continued refinement of user-Module lifecycle and development practices.
+
+The current development objective remains a small, deterministic, understandable framework with a protected Core and clearly owned userland.
 
 ---
 
