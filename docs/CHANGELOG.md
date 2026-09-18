@@ -3,7 +3,7 @@
 
 **Current Version:** 1.2.0
 
-## v1.2.1 Development
+## v1.2.1 Release Staging
 
 ## Features
 - Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table
