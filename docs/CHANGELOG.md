@@ -6,8 +6,9 @@
 ## v1.2.1 Release Staging
 
 ## Features
-- Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table
+- Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, `site.json` and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table
 - Added a Core RSS controller that generates and serves the site's RSS feed from published Posts through the existing Posts model contract while retaining `/public/rss.xml` as the generated feed artifact
+- Added a core site_json Controller that generates and serves the site's JSON Data Feed validatated against the STN-Labz Site Schema
 - Added Admin index refresh orchestration so `/admin/refresh_indices` regenerates sitemap, ROR, LLMS, and RSS artifacts before returning to `/admin`
 - Added the Core Pages subsystem with filesystem-backed page ownership under `/user/pages/{slug}/`, using `page.json` metadata and `main.md`, `main.html`, `main.txt`, or `main.json` content files instead of database-backed page records
 - Added clean public page routing so published Pages resolve directly from root-level URLs such as `/about-us` after Core controller and user-module ownership checks
