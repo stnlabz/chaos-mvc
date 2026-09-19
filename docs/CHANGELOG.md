@@ -6,7 +6,7 @@
 ## v1.2.1 — September 19, 2026
 
 ## Security
-- Prevented public `/site_json` requests from triggering remote schema retrieval, resource discovery, validation, and filesystem replacement; the public controller now serves only the last successfully generated `public/site.json`, while generation remains within the authenticated Admin refresh path
+- Prevented repeated public `/site_json` requests from triggering remote schema retrieval, resource discovery, validation, and filesystem replacement; upgraded installations bootstrap a missing `public/site.json` once with crawler-readable permissions, then the public controller serves the published artifact while normal regeneration remains within the authenticated Admin refresh path
 
 ## Features
 - Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, `site.json` and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table

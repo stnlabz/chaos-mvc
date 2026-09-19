@@ -38,16 +38,35 @@ class site_json extends controller
     {
         $siteJson = PUBROOT . '/site.json';
 
-        if (!is_file($siteJson) || is_link($siteJson)) {
-            http_response_code(404);
-            header('Content-Type: application/json; charset=UTF-8');
-            echo json_encode([
-                'error' => 'Site resource declaration is not available.',
-            ], JSON_UNESCAPED_SLASHES);
-            return;
-        }
+        if (!is_file($siteJson) && !is_link($siteJson)) {
+            /*
+             * Existing installations may not have generated site.json before
+             * this controller is deployed. Bootstrap it once; subsequent
+             * public requests serve the published artifact without repeating
+             * remote validation or filesystem discovery.
+             */
+            $json = $this->generate();
+        } else {
+            if (is_link($siteJson)) {
+                throw new RuntimeException(
+                    'Published site resource declaration is invalid.'
+                );
+            }
 
-        $json = file_get_contents($siteJson);
+            $permissions = fileperms($siteJson);
+
+            if (
+                $permissions !== false
+                && ($permissions & 0777) !== 0644
+                && !chmod($siteJson, 0644)
+            ) {
+                throw new RuntimeException(
+                    'Could not set public site.json permissions.'
+                );
+            }
+
+            $json = file_get_contents($siteJson);
+        }
 
         if (!is_string($json) || $json === '') {
             throw new RuntimeException(
@@ -936,6 +955,12 @@ class site_json extends controller
             ) {
                 throw new RuntimeException(
                     'Could not write temporary site.json.'
+                );
+            }
+
+            if (!chmod($temporary, 0644)) {
+                throw new RuntimeException(
+                    'Could not set public site.json permissions.'
                 );
             }
 
