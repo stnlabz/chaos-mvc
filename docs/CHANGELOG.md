@@ -3,7 +3,7 @@
 
 **Current Version:** 1.2.1
 
-## v1.2.1 Release Staging
+## v1.2.1 — September 19, 2026
 
 ## Security
 - Prevented public `/site_json` requests from triggering remote schema retrieval, resource discovery, validation, and filesystem replacement; the public controller now serves only the last successfully generated `public/site.json`, while generation remains within the authenticated Admin refresh path
