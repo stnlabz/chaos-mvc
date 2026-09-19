@@ -16,11 +16,11 @@ The home module for the ChAoS MVC, supersedes the absence of /home in the core
 
 ```text
 /user/modules/home/controllers/home.php
-/user/modules/home/models/home_model.php
-/user/modules/home/views/admin/home.php
+/user/modules/home/views/index.php
+/user/modules/home/README.md
 /user/modules/home/module.json
 ```
 
 ## Administration
 
-Open `/admin/home` after installing the module.
+Home is a public module and does not provide an Admin interface.

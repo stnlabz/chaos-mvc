@@ -1,9 +1,12 @@
 # Chaos MVC
 **CHANGELOG**
 
-**Current Version:** 1.2.0
+**Current Version:** 1.2.1
 
 ## v1.2.1 Release Staging
+
+## Security
+- Prevented public `/site_json` requests from triggering remote schema retrieval, resource discovery, validation, and filesystem replacement; the public controller now serves only the last successfully generated `public/site.json`, while generation remains within the authenticated Admin refresh path
 
 ## Features
 - Modernized Core SEO/discovery generation so `sitemap.xml`, `ror.xml`, `site.json` and `llms.txt` discover public Core routes, valid filesystem-backed user modules, and published Core Pages without depending on the legacy modules database table
@@ -18,6 +21,8 @@
 - Added safe URL validation for explicit and automatic links while continuing to escape raw source HTML before supported Markdown is converted into generated markup
 
 ## Reliability
+- Corrected the stock Home Module manifest so its declared files match its public controller, view, and documentation, and aligned its signing metadata with the current RSA-SHA256 trust contract
+- Corrected the Example Module signing metadata to use the current RSA-SHA256 trust contract and removed an obsolete undeclared migration patch from the canonical reference implementation
 - Added explicit Core Router authorization for the Admin `refresh_indices` maintenance action, with `refresh_indexes` retained as a compatibility alias, so maintenance requests reach the bounded Admin handler instead of falling through to 404 handling
 - Kept SEO module discovery inert and filesystem-authoritative by validating module directory identity, `module.json`, the matching confined controller, and the declared `index` route without executing user-module PHP
 - Limited public Page discovery in generated SEO artifacts to valid Pages whose filesystem metadata state is `published`

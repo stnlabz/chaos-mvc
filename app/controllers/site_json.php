@@ -26,13 +26,34 @@ class site_json extends controller
     private const MAX_SCHEMA_BYTES = 1048576;
 
     /**
-     * Serve the site resource declaration and refresh site.json.
+     * Serve the last successfully generated site resource declaration.
+     *
+     * Public requests must not trigger remote schema retrieval, resource
+     * discovery, or filesystem writes. Generation remains available to the
+     * authenticated administrative refresh operation through generate().
      *
      * @return void
      */
     public function index(): void
     {
-        $json = $this->generate();
+        $siteJson = PUBROOT . '/site.json';
+
+        if (!is_file($siteJson) || is_link($siteJson)) {
+            http_response_code(404);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'error' => 'Site resource declaration is not available.',
+            ], JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $json = file_get_contents($siteJson);
+
+        if (!is_string($json) || $json === '') {
+            throw new RuntimeException(
+                'Published site resource declaration could not be read.'
+            );
+        }
 
         header('Content-Type: application/json; charset=UTF-8');
         echo $json;

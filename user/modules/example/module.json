@@ -9,7 +9,7 @@
     "domain": "www.yourdomain.com",
     "certified": "No",
     "signing": {
-        "sha256": "SHA-256",
+        "algorithm": "rsa-sha256",
         "key_id": "Your-keys-id",
         "public_key": "your base64 public key from public.pem"
     },
@@ -22,7 +22,8 @@
         "sql/references.sql",
         "sql/patches/1.9.0-to-2.0.0.sql",
         "docs/README.md",
-        "docs/CHANGELOG.md"
+        "docs/CHANGELOG.md",
+        "README.md"
     ],
     "routes": [
         "index"
