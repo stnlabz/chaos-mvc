@@ -13,6 +13,7 @@
  */
 
 /* [AI:GPT-5.6 Sol | 2026-09-14 18:38:35 UTC] */
+/* [AI:GPT-5.6 Sol | 2026-09-19 18:10:00 UTC] */
 class site_json extends controller
 {
     public static $is_core = true;
@@ -25,12 +26,16 @@ class site_json extends controller
     private const MAX_SCHEMA_BYTES = 1048576;
 
     /**
-     * Rebuild site.json.
+     * Serve the site resource declaration and refresh site.json.
+     *
+     * @return void
      */
-    public function index(): bool
+    public function index(): void
     {
-        $this->generate();
-        return true;
+        $json = $this->generate();
+
+        header('Content-Type: application/json; charset=UTF-8');
+        echo $json;
     }
 
     /**
@@ -1043,4 +1048,5 @@ class site_json extends controller
         return checkdate($month, $day, $year);
     }
 }
+/* [End AI:GPT-5.6 Sol] */
 /* [End AI:GPT-5.6 Sol] */

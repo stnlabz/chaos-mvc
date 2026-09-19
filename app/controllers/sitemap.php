@@ -14,14 +14,30 @@
  */
 
 /* [AI:GPT-5.6 Sol | 2026-09-13 20:06:31 UTC] */
+/* [AI:GPT-5.6 Sol | 2026-09-19 18:05:00 UTC] */
 class sitemap extends controller
 {
     public static $is_core = true;
 
     /**
-     * Rebuild sitemap.xml.
+     * Serve the sitemap and refresh the cached sitemap.xml artifact.
+     *
+     * @return void
      */
-    public function index(): bool
+    public function index(): void
+    {
+        $xml = $this->generate();
+
+        header('Content-Type: application/xml; charset=UTF-8');
+        echo $xml;
+    }
+
+    /**
+     * Rebuild sitemap.xml and return the generated XML.
+     *
+     * @return string
+     */
+    public function generate(): string
     {
         $host = rtrim(URLROOT, '/');
         $xmlEscape = static fn (string $value): string => htmlspecialchars(
@@ -76,7 +92,7 @@ class sitemap extends controller
             throw new RuntimeException('Could not write sitemap.xml.');
         }
 
-        return true;
+        return $xml;
     }
 
 
@@ -277,4 +293,5 @@ class sitemap extends controller
     }
 
 }
+/* [End AI:GPT-5.6 Sol] */
 /* [End AI:GPT-5.6 Sol] */

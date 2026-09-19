@@ -22,6 +22,9 @@
 - Kept SEO module discovery inert and filesystem-authoritative by validating module directory identity, `module.json`, the matching confined controller, and the declared `index` route without executing user-module PHP
 - Limited public Page discovery in generated SEO artifacts to valid Pages whose filesystem metadata state is `published`
 - Separated RSS generation from HTTP presentation so Admin refresh can rebuild `rss.xml` without emitting feed XML, while `/rss` serves the generated RSS document with the appropriate content type
+- Separated ROR generation from HTTP presentation so Admin refresh can rebuild `ror.xml` without emitting ROR XML, while `/ror` serves the generated ROR document with the appropriate XML content type
+- Separated Sitemap generation from HTTP presentation so Admin refresh can rebuild `sitemap.xml` without emitting sitemap XML, while `/sitemap` serves the generated sitemap document with the appropriate XML content type
+- Separated Site JSON generation from HTTP presentation so Admin refresh can rebuild `site.json` without emitting JSON, while `/site_json` serves the generated site declaration with the appropriate JSON content type
 - Kept filesystem Pages non-authoritative while in `draft` state so unpublished page directories remain inaccessible through public routing
 - Preserved controller and module naming validation while allowing hyphenated page slugs through the dedicated Pages fallback path
 - Added resolved page content paths so Markdown pages are rendered through the established `render_md::markdown_file()` pipeline instead of the lightweight `content_renderer`

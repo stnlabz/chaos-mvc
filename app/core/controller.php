@@ -9,7 +9,6 @@
  * Path: /app/core/controller.php
  */
 
-/* [AI:GPT-5.6 Sol | 2026-08-26 UTC] */
 class controller
 {
     /**
@@ -660,4 +659,3 @@ class controller
         );
     }
 }
-/* [End AI:GPT-5.6 Sol] */

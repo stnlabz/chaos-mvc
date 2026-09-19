@@ -15,14 +15,30 @@
  */
 
 /* [AI:GPT-5.6 Sol | 2026-09-13 20:06:31 UTC] */
+/* [AI:GPT-5.6 Sol | 2026-09-19 18:00:00 UTC] */
 class ror extends controller
 {
     public static $is_core = true;
 
     /**
-     * Rebuild ror.xml.
+     * Serve the ROR document and refresh the cached ror.xml artifact.
+     *
+     * @return void
      */
-    public function index(): bool
+    public function index(): void
+    {
+        $xml = $this->generate();
+
+        header('Content-Type: application/xml; charset=UTF-8');
+        echo $xml;
+    }
+
+    /**
+     * Rebuild ror.xml and return the generated XML.
+     *
+     * @return string
+     */
+    public function generate(): string
     {
         $host = rtrim(URLROOT, '/');
         $xmlEscape = static fn (string $value): string => htmlspecialchars(
@@ -130,7 +146,7 @@ class ror extends controller
             throw new RuntimeException('Could not write ror.xml.');
         }
 
-        return true;
+        return $xml;
     }
 
 
@@ -331,4 +347,5 @@ class ror extends controller
     }
 
 }
+/* [End AI:GPT-5.6 Sol] */
 /* [End AI:GPT-5.6 Sol] */
