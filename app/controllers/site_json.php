@@ -572,7 +572,7 @@ class site_json extends controller
             );
             $error = curl_error($handle);
 
-            curl_close($handle);
+            //curl_close($handle);
 
             if (!is_string($raw) || $status !== 200) {
                 throw new RuntimeException(
