@@ -2,7 +2,7 @@
 
 **Version 1.0**
 
-Copyright (c) STN-LABZ, LLC.  
+Copyright (c) ChAoS Foundation.  
 All rights reserved.
 
 **Protect the Core. Grow outward.**
@@ -21,17 +21,17 @@ Chaos MVC is proprietary software. Public availability of its source code, inclu
 
 ## 2. Ownership
 
-Chaos MVC, including its Core, source code, architecture, documentation, official distributions, and other materials provided by STN-LABZ, LLC., remains the copyrighted intellectual property of STN-LABZ, LLC., except for separately identified third-party components.
+Chaos MVC, including its Core, source code, architecture, documentation, official distributions, and other materials provided by The ChAoS FOundation, remains the copyrighted intellectual property of the ChAoS FOundation, except for separately identified third-party components.
 
 No ownership interest in Chaos MVC is transferred under this License.
 
-All rights not expressly granted by this License are reserved by STN-LABZ, LLC.
+All rights not expressly granted by this License are reserved by The ChAoS Foundation
 
 ---
 
 ## 3. License Grant
 
-Subject to compliance with this License, STN-LABZ, LLC. grants the licensee a limited, non-exclusive, non-transferable, revocable license to:
+Subject to compliance with this License, The ChAoS Foundation. grants the licensee a limited, non-exclusive, non-transferable, revocable license to:
 
 1. Download an official Chaos MVC distribution.
 2. Inspect the Chaos MVC source code.
@@ -55,13 +55,13 @@ Protected Core components include, without limitation:
 1. `/app/core`;
 2. Chaos MVC controllers and models designated with `$is_core = 1`;
 3. `/app/lib`; and
-4. Additional components expressly designated by STN-LABZ, LLC. as Core components in authoritative Chaos MVC documentation.
+4. Additional components expressly designated by The ChAoS Foundation, as Core components in authoritative Chaos MVC documentation.
 
 The designation of a component as Core establishes its protected status under this License.
 
 ### 4.2 Core Modification Prohibited
 
-Except with prior express written authorization from STN-LABZ, LLC., a licensee may not:
+Except with prior express written authorization from STN-LABZ, LLC. and / or The ChAoS FOundation, a licensee may not:
 
 1. Modify the Core.
 2. Patch or alter Core source code.
@@ -77,7 +77,7 @@ Possession of source code, repository access, technical capability, or discovery
 
 ### 4.3 Authorized Core Development
 
-STN-LABZ, LLC. may expressly authorize another person or organization to perform Core development.
+The Foundation. may expressly authorize another person or organization to perform Core development.
 
 Such authorization must be explicit and does not establish a continuing right to modify the Core beyond the scope and duration of the authorization.
 
@@ -89,7 +89,7 @@ Discovery of a defect, incompatibility, malfunction, or other problem affecting 
 
 Ordinary Core defects will be reported through the official Chaos MVC Issues system at `chaos-mvc.org`.
 
-A report should contain sufficient information for STN-LABZ, LLC. to understand and, where practical, reproduce the reported condition.
+A report should contain sufficient information for STN-LABZ, LLC. and/or The ChAoS Foundation to understand and, where practical, reproduce the reported condition.
 
 Submission of a report does not grant the reporter authority to modify the Core.
 
@@ -109,13 +109,13 @@ Reporting a security vulnerability does not grant authorization to modify or dis
 
 ## 7. Core Updates
 
-Official Core corrections, replacements, and updates are issued by STN-LABZ, LLC. or by a party expressly authorized by STN-LABZ, LLC.
+Official Core corrections, replacements, and updates are issued by The ChAoS FOundation or by a party expressly authorized by The ChAoS Foundation.
 
 Official Chaos MVC update mechanisms may overwrite, replace, remove, or otherwise update Core files as necessary to install an authorized release.
 
 Licensees are responsible for ensuring that unauthorized local modifications do not interfere with the official update process.
 
-STN-LABZ, LLC. is not required to preserve unauthorized modifications to Core files during an update.
+Neither STN-LABZ, LLC. or The ChAoS Foundation are required to preserve unauthorized modifications to Core files during an update.
 
 ---
 
@@ -152,7 +152,7 @@ Permission to use Chaos MVC commercially does not grant permission to:
 
 A complete official and unmodified Chaos MVC distribution may be redistributed only when:
 
-1. The distribution remains materially identical to the official distribution released by STN-LABZ, LLC.
+1. The distribution remains materially identical to the official distribution released by The ChAoS Foundation.
 2. This License remains included.
 3. Copyright notices remain intact.
 4. Required attribution and notices remain intact.
@@ -160,7 +160,7 @@ A complete official and unmodified Chaos MVC distribution may be redistributed o
 6. No modified Core component is included.
 7. The redistribution does not falsely imply authorization, certification, endorsement, or partnership.
 
-STN-LABZ, LLC. may authorize additional redistribution rights in writing.
+The ChAoS Foundation may authorize additional redistribution rights in writing.
 
 ---
 
@@ -168,9 +168,9 @@ STN-LABZ, LLC. may authorize additional redistribution rights in writing.
 
 This License does not grant a trademark license.
 
-The names and marks STN-LABZ, ChAoS, Chaos MVC, associated logos, the ChAoS circular brand image, and other identifying marks remain the property of their respective owner.
+The names and marks STN-LABZ, ChAoS, ChaoS Foundation, Chaos MVC, associated logos, the ChAoS circular brand image, and other identifying marks remain the property of their respective owner.
 
-Use of Chaos MVC does not authorize a licensee to represent itself as STN-LABZ, ChAoS, an official Chaos MVC distributor, or an authorized, approved, or certified developer.
+Use of Chaos MVC does not authorize a licensee to represent itself as STN-LABZ, ChAoS, The ChAoS FOundation, an official Chaos MVC distributor, or an authorized, approved, or certified developer.
 
 Reasonable factual statements identifying that a website or application uses Chaos MVC are permitted provided they do not imply an affiliation, certification, sponsorship, or endorsement that does not exist.
 
@@ -178,11 +178,11 @@ Reasonable factual statements identifying that a website or application uses Cha
 
 ## 12. Certification
 
-Installation, use, development with, contribution to, or redistribution of Chaos MVC does not grant any STN-LABZ or ChAoS certification.
+Installation, use, development with, contribution to, or redistribution of Chaos MVC does not grant any ChAoS certification.
 
 Certification programs, including developer, module, theme, or other Chaos MVC certifications, are governed separately.
 
-Only certifications actually issued or recognized by the applicable STN-LABZ or ChAoS certification authority may be represented as valid.
+Only certifications actually issued or recognized by the applicable ChAoS Foundation or ChAoS certification authority may be represented as valid.
 
 ---
 
@@ -210,7 +210,7 @@ Where a third-party license conflicts with this License regarding the third part
 
 Chaos MVC may be used only in compliance with applicable law.
 
-Nothing in this License authorizes conduct prohibited by applicable law or grants rights that STN-LABZ, LLC. does not possess.
+Nothing in this License authorizes conduct prohibited by applicable law or grants rights that STN-LABZ, LLC., The ChAoS Foundation, does not possess.
 
 ---
 
@@ -227,7 +227,7 @@ No right or permission will arise from:
 7. Failure to enforce a provision on a previous occasion.
 8. Any right not expressly granted by this License.
 
-Any permission outside this License requires express authorization from STN-LABZ, LLC.
+Any permission outside this License requires express authorization from The ChAoS Foundation.
 
 ---
 
@@ -239,9 +239,9 @@ Unauthorized modification, replacement, circumvention, or distribution of the Ch
 
 Upon termination, the licensee will cease exercising rights granted by this License except as necessary to comply with applicable legal obligations.
 
-STN-LABZ, LLC. may provide an opportunity to cure a violation.
+The ChAos Foundation. may provide an opportunity to cure a violation.
 
-A cured violation does not automatically reinstate terminated rights unless STN-LABZ, LLC. confirms reinstatement in writing.
+A cured violation does not automatically reinstate terminated rights unless The ChAoS Foundation confirms reinstatement in writing.
 
 Termination does not affect rights or remedies that accrued before termination.
 
@@ -251,15 +251,15 @@ Termination does not affect rights or remedies that accrued before termination.
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, CHAOS MVC IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, EXPRESS, IMPLIED, OR STATUTORY.
 
-STN-LABZ, LLC. DISCLAIMS, TO THE MAXIMUM EXTENT PERMITTED BY LAW, WARRANTIES INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, ACCURACY, AVAILABILITY, SECURITY, AND ERROR-FREE OPERATION.
+STN-LABZ, LLC., THE CHAOS FOUNDATION AND TEAM CHAOS DISCLAIMS, TO THE MAXIMUM EXTENT PERMITTED BY LAW, WARRANTIES INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, ACCURACY, AVAILABILITY, SECURITY, AND ERROR-FREE OPERATION.
 
-STN-LABZ, LLC. DOES NOT WARRANT THAT CHAOS MVC WILL MEET EVERY REQUIREMENT, OPERATE WITHOUT INTERRUPTION, OR BE FREE FROM DEFECTS OR VULNERABILITIES.
+STN-LABZ, LLC., THE CHAOS FOUNDATION AND TEAM CHAOS DOES NOT WARRANT THAT CHAOS MVC WILL MEET EVERY REQUIREMENT, OPERATE WITHOUT INTERRUPTION, OR BE FREE FROM DEFECTS OR VULNERABILITIES.
 
 ---
 
 ## 19. Limitation of Liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, STN-LABZ, LLC., ITS OWNERS, OFFICERS, EMPLOYEES, CONTRIBUTORS, CONTRACTORS, AND AUTHORIZED DISTRIBUTORS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM OR RELATED TO CHAOS MVC OR THIS LICENSE.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, STN-LABZ, LLC., THE CHAOS FOUNDATION AND TEAM CHAOS,  ITS OWNERS, OFFICERS, EMPLOYEES, CONTRIBUTORS, CONTRACTORS, AND AUTHORIZED DISTRIBUTORS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM OR RELATED TO CHAOS MVC OR THIS LICENSE.
 
 THIS INCLUDES, WITHOUT LIMITATION, LOSS OF DATA, LOSS OF PROFITS, LOSS OF REVENUE, BUSINESS INTERRUPTION, LOSS OF GOODWILL, OR COSTS ASSOCIATED WITH SUBSTITUTE SOFTWARE OR SERVICES.
 
@@ -277,15 +277,15 @@ The remaining provisions will remain in effect.
 
 ## 21. Waiver
 
-Failure by STN-LABZ, LLC. to enforce a provision of this License on one occasion does not waive the right to enforce that provision or another provision later.
+Failure by Team ChAoS to enforce a provision of this License on one occasion does not waive the right to enforce that provision or another provision later.
 
-A waiver must be expressly authorized by STN-LABZ, LLC.
+A waiver must be expressly authorized by The ChAoS Foundation.
 
 ---
 
 ## 22. Entire License
 
-This License constitutes the software license granted by STN-LABZ, LLC. for the applicable Chaos MVC distribution unless a separate written agreement expressly provides otherwise.
+This License constitutes the software license granted by The ChAoS Foundation for the applicable Chaos MVC distribution unless a separate written agreement expressly provides otherwise.
 
 Documentation, marketing material, repository descriptions, discussions, issue reports, forum posts, or other communications do not independently expand the rights granted by this License.
 
@@ -293,9 +293,9 @@ Documentation, marketing material, repository descriptions, discussions, issue r
 
 ## 23. License Versions
 
-STN-LABZ, LLC. may publish revised versions of the Chaos MVC License.
+The ChAoS Foundation may publish revised versions of the Chaos MVC License.
 
-A Chaos MVC release remains governed by the license version distributed with that release unless STN-LABZ, LLC. expressly provides otherwise.
+A Chaos MVC release remains governed by the license version distributed with that release unless The ChAoS Foundation expressly provides otherwise.
 
 Publication of a later license does not silently modify the license attached to an earlier distribution.
 
@@ -330,7 +330,7 @@ The licensing model follows the same principle:
 ---
 
 **CHAOS MVC LICENSE**  
-**Version 1.0**
+**Version 1.1**
 
-Copyright (c) STN-LABZ, LLC.  
+Copyright (c) The Chaos Foundation.  
 All rights reserved.
