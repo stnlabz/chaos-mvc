@@ -415,12 +415,14 @@ Use the release artifact and installation documentation for the version being de
 │   ├── models/
 │   └── views/
 ├── public/
+│   ├── .htaccess
 ├── user/
 │   ├── data/
 │   ├── modules/
 │   ├── pages/
 │   └── themes/
 └── README.md
+└── .htaccess
 ```
 
 `app/` contains protected framework infrastructure.
