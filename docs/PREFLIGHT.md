@@ -90,6 +90,60 @@ Known requirements currently include:
 - `user/pages/`
   - Must permit creation, modification, and lifecycle operations for filesystem-backed Pages.
 
+- `user/modules/`
+  - Must permit module installation, update, rollback, and removal operations.
+  - Must permit creation and replacement of module-owned JSON and other
+    filesystem-backed runtime data within an installed module's own directory.
+  - Must permit Core to create module maintenance locks, isolated incoming and
+    backup directories, and the single retained previous filesystem version.
+
+- `user/themes/`
+  - Must permit theme installation, selection support, update, rollback, and
+    removal operations.
+  - Must permit Core to create theme maintenance locks, staging directories,
+    backup directories, and the single retained previous filesystem version.
+
+- `public/`
+  - Must permit ChAoS to create and replace its generated public discovery
+    artifacts: `site.json`, `sitemap.xml`, `ror.xml`, `llms.txt`, and `rss.xml`.
+  - This requirement does not authorize arbitrary executable uploads or make
+    the entire public tree an unrestricted user-content destination.
+
+### Update-Time Resources
+
+- `app/data/updater/`
+  - Must permit Core updater status and maintenance-lock files to be created,
+    replaced, and removed.
+
+- `tmp/updater/`
+  - Must permit Core update packages and staging content to be created, written,
+    read, renamed, and removed.
+
+- `backups/updater/`
+  - Must permit the one retained previous Core filesystem version to be created,
+    replaced, read, renamed, and removed.
+
+- PHP system temporary directory
+  - Must permit isolated module-update workspaces to be created, written, read,
+    renamed, and removed by the running PHP process.
+
+### Feature-Dependent Resources
+
+- `releases/`
+  - Required when an installed developer Builder generates and retains release
+    artifacts. It is not a mandatory writable directory for installations that
+    do not provide a Builder capability.
+
+- Module-owned data paths declared by an installed module
+  - Required when that module uses filesystem-backed JSON or other runtime data.
+    Qualification must remain confined to the module's own directory and must
+    not grant that module general write authority over Core or other modules.
+
+- Theme-owned writable paths declared by an installed theme or theme tool
+  - Required only when that installed component has an established runtime
+    write requirement. Theme rendering alone does not make PHP theme files
+    generally writable.
+
 Additional runtime-writable resources must be added to this contract when established through ChAoS development and testing.
 
 ---
@@ -116,6 +170,9 @@ Example:
     [PASS] app/core/config.php       WRITE
     [FAIL] logs/                     CREATE / WRITE
     [FAIL] user/pages/               CREATE / WRITE
+    [FAIL] user/modules/             CREATE / WRITE / RENAME / DELETE
+    [PASS] user/themes/              CREATE / WRITE / RENAME / DELETE
+    [FAIL] public/ generated files   CREATE / WRITE / REPLACE
     [PASS] installer lock location   CREATE / WRITE
 
 If a safe temporary resource is created during qualification, preflight must remove that resource after the test.

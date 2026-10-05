@@ -957,3 +957,13 @@ Nuke remains recoverable even when the module itself is broken.
 The result should be predictable for the developer, predictable for the administrator, and predictable for the framework.
 
 > **Secure the Core. Grow outwards.**
+
+## 18. Using index options
+If a Module requires extension of cores routing for:
+ - Sluggified URL'S
+ - Anything like above...
+add:
+
+- `"index_parameters": true`
+
+at the bottom of `modules.json` for the closing `}`
