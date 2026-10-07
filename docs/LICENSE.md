@@ -1,6 +1,6 @@
 # CHAOS MVC LICENSE
 
-**Version 1.0**
+**Version 1.1**
 
 Copyright (c) ChAoS Foundation.  
 All rights reserved.
@@ -21,7 +21,7 @@ Chaos MVC is proprietary software. Public availability of its source code, inclu
 
 ## 2. Ownership
 
-Chaos MVC, including its Core, source code, architecture, documentation, official distributions, and other materials provided by The ChAoS FOundation, remains the copyrighted intellectual property of the ChAoS FOundation, except for separately identified third-party components.
+Chaos MVC, including its Core, source code, architecture, documentation, official distributions, and other materials provided by The ChAoS Foundation, remains the copyrighted intellectual property of the ChAoS Foundation, except for separately identified third-party components.
 
 No ownership interest in Chaos MVC is transferred under this License.
 

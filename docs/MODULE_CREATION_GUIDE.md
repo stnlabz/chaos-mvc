@@ -966,4 +966,4 @@ add:
 
 - `"index_parameters": true`
 
-at the bottom of `modules.json` for the closing `}`
+at the bottom of `modules.json` before the final closing `}`
