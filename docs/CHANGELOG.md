@@ -3,6 +3,14 @@
 
 **Current Version:** 1.2.1
 
+## v1.2.2-dev October 6, 2026
+- Templated
+    - LightSpeed / Apache2 / OpenLiteSpeed / NGiNX / IIS, and other types of Webserver Integrations into Install
+    - Various Known Security Updates
+    - Known PHP 8.5 Updates
+        - cURL
+    - Known PHP/SAPI Version Write Permissions
+
 ## v1.2.1 — September 19, 2026
 
 ## Security
