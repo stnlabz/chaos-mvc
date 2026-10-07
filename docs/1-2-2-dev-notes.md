@@ -51,3 +51,9 @@ A concern may be classified as:
 A finding does not authorize a patch.
 
 Patch authorization remains governed by the established ChAoS MVC Patch Requirements.
+
+### Fixed - 20261007
+
+- Fixed media deletion failing when retrieving a media record by ID.
+- Updated `media_model::get_by_id()` to use a prepared PDO statement with parameter binding instead of incorrectly passing parameters to `PDO::query()`.
+- Resolves the `PDO::query(): Argument #2 ($fetchMode) must be of type ?int, array given` TypeError encountered when deleting media images.

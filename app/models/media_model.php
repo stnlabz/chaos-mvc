@@ -10,7 +10,9 @@ class media_model extends model {
     }
 
     public function get_by_id($id) {
-        return $this->db->query("SELECT * FROM {$this->table} WHERE id = ?", [(int)$id])->fetch();
+        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE id = ?");
+        $stmt->execute([(int)$id]);
+        return $stmt->fetch();
     }
 
     /**
