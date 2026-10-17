@@ -53,7 +53,11 @@ Open the Chaos MVC installer in a browser:
 https://your-domain.example/install
 ```
 
-The installer presents two configuration sections:
+The installer first presents environment and capability qualification. The
+database and administrator sections are available only after qualification
+passes.
+
+The configuration form contains two sections:
 
 1. Database
 2. Administrator
@@ -108,6 +112,15 @@ After submitting the installer form, Chaos MVC performs the installation in the 
 /install
    |
    v
+Identify and validate operating environment
+   |
+   v
+Test effective filesystem capabilities
+   |
+   v
+PASS: show installer / FAIL: refuse installation
+   |
+   v
 Validate installer input
    |
    v
@@ -133,6 +146,12 @@ Redirect to /login
 ```
 
 If a required step fails, the installer stops and reports the applicable error.
+
+If the environment cannot be positively identified as Windows, Apache2,
+nginx, LiteSpeed, or OpenLiteSpeed, installation is refused before database,
+configuration, permission, or installation-lock changes are made.
+Environment validation must be performed through the documented `/install`
+route so successful front-controller routing is part of the evidence.
 
 ## Database Schema
 

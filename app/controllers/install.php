@@ -75,8 +75,25 @@ class install extends controller
              */
         }
 
+        $requestPath = (string) parse_url(
+            $_SERVER['REQUEST_URI'] ?? '',
+            PHP_URL_PATH
+        );
+        if ($_SERVER['REQUEST_METHOD'] === 'GET' && $requestPath !== '/install') {
+            header('Location: /install');
+            exit;
+        }
+
+        $preflight = installer_preflight::qualify();
+
+        if (!$preflight['passed']) {
+            http_response_code(503);
+            $this->view('public/install/index', ['preflight' => $preflight]);
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->view('public/install/index');
+            $this->view('public/install/index', ['preflight' => $preflight]);
             return;
         }
 
@@ -119,6 +136,28 @@ class install extends controller
         if (strlen($adminPass) < 12) {
             $this->view('public/install/index', [
                 'error' => 'The administrator password must contain at least 12 characters.'
+            ]);
+            return;
+        }
+
+        /*
+         * Environment and capability qualification is repeated immediately
+         * before the first installation change. A failed or changed
+         * environment never falls through to database or filesystem writes.
+         */
+        $preflight = installer_preflight::qualify();
+        if (!$preflight['passed']) {
+            http_response_code(503);
+            $this->view('public/install/index', ['preflight' => $preflight]);
+            return;
+        }
+
+        try {
+            installer_preflight::prepareRuntimeDirectories();
+        } catch (Throwable $error) {
+            $this->view('public/install/index', [
+                'preflight' => $preflight,
+                'error' => 'Required runtime directories could not be prepared. No database changes were made.',
             ]);
             return;
         }

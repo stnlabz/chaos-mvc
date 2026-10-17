@@ -10,7 +10,10 @@ Preflight exists to answer three questions:
 2. What filesystem capabilities does ChAoS require?
 3. Does the running PHP process actually have those capabilities?
 
-Installation eligibility is determined by demonstrated runtime capability, not assumptions about the operating system, web server, ownership, group membership, or displayed permission modes.
+Installation eligibility requires both positive identification of a
+Foundation-qualified environment and demonstrated runtime capability. Names,
+ownership, group membership, and displayed permission modes do not substitute
+for an effective capability test.
 
 ---
 
@@ -27,25 +30,22 @@ This includes:
 - PHP SAPI
 - PHP runtime identity where reliably available
 
-Known web-server environments may include:
+The installer recognizes these Foundation-qualified environments:
 
 - Apache HTTP Server
 - LiteSpeed
 - OpenLiteSpeed
 - nginx
-- Caddy
-- Microsoft IIS
-- Other or unknown web servers
+- Windows
 
-Web-server identification provides diagnostic context.
-
-It does not determine whether ChAoS can be installed.
-
-An unknown or unrecognized web server must not, by itself, fail preflight.
+Environment identification is a mandatory installation gate. If the operating
+environment cannot be positively identified as Windows, Apache HTTP Server,
+nginx, LiteSpeed, or OpenLiteSpeed, the installer must report the failure and
+refuse installation before making installation changes.
 
 ---
 
-## Capability Is Authoritative
+## Capability Validation
 
 ChAoS must not assume that a filesystem resource is writable merely because its displayed permissions appear appropriate.
 
@@ -61,7 +61,9 @@ Where required, qualification should determine whether PHP can:
 - Write to a newly created test resource
 - Remove a test resource created by preflight
 
-Permission modes, ownership, runtime identity, and server information may be reported for diagnostic purposes, but demonstrated capability determines PASS or FAIL.
+Permission modes, ownership, and runtime identity may be reported for
+diagnostic purposes. After the environment gate passes, demonstrated
+capability determines the capability PASS or FAIL result.
 
 ---
 
@@ -108,6 +110,11 @@ Known requirements currently include:
     artifacts: `site.json`, `sitemap.xml`, `ror.xml`, `llms.txt`, and `rss.xml`.
   - This requirement does not authorize arbitrary executable uploads or make
     the entire public tree an unrestricted user-content destination.
+
+- `public/uploads/`
+  - Must permit validated media uploads and media lifecycle deletion.
+  - Web-server controls must continue preventing uploaded content from gaining
+    executable authority.
 
 ### Update-Time Resources
 
@@ -237,24 +244,19 @@ The administrator remains responsible for authorizing operating-system permissio
 
 ---
 
-## Web Server Independence
+## Foundation-Qualified Environments
 
-ChAoS must remain web-server independent.
+ChAoS requires both positive environment identification and demonstrated
+runtime capability. Neither substitutes for the other.
 
-Known server environments may receive more specific diagnostic information, but installation behavior must not depend upon a fixed list of supported web servers.
+Windows is identified from the PHP operating-system family. Apache2, nginx,
+LiteSpeed, and OpenLiteSpeed are identified from web-server and PHP-SAPI
+evidence available to the running request. Server identity alone never proves
+filesystem authority, and filesystem capability alone never authorizes an
+unknown environment.
 
-The governing rule is:
-
-> Server identification is telemetry. Effective capability testing is authority.
-
-For example, an installation running under an unknown server may report:
-
-    Web Server:   Unknown
-    PHP SAPI:     fpm-fcgi
-
-If every mandatory ChAoS capability passes qualification, the unknown server identity does not prevent installation.
-
-This allows ChAoS to operate correctly on established platforms as well as environments not known when the installer was developed.
+An unknown environment must fail closed. Support for another environment must
+be established by the ChAoS Foundation before the installer may recognize it.
 
 ---
 
@@ -278,9 +280,8 @@ The installer and post-install diagnostics should use the same authoritative cap
 
 ## Qualification Principle
 
-ChAoS does not need to understand every web server in existence.
-
-It needs to understand what ChAoS requires and determine whether the environment can provide it.
+ChAoS must identify a Foundation-qualified environment and determine whether
+that environment provides every required capability.
 
 The preflight sequence is therefore:
 
