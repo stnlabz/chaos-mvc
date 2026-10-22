@@ -14,6 +14,18 @@ CREATE TABLE IF NOT EXISTS `accounts` (
 
 -- --------------------------------------------------------
 
+CREATE TABLE IF NOT EXISTS `account_module_access` (
+  `account_id` int(11) NOT NULL,
+  `module_slug` varchar(63) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`account_id`, `module_slug`),
+  CONSTRAINT `account_module_access_account_fk`
+    FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `password_resets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,

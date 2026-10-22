@@ -364,6 +364,26 @@ class router
             return;
         }
 
+        if ($this->method === 'admin') {
+            $module = $this->controller_scope === 'user'
+                ? (string) $this->module_context
+                : strtolower(get_class($this->controller));
+            $level = (int) ($_SESSION['user_level'] ?? 0);
+
+            if ($level < 7) {
+                header('Location: /auth/login');
+                exit;
+            }
+
+            if (!admin_access::canAccess(
+                (int) ($_SESSION['user_id'] ?? 0),
+                $level,
+                $module
+            )) {
+                (new error_handler())->unauthorized();
+            }
+        }
+
         call_user_func_array(
             [
                 $this->controller,

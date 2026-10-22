@@ -57,3 +57,11 @@ Patch authorization remains governed by the established ChAoS MVC Patch Requirem
 - Fixed media deletion failing when retrieving a media record by ID.
 - Updated `media_model::get_by_id()` to use a prepared PDO statement with parameter binding instead of incorrectly passing parameters to `PDO::query()`.
 - Resolves the `PDO::query(): Argument #2 ($fetchMode) must be of type ?int, array given` TypeError encountered when deleting media images.
+
+### Implemented - 20261022
+
+- Added `developer` and `ai` account classifications. Both use authority level 7 and receive no module administration authority unless a level-9 administrator grants it explicitly.
+- Added Core-owned per-account module Admin grants and enforcement at Admin delegation and direct module Admin routes.
+- Added account-management controls for assigning classifications and module access.
+- Kept protected Core administration and maintenance operations level-9 only.
+- Added `docs/ADMIN_ACCESS.md` as the authority and enforcement reference.

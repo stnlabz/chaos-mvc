@@ -85,6 +85,8 @@ class admin extends controller
             return;
         }
 
+        $this->require_admin_module_access($slug);
+
         /*
          * Core owns the controller namespace first.
          */
@@ -194,7 +196,7 @@ class admin extends controller
      */
     public function refresh_indices(): void
     {
-        $this->require_admin(7);
+        $this->require_admin(9);
 
         $generators = [
             'sitemap',
@@ -328,7 +330,9 @@ class admin extends controller
         }
 
         sort($modules, SORT_STRING);
-        return array_values(array_unique($modules));
+        return admin_access::filterForCurrentAccount(
+            array_values(array_unique($modules))
+        );
     }
 
     /**
@@ -2202,6 +2206,16 @@ class admin extends controller
                 . $module . ']: ' . $error->getMessage()
             );
             $this->error_page('Module files could not be removed.');
+        }
+
+        try {
+            require_once APPROOT . '/models/accounts_model.php';
+            (new accounts_model())->revoke_admin_module_access($module);
+        } catch (Throwable $error) {
+            error_log(
+                'Removed module Admin grants could not be cleared for ['
+                . $module . ']: ' . $error->getMessage()
+            );
         }
 
         $_SESSION['admin_status'] = 'Module ' . $module . ' was removed.';

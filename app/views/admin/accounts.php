@@ -1,4 +1,12 @@
 <?php require APPROOT . '/views/inc/head.php'; ?>
+<?php
+$adminModules = is_array($data['admin_modules'] ?? null)
+    ? $data['admin_modules']
+    : [];
+$moduleAccess = is_array($data['module_access'] ?? null)
+    ? $data['module_access']
+    : [];
+?>
 <p><small><a href="/admin">Admin</a> >> <strong>Accounts</strong></small></p>
 <div class="container mt-4">
 
@@ -17,7 +25,7 @@
 <th>Username</th>
 <th>Name</th>
 <th>Email</th>
-<th>Level</th>
+<th>Classification and Admin Access</th>
 <th>Password</th>
 <th>Delete</th>
 </tr>
@@ -46,7 +54,51 @@
 
 </td>
 
-<td><?php echo $a['user_level']; ?> - <?php echo $a['role']; ?></td>
+<td>
+<form method="POST" action="<?= htmlspecialchars(URLROOT, ENT_QUOTES, 'UTF-8'); ?>/admin/accounts">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($this->csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+<input type="hidden" name="action" value="access">
+<input type="hidden" name="account_id" value="<?= (int) $a['id']; ?>">
+
+<?php $isCurrentAccount = (int) $a['id'] === (int) ($_SESSION['user_id'] ?? 0); ?>
+<?php if ($isCurrentAccount): ?>
+    <input type="hidden" name="role" value="admin">
+    <strong>Administrator</strong>
+<?php else: ?>
+    <label>
+        Classification
+        <select name="role" class="form-control">
+            <?php foreach (['user' => 'User', 'developer' => 'Developer', 'ai' => 'AI', 'admin' => 'Administrator'] as $roleValue => $roleLabel): ?>
+                <option value="<?= $roleValue; ?>" <?= (string) $a['role'] === $roleValue ? 'selected' : ''; ?>><?= $roleLabel; ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+<?php endif; ?>
+
+<p><small>Authority level: <?= (int) $a['user_level']; ?></small></p>
+
+<?php if (!$isCurrentAccount): ?>
+<details>
+    <summary>Module grants</summary>
+    <?php if ($adminModules === []): ?>
+        <p><small>No assignable Admin modules are installed.</small></p>
+    <?php endif; ?>
+    <?php foreach ($adminModules as $adminModule): ?>
+        <label style="display:block;">
+            <input
+                type="checkbox"
+                name="modules[]"
+                value="<?= htmlspecialchars((string) $adminModule, ENT_QUOTES, 'UTF-8'); ?>"
+                <?= in_array((string) $adminModule, $moduleAccess[(int) $a['id']] ?? [], true) ? 'checked' : ''; ?>
+            >
+            <?= htmlspecialchars(ucwords(str_replace('_', ' ', (string) $adminModule)), ENT_QUOTES, 'UTF-8'); ?>
+        </label>
+    <?php endforeach; ?>
+</details>
+<button type="submit">save access</button>
+<?php endif; ?>
+</form>
+</td>
 
 <td>
 
@@ -107,14 +159,14 @@
 </div>
 
 <div class="mb-3">
-<label>User Level</label>
-<select name="user_level" class="form-control">
-<option value="1">1 - User</option>
-<option value="9">9 - Admin</option>
+<label>Classification</label>
+<select name="role" class="form-control">
+<option value="user">User</option>
+<option value="developer">Developer</option>
+<option value="ai">AI</option>
+<option value="admin">Administrator</option>
 </select>
-<!--
-<input type="number" name="user_level" class="form-control" value="1">
--->
+<small>Developer and AI accounts receive restricted level 7 authority. Assign their Admin modules after creating the account.</small>
 </div>
 
 <button type="submit" class="btn btn-primary">Create Account</button>

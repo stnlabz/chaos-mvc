@@ -203,12 +203,32 @@ class controller
      */
     protected function require_admin(int $level = 7): void
     {
-        if (
-            (int) ($_SESSION['user_level'] ?? 0)
-            < $level
-        ) {
+        $currentLevel = (int) ($_SESSION['user_level'] ?? 0);
+
+        if ($currentLevel < $level) {
             header('Location: /login');
             exit;
+        }
+
+        if ($level <= 7 && $currentLevel < 9) {
+            $module = $this->module_context ?? strtolower(static::class);
+            $this->require_admin_module_access($module);
+        }
+    }
+
+    protected function has_admin_module_access(string $module): bool
+    {
+        return admin_access::canAccess(
+            (int) ($_SESSION['user_id'] ?? 0),
+            (int) ($_SESSION['user_level'] ?? 0),
+            $module
+        );
+    }
+
+    protected function require_admin_module_access(string $module): void
+    {
+        if (!$this->has_admin_module_access($module)) {
+            (new error_handler())->unauthorized();
         }
     }
 

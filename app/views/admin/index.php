@@ -73,6 +73,7 @@
         ?>
     </div>
 
+    <?php if ((int) ($_SESSION['user_level'] ?? 0) >= 9): ?>
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="p-4 bg-light rounded-3 d-flex justify-content-between align-items-center border">
@@ -84,6 +85,7 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 <form action="/logout" method="POST">
     <?= $this->csrf_field(); ?>

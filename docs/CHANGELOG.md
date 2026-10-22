@@ -11,6 +11,24 @@
         - cURL
     - Known PHP/SAPI Version Write Permissions
 
+### Security - 20261022
+
+- Added Core-owned Developer and AI account classifications with authority level 7 and explicit per-module Admin access grants.
+- Enforced module grants at both `/admin/{module}` delegation and direct module `admin()` routing so hiding an Admin card is not treated as authorization.
+- Kept level-9 administrators unrestricted while preventing level-7 accounts from being granted protected Core administration components.
+- Removed stale module grants after successful module removal and fail closed when grant state cannot be established.
+
+### Administration - 20261022
+
+- Added account classification and module-access controls to Admin → Accounts.
+- Filtered the Admin dashboard to show Developer and AI accounts only the module administration interfaces explicitly assigned to them.
+- Kept Core maintenance and account/module lifecycle authority restricted to level-9 administrators.
+- Added the `account_module_access` clean-install schema and compatible lazy schema initialization for existing installations.
+
+### Documentation - 20261022
+
+- Added `ADMIN_ACCESS.md` documenting classifications, module-grant enforcement, protected components, and the database contract.
+
 ## v1.2.1 — September 19, 2026
 
 ## Security
