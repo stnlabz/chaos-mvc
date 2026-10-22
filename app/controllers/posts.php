@@ -83,7 +83,7 @@ class posts extends controller {
                 'title'             => $_POST['title'],
                 'slug'              => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($_POST['title']))), '-'),
                 'body'              => $_POST['body'],
-                'featured_image_id' => !empty($_POST['featured_image_id']) ? (int)$_POST['featured_image_id'] : null,
+                'featured_image_id' => isset($_POST['featured_image_id']) && $_POST['featured_image_id'] !== '' && filter_var($_POST['featured_image_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) !== false ? (int)$_POST['featured_image_id'] : null,
                 'published'         => isset($_POST['published']) ? 1 : 0
             ];
 
