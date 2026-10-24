@@ -25,6 +25,10 @@
 - Kept Core maintenance and account/module lifecycle authority restricted to level-9 administrators.
 - Added the `account_module_access` clean-install schema and compatible lazy schema initialization for existing installations.
 
+### Administration - 20261024
+
+- Expanded the Posts administration content editor to use the full available width, increased its height, and enabled vertical resizing for easier post editing.
+
 ### Documentation - 20261022
 
 - Added `ADMIN_ACCESS.md` documenting classifications, module-grant enforcement, protected components, and the database contract.
