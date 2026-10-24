@@ -37,6 +37,7 @@ A normal installation contains the framework directories and the public web root
 ```text
 /app
 /public
+/user
 ```
 
 The web server document root should point to:
