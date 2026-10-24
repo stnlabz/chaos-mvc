@@ -20,7 +20,7 @@ It implements selected standard Markdown and GitHub-style features while retaini
 | Italic | `_italic_` | Emphasized text |
 | Strikethrough | `~~removed~~` | Deleted text |
 | Small text | `{small}small{/small}` | Small text |
-| Colored text | `{color:red}Red{/color}` | Controlled colored text |
+| Colored text | `{color:red}Red{/color}` | Controlled colored text (red, amber, green, and other approved colors) |
 | Inline code | `` `code` `` | Inline code |
 | Link | `[Downloads](/downloads)` | Link |
 | Automatic URL | `https://chaos-mvc.org` | Automatic link |
@@ -242,6 +242,16 @@ The Markdown renderer does not accept arbitrary CSS values from Markdown.
 
 Only approved color names are supported.
 
+For red/amber/green status indicators:
+
+```text
+{color:red}Critical{/color}
+{color:amber}Warning{/color}
+{color:green}Healthy{/color}
+```
+
+These colors affect text presentation only; they do not calculate or validate status.
+
 ### Supported Colors
 
 | Markdown Name | Color |
@@ -252,6 +262,8 @@ Only approved color names are supported.
 | `huntergreen` | Hunter Green |
 | `purple` | Purple |
 | `red` | Red |
+| `amber` | Amber (`#ffbf00`) |
+| `green` | Green |
 | `black` | Black |
 | `brown` | Brown |
 | `blue` | Blue |
@@ -1356,6 +1368,8 @@ The renderer includes features that are not standard Markdown or are intentional
 
 ```text
 {color:red}Red{/color}
+{color:amber}Amber{/color}
+{color:green}Green{/color}
 ```
 
 ```text
