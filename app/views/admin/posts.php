@@ -34,7 +34,7 @@
 
             <div class="form-group">
                 <label>Content</label>
-                <textarea name="body" rows="10" required><?= htmlspecialchars((string) ($data['edit_item']['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                <textarea name="body" rows="20" style="display:block; width:100%; min-height:420px; box-sizing:border-box; resize:vertical;" required><?= htmlspecialchars((string) ($data['edit_item']['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Save Post</button>
         </form>
