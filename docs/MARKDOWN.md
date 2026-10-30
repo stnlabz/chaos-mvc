@@ -23,6 +23,7 @@ It implements selected standard Markdown and GitHub-style features while retaini
 | Colored text | `{color:red}Red{/color}` | Controlled colored text (red, amber, green, and other approved colors) |
 | Inline code | `` `code` `` | Inline code |
 | Link | `[Downloads](/downloads)` | Link |
+| Image | `![Alt text](/images/photo.jpg)` | Responsive image |
 | Automatic URL | `https://chaos-mvc.org` | Automatic link |
 | Blockquote | `> Quote` | Blockquote |
 | Alert | `> [!NOTE]` | GitHub-style alert |
@@ -1117,17 +1118,41 @@ Stable releases are available from the [Releases](https://github.com/OWNER/REPOS
 
 ## Images
 
-Markdown image syntax is not currently implemented.
-
-Standard Markdown commonly uses:
+The renderer supports standard inline Markdown images.
 
 ```text
-![Alt Text](/path/to/image.png)
+![Alternative Text](/images/photo.jpg)
 ```
 
-Do not rely on this syntax when writing content for the ChAoS MVC Markdown renderer.
+The alternative text describes the image for accessibility and when it cannot load.
 
-Image handling should remain an explicit future feature if ChAoS MVC develops a demonstrated requirement for it.
+An optional image title is supported:
+
+```text
+![ChAoS MVC Logo](/images/logo.png "ChAoS MVC")
+```
+
+Images may also be linked:
+
+```text
+[![ChAoS MVC Logo](/images/logo.png)](https://chaos-mvc.org)
+```
+
+### Image URLs and Safety
+
+Image sources may be local paths or absolute HTTP/HTTPS URLs:
+
+```text
+![Local](/images/photo.jpg)
+![Relative](./images/photo.jpg)
+![Remote](https://example.com/photo.jpg)
+```
+
+The renderer rejects unsupported schemes such as `javascript:` and `data:`, protocol-relative URLs beginning with `//`, and URL strings containing whitespace or backslashes. It HTML-escapes image attributes and preserves code blocks as literal source.
+
+Rendered images use `loading="lazy"` and `max-width: 100%; height: auto;` so they scale within the content area. External image requests are made by visitors' browsers; use trusted image hosts.
+
+Images require an existing, web-accessible URL. Markdown does not upload or store image files.
 
 ---
 
@@ -1365,6 +1390,12 @@ The renderer includes features that are not standard Markdown or are intentional
 {small}Small text{/small}
 ```
 
+### Images
+
+```text
+![Alternative Text](/images/photo.jpg)
+```
+
 ### Named Colors
 
 ```text
@@ -1415,7 +1446,7 @@ The ChAoS MVC Markdown renderer intentionally remains smaller than a complete Ma
 
 Current limitations include:
 
-- Markdown image syntax is not implemented
+- Advanced image syntax, reference-style images, and image upload handling are not implemented
 - Raw HTML is not enabled
 - Footnote definitions are single-line
 - Complete CommonMark behavior is not guaranteed
@@ -1465,6 +1496,8 @@ For everyday use, remember:
 {small}Small text{/small}
 
 {color:red}Colored text{/color}
+
+![Alternative Text](/images/photo.jpg)
 
 `Code`
 
