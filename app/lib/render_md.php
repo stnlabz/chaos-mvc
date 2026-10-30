@@ -675,19 +675,20 @@ $html = preg_replace_callback(
                     $content = (string) $matches[2];
 
                     $colors = [
-                        'grey' => 'grey',
-                        'gray' => 'gray',
-                        'white' => 'white',
-                        'huntergreen' => '#355e3b',
-                        'purple' => 'purple',
-                        'red' => 'red',
-                        'amber' => '#ffbf00',
-                        'green' => 'green',
-                        'black' => 'black',
-                        'brown' => 'brown',
-                        'blue' => 'blue',
-                        'pink' => 'pink',
-                    ];
+    'grey' => 'grey',
+    'gray' => 'gray',
+    'white' => 'white',
+    'huntergreen' => '#355e3b',
+    'purple' => 'purple',
+    'red' => 'red',
+    'amber' => '#ffbf00',
+    'green' => 'green',
+    'black' => 'black',
+    'brown' => 'brown',
+    'blue' => 'blue',
+    'pink' => 'pink',
+    'indigo' => 'indigo',
+];
 
                     if (!isset($colors[$requestedColor])) {
                         return $matches[0];
