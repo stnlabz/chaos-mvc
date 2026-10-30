@@ -22,9 +22,6 @@
                 
                 <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 10px; color: #1a1a1a;"><?= htmlspecialchars((string) $item['title'], ENT_QUOTES, 'UTF-8') ?></h2>
-                    <p style="color: #4a5568; line-height: 1.5; margin-bottom: 20px; flex-grow: 1;">
-                        <?= htmlspecialchars(substr(strip_tags((string) $item['body']), 0, 120), ENT_QUOTES, 'UTF-8') ?>...
-                    </p>
                     <a href="/posts/<?= rawurlencode((string) $item['slug']) ?>"
                        style="display: inline-block; text-decoration: none; color: #0366d6; font-weight: 600;">
                        Read More &rarr;
