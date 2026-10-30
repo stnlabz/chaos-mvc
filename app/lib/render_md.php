@@ -43,6 +43,7 @@ if (!class_exists('render_md')) {
          * - inline code
          * - variable-length fenced code blocks
          * - links
+         * - images
          * - automatic links
          * - blockquotes
          * - GitHub-style alerts
@@ -75,6 +76,7 @@ if (!class_exists('render_md')) {
             $codeBlocks = [];
             $inlineCode = [];
             $links = [];
+            $images = [];
             $escapedCharacters = [];
             $footnotes = [];
 
@@ -466,6 +468,62 @@ if (!class_exists('render_md')) {
             );
 
             /*
+             * Markdown images, including images inside explicit links.
+             * Protect generated markup from subsequent emphasis/link passes.
+             *
+             * ![Alt text](/images/photo.jpg)
+             * ![Alt text](/images/photo.jpg "Optional title")
+             */
+            $html = preg_replace_callback(
+                '/!\\[([^\\]\\n]*)\\]\\(([^)\\s]+)(?:\\s+&quot;([^\\n]*?)&quot;)?\\)/',
+                static function (array $matches) use (&$images): string {
+                    $url = html_entity_decode(
+                        (string) $matches[2],
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    if (!self::isSafeImageUrl($url)) {
+                        return $matches[0];
+                    }
+
+                    $alt = html_entity_decode(
+                        (string) $matches[1],
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
+
+                    $image = '<img src="'
+                        . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+                        . '" alt="'
+                        . htmlspecialchars($alt, ENT_QUOTES, 'UTF-8')
+                        . '"';
+
+                    if (isset($matches[3])) {
+                        $title = html_entity_decode(
+                            (string) $matches[3],
+                            ENT_QUOTES,
+                            'UTF-8'
+                        );
+
+                        $image .= ' title="'
+                            . htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
+                            . '"';
+                    }
+
+                    $image .= ' loading="lazy" style="max-width: 100%; height: auto;">';
+
+                    $index = count($images);
+                    $images[$index] = $image;
+
+                    return 'CHAOSIMAGETOKEN'
+                        . $index
+                        . 'ENDTOKEN';
+                },
+                $html
+            );
+
+            /*
  * Explicit Markdown links.
  *
  * Internal links remain in the current browsing context.
@@ -766,6 +824,20 @@ $html = preg_replace_callback(
                     . $index
                     . 'ENDTOKEN',
                     $link,
+                    $html
+                );
+            }
+
+            /*
+             * Restore generated images after generated links, so linked images
+             * can be inserted safely inside their protected anchor markup.
+             */
+            foreach ($images as $index => $image) {
+                $html = str_replace(
+                    'CHAOSIMAGETOKEN'
+                    . $index
+                    . 'ENDTOKEN',
+                    $image,
                     $html
                 );
             }
@@ -1395,6 +1467,40 @@ $html = preg_replace_callback(
             }
 
             return $rendered;
+        }
+
+        /**
+         * Only HTTP(S) and local relative image paths may become img sources.
+         * Reject protocol-relative URLs, controls, whitespace and backslashes.
+         */
+        private static function isSafeImageUrl(string $url): bool
+        {
+            if (
+                $url === ''
+                || preg_match('/[\\x00-\\x20\\x7f\\\\\\\\]/', $url) === 1
+                || str_starts_with($url, '//')
+            ) {
+                return false;
+            }
+
+            $parts = parse_url($url);
+
+            if ($parts === false) {
+                return false;
+            }
+
+            if (isset($parts['scheme'])) {
+                return in_array(
+                    strtolower((string) $parts['scheme']),
+                    ['http', 'https'],
+                    true
+                ) && !empty($parts['host']);
+            }
+
+            return !isset($parts['host'])
+                && !str_starts_with($url, '#')
+                && !str_starts_with($url, '?')
+                && !str_starts_with($url, ':');
         }
 
         /**
