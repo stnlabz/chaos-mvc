@@ -37,6 +37,11 @@
 
 - Added `ADMIN_ACCESS.md` documenting classifications, module-grant enforcement, protected components, and the database contract.
 
+### Markdown Rendering - 20261030
+
+- Added safe Markdown image rendering with alternative text, optional titles, local or HTTP(S) image URLs, linked images, lazy loading, and responsive sizing.
+- Updated `docs/MARKDOWN.md` with image syntax and URL restrictions.
+
 ## v1.2.1 — September 19, 2026
 
 ## Security
