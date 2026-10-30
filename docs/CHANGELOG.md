@@ -29,6 +29,10 @@
 
 - Expanded the Posts administration content editor to use the full available width, increased its height, and enabled vertical resizing for easier post editing.
 
+### Posts - 20261029
+
+- Simplified public Core Posts index cards to show the featured image, title, and Read More link without raw Markdown body excerpts.
+
 ### Documentation - 20261022
 
 - Added `ADMIN_ACCESS.md` documenting classifications, module-grant enforcement, protected components, and the database contract.
