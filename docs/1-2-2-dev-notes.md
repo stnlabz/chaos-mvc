@@ -8,8 +8,37 @@ Various things to be addressed, added, removed or updated.
 See PREFLIGHT.md
 
 ## ChAoS MVC Logging
-Core Logging Reliability — Investigation Required
-Major errors are not consistently reaching the ChAoS log configured in app/bootstrap.php. Determine whether the failure originates from PHP 8.5 behavior/configuration, PHP SAPI/web-server environment, filesystem capability, bootstrap initialization order, or ChAoS error handling. Do not prescribe a Core correction until the failure path is established.
+
+Core Logging Reliability — Confirmed Pre-Bootstrap Coverage Gap
+
+Major errors do not consistently reach the ChAoS log configured in `app/bootstrap.php`.
+
+### Verified Server Evidence — 20261024
+
+Inspection of the Apache 2 deployment at `/var/www/stn-chain.org` established:
+
+- The PHP runtime account `www-data` can traverse and write the installation-owned `logs/` directory.
+- `logs/site_errors` is owned by `www-data` and is writable by that account.
+- PHP accepts `/var/www/stn-chain.org/logs/site_errors` as its `error_log` destination.
+- A direct `error_log()` probe successfully reached `site_errors`.
+- Existing ChAoS exception records and stack traces are present in `site_errors`.
+
+Filesystem capability and the ChAoS `error_log` destination are therefore not the general cause of missing records.
+
+The current `public/index.php` performs `session_set_cookie_params()` and `session_start()` before loading `app/bootstrap.php`. The bootstrap configures `error_log`, enables PHP logging, and registers the ChAoS error and shutdown handlers. Errors during session initialization, errors in `public/index.php` before the bootstrap include, PHP startup failures, and parse or compilation failures that prevent the bootstrap from executing cannot reach the ChAoS handler or its configured log.
+
+The inspected Apache service was disabled and inactive. Its enabled SSL virtual host also failed `apache2ctl configtest` because the configured Let's Encrypt certificate file did not exist or was empty. That Apache startup failure occurs before PHP executes and must be reported through the web-server/service logging boundary rather than the ChAoS application log.
+
+### Required Follow-Up
+
+- Establish a minimal ChAoS logging/error initialization boundary before session setup without moving unrelated bootstrap behavior or changing Sentinel execution order.
+- Preserve the normal full bootstrap as the authority for framework initialization.
+- Verify handled exceptions, session-start failures, required-file failures, and shutdown-detected fatal errors under an actual web SAPI.
+- Keep web-server startup, PHP startup, and failures that occur before application execution within the server/SAPI logging boundary.
+- Confirm the production deployment defaults `APP_DEBUG` to `false`; the inspected deployment defaulted it to `true` when the environment variable was absent.
+- Retest using the actual runtime account, SAPI, virtual host, and configured log destinations after Apache configuration is valid and the service is running.
+
+No Core correction has yet been implemented. The verified failure boundary now authorizes focused design and testing; it does not justify moving the entire bootstrap ahead of session initialization.
 
 ## Concerns
 

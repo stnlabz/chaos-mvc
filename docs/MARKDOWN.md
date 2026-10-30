@@ -268,20 +268,21 @@ These colors affect text presentation only; they do not calculate or validate st
 | `brown` | Brown |
 | `blue` | Blue |
 | `pink` | Pink |
+| `indigo` | Indigo |
 
 Example:
 
 ```text
-- None (Seeker)
-- {color:grey}Grey{/color} (Neophyte)
-- White (Initiate)
-- {color:huntergreen}Hunter Green{/color} (Adeptus-minor)
-- {color:purple}Purple{/color} (Priestess)
-- {color:red}Red{/color} (Adeptus)
-- {color:black}Black{/color} (Prioress)
-- {color:brown}Brown{/color} (Adeptus-Major)
-- {color:blue}Blue{/color} (Soror)
-- {color:pink}Pink{/color} (Madam)
+- {color:grey}Grey{/color}
+- White
+- {color:huntergreen}Hunter Green{/color}
+- {color:purple}Purple{/color}
+- {color:red}Red{/color}
+- {color:black}Black{/color}
+- {color:brown}Brown{/color}
+- {color:blue}Blue{/color}
+- {color:pink}Pink{/color}
+- {color:indigo}Indigo{/color}
 ```
 
 A document does not have to apply a color merely because the color exists.
