@@ -1,0 +1,19 @@
+{
+    "name": "Lifecycle Test",
+    "module": "lifecycle_test",
+    "version": "1.0.0",
+    "description": "Disposable, database-free test module for ChAoS MVC installation, public and admin routing, and removal.",
+    "creator": "ChAoS Foundation",
+    "domain": "chaos-foundation.org",
+    "certified": "No",
+    "files": [
+        "controllers/lifecycle_test.php",
+        "views/index.php",
+        "views/admin/index.php",
+        "README.md"
+    ],
+    "routes": [
+        "index"
+    ],
+    "database_tables": []
+}
