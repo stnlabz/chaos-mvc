@@ -57,6 +57,12 @@
 - Preserved the existing fail-closed installer environment and filesystem capability gates; full CDM probes and module inspection remain Level-9-only.
 - GreenGeeks and Hostinger installation qualification remains pending live environment testing.
 
+### Installer Preflight - 20261101
+
+- Removed `tmp/updater/` and `backups/updater/` from mandatory fresh-installation capability checks and installation-time directory creation; these workspaces are Core Updater concerns, not installation prerequisites.
+- Preserved the remaining fail-closed environment and filesystem qualification, including `app/data/updater/`.
+- Apache2 test evidence: the two updater-only directory checks incorrectly blocked installation; the user confirmed the corrected preflight proceeded past this failure. Full Hostinger/Apache2 compatibility qualification remains outstanding.
+
 ## v1.2.1 — September 19, 2026
 
 ## Security
