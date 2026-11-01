@@ -1,5 +1,19 @@
 # v1.2.2 Development Notes
 
+## Versioned Module ZIP Roots — 20261101
+
+Module updates accept either `lifecycle_test/` or a matching versioned
+root such as `lifecycle_test-1.0.1/` within the ZIP. Archive validation
+enforces exactly one matching module root; it still rejects unrelated root
+entries, traversal paths, symlinks, duplicate paths, or missing module
+controller/metadata. The validated archive root is used consistently during
+staging, metadata and version checks, migration resolution, and file copying.
+The module is always installed under its unversioned module slug.
+
+This addresses DCT-packaged versioned ZIPs without rebuilding the package
+or changing its published SHA-256 checksum.
+
+
 ## Module and Theme Update Simplification — 20261101
 
 Module and theme update installation no longer requires RSA/PEM public keys,
