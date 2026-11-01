@@ -24,18 +24,14 @@ class themes extends controller
                 header('Content-Type: application/json');
                 header('Cache-Control: no-store');
                 try {
-                    if (!in_array($action, ['check_update', 'update', 'rollback'], true)
+                    if (!in_array($action, ['check_update', 'update'], true)
                         || !is_string($_POST['theme'] ?? null)) {
                         throw new RuntimeException('Invalid theme maintenance action.');
                     }
                     $slug = trim($_POST['theme']);
-                    if ($action === 'rollback' && ($_POST['confirm_rollback'] ?? '') !== '1') {
-                        throw new RuntimeException('Confirm replacement with the previous theme files.');
-                    }
                     $result = match ($action) {
                         'check_update' => $updater->check($slug),
                         'update' => $updater->update($slug),
-                        'rollback' => $updater->rollback($slug),
                     };
                 } catch (Throwable $exception) {
                     $result = ['success' => false, 'error' => $exception->getMessage()];
