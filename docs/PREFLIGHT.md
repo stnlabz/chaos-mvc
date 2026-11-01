@@ -118,6 +118,16 @@ Known requirements currently include:
 
 ### Update-Time Resources
 
+The initial installer does not require or create `tmp/updater/` or
+`backups/updater/`. Those are Core Updater workspaces, not fresh-installation
+prerequisites. Their absence must not block installation. The updater must
+validate and prepare them when an update or rollback operation actually needs
+them; their suitability is not established by a successful installation
+preflight.
+
+The initial installer still qualifies `app/data/updater/` as part of the
+current Core runtime-directory contract.
+
 - `app/data/updater/`
   - Must permit Core updater status and maintenance-lock files to be created,
     replaced, and removed.
@@ -189,6 +199,15 @@ Preflight testing must not alter existing installation content merely to determi
 ---
 
 ## Installation Failure
+
+A fresh Apache2 installation test on November 1, 2026 demonstrated why
+updater-only workspaces must not be installation gates. The active PHP process
+passed the other reported capabilities but could not create/write under the
+absent `tmp/updater/` and `backups/updater/` paths. The original preflight
+refused installation. After those two updater-only checks and their
+installation-time directory preparation were removed, the user confirmed the
+installer proceeded past this failure. This is evidence for the scope
+correction, not a complete Apache2 installation or updater qualification.
 
 Installation must not continue when a mandatory capability fails qualification.
 
