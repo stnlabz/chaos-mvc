@@ -629,10 +629,13 @@ class admin extends controller
                 throw new RuntimeException('Update package integrity check failed.');
             }
 
-            $files = $this->validateModuleArchive(
+            $archive = $this->validateModuleArchive(
                 $packagePath,
-                $module
+                $module,
+                $new
             );
+            $files = $archive['files'];
+            $packageRoot = $archive['root'];
 
             if (!mkdir($stagePath, 0700, true)) {
                 throw new RuntimeException('Could not create staging directory.');
@@ -651,12 +654,9 @@ class admin extends controller
 
             $zip->close();
 
+            $stagedModuleRoot = $stagePath . DIRECTORY_SEPARATOR . $packageRoot;
             $stagedConfig = $this->readModuleJson(
-                $stagePath
-                    . DIRECTORY_SEPARATOR
-                    . $module
-                    . DIRECTORY_SEPARATOR
-                    . 'module.json'
+                $stagedModuleRoot . DIRECTORY_SEPARATOR . 'module.json'
             );
 
             if ((string) ($stagedConfig['module'] ?? '') !== $module) {
@@ -667,13 +667,13 @@ class admin extends controller
 
             if ((string) ($stagedConfig['version'] ?? '') !== $new) {
                 throw new RuntimeException(
-                    'Packaged module version does not match the signed manifest.'
+                    'Packaged module version does not match the update manifest.'
                 );
             }
 
             $migration = $this->resolveModuleMigration(
                 $stagedConfig,
-                $stagePath . DIRECTORY_SEPARATOR . $module,
+                $stagedModuleRoot,
                 $current,
                 $new
             );
@@ -683,9 +683,7 @@ class admin extends controller
             }
 
             foreach ($files as $relativePath) {
-                $source = $stagePath
-                    . DIRECTORY_SEPARATOR
-                    . $module
+                $source = $stagedModuleRoot
                     . DIRECTORY_SEPARATOR
                     . $relativePath;
                 $destination = $incomingRoot
@@ -1764,11 +1762,12 @@ class admin extends controller
      * CMSEC-2026-4828-K
      * CMSEC-2026-4828-R — Portable archive path identity
      *
-     * @return array<int, string>
+     * @return array{root: string, files: array<int, string>}
      */
     private function validateModuleArchive(
         string $packagePath,
-        string $module
+        string $module,
+        string $version
     ): array {
         $zip = new ZipArchive();
 
@@ -1784,7 +1783,14 @@ class admin extends controller
         $files = [];
         $totalSize = 0;
         $controllerFound = false;
-        $archivePrefix = $module . '/';
+        // Accept an unversioned directory or the versioned directory emitted
+        // by developer packaging tools. Both must map to this module only.
+        if (!preg_match('/^[0-9]+(?:\\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/', $version)) {
+            $zip->close();
+            throw new RuntimeException('Update manifest version is invalid.');
+        }
+        $archiveRoot = null;
+        $allowedRoots = [$module, $module . '-' . $version];
         $metadataFound = false;
         $seenPaths = [];
 
@@ -1846,13 +1852,28 @@ class admin extends controller
                 throw new RuntimeException('Update package contains a symbolic link.');
             }
 
+            $entryRoot = explode('/', $normalized, 2)[0];
+            if (!in_array($entryRoot, $allowedRoots, true)
+                || ($archiveRoot !== null && $archiveRoot !== $entryRoot)) {
+                $zip->close();
+                throw new RuntimeException(
+                    'Update package contains files outside the module boundary.'
+                );
+            }
+            $archiveRoot = $entryRoot;
+            $archivePrefix = $entryRoot . '/';
+
+            // The root directory entry is allowed, but loose files at
+            // the ZIP root are not.
+            if ($normalized === $archivePrefix) {
+                continue;
+            }
             if (!str_starts_with($normalized, $archivePrefix)) {
                 $zip->close();
                 throw new RuntimeException(
                     'Update package contains files outside the module boundary.'
                 );
             }
-
             if (str_ends_with($normalized, '/')) {
                 continue;
             }
@@ -1888,7 +1909,7 @@ class admin extends controller
             throw new RuntimeException('Update package does not match the requested module.');
         }
 
-        return $files;
+        return ['root' => $archiveRoot, 'files' => $files];
     }
 
     /**
