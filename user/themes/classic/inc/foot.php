@@ -39,7 +39,7 @@ $copyrightName = $SITE['copyright_name']
 
 </div>
 
-<script src="<?= theme::assetUrl('js/site.js'); ?>"></script>
+<script src="<?= htmlspecialchars(theme::assetUrl('js/site.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 </body>
 </html>
