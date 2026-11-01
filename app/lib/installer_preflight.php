@@ -61,6 +61,12 @@ final class installer_preflight
         ];
 
         /*
+         * CDM's installer-facing method provides passive extension telemetry.
+         * It does not invoke authenticated diagnostics or active probes.
+         */
+        $diagnostics = (new cdm_model())->installationObservations();
+
+        /*
          * Unknown or invalid environments stop here. Filesystem probes create
          * short-lived test resources, so they are not attempted until the
          * Foundation environment gate has passed.
@@ -70,6 +76,7 @@ final class installer_preflight
                 'passed' => false,
                 'environment' => $environment,
                 'environment_errors' => $environmentErrors,
+                'diagnostics' => $diagnostics,
                 'requirements' => [],
             ];
         }
@@ -112,6 +119,7 @@ final class installer_preflight
             'passed' => $environmentErrors === [] && $capabilitiesPassed,
             'environment' => $environment,
             'environment_errors' => $environmentErrors,
+            'diagnostics' => $diagnostics,
             'requirements' => $requirements,
         ];
     }
