@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 /**
  * Update installation-owned themes. No module dispatch, SQL, or Core updating.
- * Transport and verification mirror the module release contract; theme
- * signatures use their own domain separator and theme identity.
+ * Transport and SHA-256 package verification mirror the module update contract.
  */
 /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
 final class theme_updater
@@ -99,7 +98,7 @@ final class theme_updater
             $incoming = $workspace . '/' . $slug;
             $staged = $this->metadata($incoming, $slug);
             if ($staged['version'] !== $manifest['version']) {
-                throw new RuntimeException('Packaged theme version does not match signed release.');
+                throw new RuntimeException('Packaged theme version does not match update manifest.');
             }
             if (!empty($staged['database_tables']) || !empty($staged['migrations'])) {
                 throw new RuntimeException('Theme updates do not execute database lifecycle operations.');
@@ -110,7 +109,8 @@ final class theme_updater
                     token_get_all((string) file_get_contents($incoming . '/' . $file), TOKEN_PARSE);
                 }
             }
-            foreach (['update_url', 'package_hosts', 'signing'] as $key) {
+            unset($staged['signing']);
+            foreach (['update_url', 'package_hosts'] as $key) {
                 if (array_key_exists($key, $config)) $staged[$key] = $config[$key];
                 else unset($staged[$key]);
             }
@@ -193,14 +193,28 @@ final class theme_updater
         // Like modules, discovery compares versions. Installation verifies all artifacts.
         if (!$verify || !version_compare($manifest['version'], $config['version'], '>')) return $manifest;
         $download = $manifest['download'] ?? null;
-        $sha = $manifest['sha256'] ?? null;
+        $checksum = $manifest['signing'] ?? null;
+        if ($checksum !== null && (
+            !is_array($checksum)
+            || strtolower((string) ($checksum['algorithm'] ?? '')) !== 'sha256'
+            || !is_string($checksum['sha256'] ?? null)
+        )) {
+            throw new RuntimeException('Theme manifest SHA-256 configuration is invalid.');
+        }
+        $topLevelHash = $manifest['sha256'] ?? null;
+        $nestedHash = $checksum['sha256'] ?? null;
+        if ($nestedHash !== null && $topLevelHash !== null
+            && (!is_string($topLevelHash)
+                || !hash_equals(strtolower($nestedHash), strtolower($topLevelHash)))) {
+            throw new RuntimeException('Theme manifest SHA-256 values disagree.');
+        }
+        $sha = $nestedHash ?? $topLevelHash;
         if (!is_string($download) || !is_string($sha) || !preg_match('/^[a-f0-9]{64}$/i', $sha)) {
             throw new RuntimeException('Theme release package URL or SHA-256 is invalid.');
         }
         if (!$this->isAuthorizedThemePackageHost($url, $download, $config)) {
             throw new RuntimeException('Theme package host is not authorized by installed metadata.');
         }
-        $this->verifyThemeReleaseSignature($manifest, $config, $slug, $manifest['version'], $download, strtolower($sha));
         return $manifest;
     }
 
@@ -714,32 +728,6 @@ final class theme_updater
         }
 
         return $body;
-    }
-
-    private function verifyThemeReleaseSignature(
-        array $manifest,
-        array $config,
-        string $theme,
-        string $version,
-        string $downloadUrl,
-        string $sha256
-    ): void {
-        require_once __DIR__ . '/release_signature.php';
-        $statement = implode("\n", [
-            'CHAOS-MVC-THEME-RELEASE',
-            'theme=' . $theme,
-            'version=' . $version,
-            'download=' . $downloadUrl,
-            'sha256=' . $sha256,
-            'key_id=' . (string) ($manifest['key_id'] ?? ''),
-        ]);
-
-        \release_signature::verify(
-            is_array($config['signing'] ?? null) ? $config['signing'] : [],
-            (string) ($manifest['key_id'] ?? ''),
-            (string) ($manifest['signature'] ?? ''),
-            $statement
-        );
     }
 
     private function validateThemeArchive(
