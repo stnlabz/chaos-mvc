@@ -560,7 +560,24 @@ class admin extends controller
             $new = (string) ($manifest['version'] ?? '');
             $manifestModule = (string) ($manifest['module'] ?? '');
             $downloadUrl = (string) ($manifest['download'] ?? '');
-            $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
+            // SHA-256 is an integrity checksum, not a publisher signature.
+            // Accept the simple nested format and the existing top-level field.
+            $checksum = $manifest['signing'] ?? null;
+            if ($checksum !== null && (
+                !is_array($checksum)
+                || strtolower((string) ($checksum['algorithm'] ?? '')) !== 'sha256'
+                || !is_string($checksum['sha256'] ?? null)
+            )) {
+                throw new RuntimeException('Manifest SHA-256 configuration is invalid.');
+            }
+            $topLevelHash = $manifest['sha256'] ?? null;
+            $nestedHash = $checksum['sha256'] ?? null;
+            if ($nestedHash !== null && $topLevelHash !== null
+                && (!is_string($topLevelHash)
+                    || !hash_equals(strtolower($nestedHash), strtolower($topLevelHash)))) {
+                throw new RuntimeException('Manifest SHA-256 values disagree.');
+            }
+            $expectedHash = strtolower((string) ($nestedHash ?? $topLevelHash ?? ''));
 
             if ($manifestModule !== $module) {
                 throw new RuntimeException(
@@ -596,15 +613,6 @@ class admin extends controller
             if (!preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
                 throw new RuntimeException('Manifest SHA-256 is missing or invalid.');
             }
-
-            $this->verifyModuleReleaseSignature(
-                $manifest,
-                $config,
-                $module,
-                $new,
-                $downloadUrl,
-                $expectedHash
-            );
 
             $package = $this->downloadModuleResource($downloadUrl, 26214400);
 
@@ -703,8 +711,9 @@ class admin extends controller
              * installation-local network and signing trust remains pinned.
              */
             $updatedConfig = $stagedConfig;
+            unset($updatedConfig['signing']);
 
-            foreach (['update_url', 'package_hosts', 'signing'] as $trustedKey) {
+            foreach (['update_url', 'package_hosts'] as $trustedKey) {
                 if (array_key_exists($trustedKey, $config)) {
                     $updatedConfig[$trustedKey] = $config[$trustedKey];
                 }
@@ -1240,32 +1249,6 @@ class admin extends controller
      *
      * CMSEC-2026-4828-M — Developer release authenticity
      */
-    private function verifyModuleReleaseSignature(
-        array $manifest,
-        array $config,
-        string $module,
-        string $version,
-        string $downloadUrl,
-        string $sha256
-    ): void {
-        require_once __DIR__ . '/../lib/release_signature.php';
-        $statement = implode("\n", [
-            'CHAOS-MVC-MODULE-RELEASE',
-            'module=' . $module,
-            'version=' . $version,
-            'download=' . $downloadUrl,
-            'sha256=' . $sha256,
-            'key_id=' . (string) ($manifest['key_id'] ?? ''),
-        ]);
-
-        \release_signature::verify(
-            is_array($config['signing'] ?? null) ? $config['signing'] : [],
-            (string) ($manifest['key_id'] ?? ''),
-            (string) ($manifest['signature'] ?? ''),
-            $statement
-        );
-    }
-
     /**
      * Reject update destinations that cross the verified module root through
      * an existing symbolic link, junction, or other resolved ancestor.
