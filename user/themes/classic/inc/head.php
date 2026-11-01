@@ -123,13 +123,13 @@ $ogType = $og['type'] ?? 'website';
 
     <link
         rel="stylesheet"
-        href="<?= theme::assetUrl('css/site.css'); ?>"
+        href="<?= htmlspecialchars(theme::assetUrl('css/site.css'), ENT_QUOTES, 'UTF-8'); ?>"
     >
 
     <link
         rel="icon"
         type="image/png"
-        href="<?= theme::assetUrl('icons/icon.png'); ?>"
+        href="<?= htmlspecialchars(theme::assetUrl('icons/icon.png'), ENT_QUOTES, 'UTF-8'); ?>"
     >
 </head>
 
