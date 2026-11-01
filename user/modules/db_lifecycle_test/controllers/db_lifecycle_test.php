@@ -19,11 +19,23 @@ final class db_lifecycle_test extends controller
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $this->require_csrf();
             try {
-                if (($_POST['action'] ?? '') !== 'install_sql' || $model->databaseState() !== 'missing') {
-                    throw new RuntimeException('Invalid database lifecycle action.');
+                $action = (string) ($_POST['action'] ?? '');
+                $state = $model->databaseState();
+                if ($action === 'install_sql' && $state === 'missing') {
+                    $model->installSchema();
+                    $message = 'Disposable database schema and reference row installed.';
+                } elseif ($action === 'update_sql' && $state === 'update') {
+                    $model->updateSchema();
+                    $message = 'Module schema updated to 1.0.1.';
+                } elseif ($action === 'delete_data' && $state === 'current') {
+                    $model->deleteData();
+                    $message = 'Module data deleted; schema preserved.';
+                } elseif ($action === 'reset_data' && $state === 'current') {
+                    $model->resetData();
+                    $message = 'Canonical reference data restored.';
+                } else {
+                    throw new RuntimeException('Invalid database lifecycle action for the current state.');
                 }
-                $model->installSchema();
-                $message = 'Disposable database schema created and reference row inserted.';
             } catch (Throwable $exception) {
                 $error = $exception->getMessage();
             }
