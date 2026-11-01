@@ -51,6 +51,12 @@
 - Added safe Markdown image rendering with alternative text, optional titles, local or HTTP(S) image URLs, linked images, lazy loading, and responsive sizing.
 - Updated `docs/MARKDOWN.md` with image syntax and URL restrictions.
 
+### Installation Diagnostics - 20261031
+
+- Connected installer preflight to a restricted CDM Core method for passive PHP extension observations, displayed separately from installation capability qualification.
+- Preserved the existing fail-closed installer environment and filesystem capability gates; full CDM probes and module inspection remain Level-9-only.
+- GreenGeeks and Hostinger installation qualification remains pending live environment testing.
+
 ## v1.2.1 — September 19, 2026
 
 ## Security
