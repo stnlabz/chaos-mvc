@@ -71,8 +71,6 @@ require APPROOT . '/views/inc/head.php';
                                 <?php elseif (empty($installed['metadata_error']) && empty($installed['update_source_error'])): ?>
                                     <button class="btn btn-sm btn-outline-secondary w-100 mb-2" disabled>Local Theme</button>
                                 <?php endif; ?>
-                                <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2 theme-rollback"
-                                    <?= empty($installed['rollback_available']) ? 'disabled' : ''; ?>>Restore previous files</button>
                                 <p class="small theme-result" role="status" aria-live="polite"></p>
                             <?php endif; ?>
                         </div>
@@ -88,17 +86,14 @@ require APPROOT . '/views/inc/head.php';
 const themeUpdateCsrf = <?= json_encode($this->csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 async function themeMaintenance(card, action) {
     const update = card.querySelector('.theme-update');
-    const rollback = card.querySelector('.theme-rollback');
     const status = card.querySelector('.theme-result');
-    const hadRollback = rollback && !rollback.disabled;
     if (update) update.disabled = true;
-    if (rollback) rollback.disabled = true;
     status.textContent = action === 'check_update' ? 'Checking for updates...' : 'Working...';
     try {
         const response = await fetch('/admin/themes', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({action, theme: card.dataset.theme, csrf_token: themeUpdateCsrf, confirm_rollback: action === 'rollback' ? '1' : '0'})
+            body: new URLSearchParams({action, theme: card.dataset.theme, csrf_token: themeUpdateCsrf})
         });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Theme operation failed.');
@@ -108,12 +103,10 @@ async function themeMaintenance(card, action) {
             update.classList.toggle('btn-success', data.update_available);
             update.classList.toggle('btn-secondary', !data.update_available);
             status.textContent = data.update_available ? 'New version available.' : 'Up to date.';
-            if (rollback) rollback.disabled = !hadRollback;
         } else {
             status.textContent = data.message || 'Completed.';
             const version = card.querySelector('.theme-version');
             if (version) version.textContent = data.version;
-            if (rollback) rollback.disabled = action === 'rollback';
             if (update) {
                 update.dataset.action = 'check_update';
                 update.textContent = 'Check for updates';
@@ -122,7 +115,6 @@ async function themeMaintenance(card, action) {
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : 'Theme operation failed.';
         if (update) update.textContent = action === 'update' ? 'Update failed — Retry' : 'Check failed — Retry';
-        if (rollback) rollback.disabled = !hadRollback;
     } finally {
         if (update) update.disabled = false;
     }
@@ -134,9 +126,6 @@ document.querySelectorAll('.theme-card').forEach(card => {
         update.addEventListener('click', () => themeMaintenance(card, update.dataset.action));
         themeMaintenance(card, 'check_update');
     }
-    if (rollback) rollback.addEventListener('click', () => {
-        if (confirm('Replace this theme with its previous files?')) themeMaintenance(card, 'rollback');
-    });
 });
 /* [End AI:GPT-5.6 Sol] */
 </script>
