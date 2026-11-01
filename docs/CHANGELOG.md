@@ -1,4 +1,14 @@
 # Chaos MVC
+
+### Module and Theme Updater — 20261101
+
+- Removed mandatory RSA/PEM release-signature verification from module and theme updates.
+- Accept a SHA-256 checksum at the manifest root or nested in `signing` with `algorithm: sha256`.
+- Require matching checksums when both manifest formats are present.
+- Keep HTTPS, package-host checks, ZIP SHA-256 verification, safe staging, archive validation, and rollback.
+- Remove obsolete local publisher-signing metadata on successful module/theme update.
+- SHA-256 verifies downloaded package integrity, not publisher identity.
+
 **CHANGELOG**
 
 **Current Version:** 1.2.1
