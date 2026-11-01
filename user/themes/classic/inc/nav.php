@@ -45,7 +45,7 @@ $siteDescription = $SITE['description'] ?? '';
 
                     <?php if (
                         isset($_SESSION['user_level'])
-                        && (int) $_SESSION['user_level'] >= 7
+                        && in_array((int) $_SESSION['user_level'], [7, 9], true)
                     ): ?>
                         <li>
                             <a href="/admin">Admin</a>
