@@ -435,15 +435,14 @@ class admin extends controller
      * CMSEC-2026-4828-A — POST and CSRF request intent
      * CMSEC-2026-4828-B — Manifest and package integrity
      * CMSEC-2026-4828-C — Safe archive and module identity
-     * CMSEC-2026-4828-D — Staging, backup, and rollback
+     * CMSEC-2026-4828-D — Staging and automatic failure recovery
      * CMSEC-2026-4828-K — User module ownership boundary
-     * CMSEC-2026-4828-M — Developer release authenticity
      * CMSEC-2026-4828-N — Module write-path confinement
      * CMSEC-2026-4828-O — Atomic module directory replacement
      * CMSEC-2026-4828-Q — Trust and release metadata separation
      * CMSEC-2026-4830-E — Serialized module maintenance
      * CMSEC-2026-4832-A — Durable module migration journal
-     * CMSEC-2026-4832-B — Controlled signed module migration execution
+     * CMSEC-2026-4832-B — Controlled module migration execution
      * CMSEC-2026-4832-C — Exact transition and table confinement
      *
      * @return void
@@ -477,23 +476,9 @@ class admin extends controller
             $this->respondModuleUpdate(false, null, $error->getMessage());
         }
 
-        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
-        $operation = $_POST['operation'] ?? 'update';
-        if (!in_array($operation, ['update', 'rollback'], true)) {
+        if (($_POST['operation'] ?? 'update') !== 'update') {
             $this->respondModuleUpdate(false, null, 'Invalid module update operation.');
         }
-        if ($operation === 'rollback') {
-            if (($_POST['confirm_files_only'] ?? '') !== '1') {
-                $this->respondModuleUpdate(false, null, 'Confirm filesystem-only rollback. Database changes will not be reversed.');
-            }
-            try {
-                $result = $this->restorePreviousModuleFiles($module);
-            } catch (Throwable $error) {
-                $this->respondModuleUpdate(false, null, $error->getMessage());
-            }
-            $this->respondModuleUpdate(true, $result['version'], $result['message']);
-        }
-        /* [End AI:GPT-5.6 Sol] */
 
         try {
             $moduleRoot = $this->resolveInstalledModuleRoot($module);
@@ -524,24 +509,12 @@ class admin extends controller
 
         $packagePath = $workRoot . DIRECTORY_SEPARATOR . 'package.zip';
         $stagePath = $workRoot . DIRECTORY_SEPARATOR . 'stage';
-        /*
-         * CMSEC-2026-4828-O
-         *
-         * Disabled file-level rollback state retained for maintenance:
-         * $originalConfig = file_get_contents($configPath);
-         * $backupPath = $workRoot . DIRECTORY_SEPARATOR . 'backup';
-         * $installed = [];
-         * $backedUp = [];
-         */
         $transactionId = bin2hex(random_bytes(8));
         $moduleParent = dirname($moduleRoot);
         $incomingRoot = $moduleParent . DIRECTORY_SEPARATOR
             . '.' . $module . '.incoming-' . $transactionId;
         $moduleBackupRoot = $moduleParent . DIRECTORY_SEPARATOR
             . '.' . $module . '.backup-' . $transactionId;
-        /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
-        $previousRoot = $moduleParent . DIRECTORY_SEPARATOR . '.' . $module . '.previous';
-        /* [End AI:GPT-5.6 Sol] */
         $moduleMoved = false;
         $migrationState = 'none';
 
@@ -779,18 +752,21 @@ class admin extends controller
                 throw new RuntimeException('Could not activate the module update.');
             }
 
-            /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
-            // Keep one previous release after activation, without loading its PHP.
-            // Retention is part of the transaction: failure restores this update's backup.
-            $this->deleteModuleDirectory($previousRoot);
-            if (!rename($moduleBackupRoot, $previousRoot)) {
-                throw new RuntimeException('Could not retain the previous module files.');
-            }
+            // Activation is complete. Remove temporary backup; do not retain
+            // earlier releases for user-triggered rollback.
             $moduleMoved = false;
-
+            $cleanupWarning = '';
+            try {
+                $this->deleteModuleDirectory($moduleBackupRoot);
+                $this->deleteModuleDirectory(
+                    $moduleParent . DIRECTORY_SEPARATOR . '.' . $module . '.previous'
+                );
+            } catch (Throwable $cleanupError) {
+                error_log('Module update backup cleanup failed: ' . $cleanupError->getMessage());
+                $cleanupWarning = ' Old module backup cleanup requires attention.';
+            }
             $this->cleanupModuleUpdateSafely($workRoot);
-            $this->respondModuleUpdate(true, $new, 'Updated. One previous filesystem version is available for rollback; database changes are not reversed by rollback.');
-            /* [End AI:GPT-5.6 Sol] */
+            $this->respondModuleUpdate(true, $new, 'Updated.' . $cleanupWarning);
         } catch (Throwable $error) {
             /* [AI:GPT-5.6 Sol | 2026-09-04 13:59:34 UTC] */
             $recoveryMessage = ' Installed module files were not replaced.';
@@ -1934,35 +1910,6 @@ class admin extends controller
     }
 
     /**
-     * Restore files after an incomplete module update.
-     *
-     * CMSEC-2026-4828-D
-     * CMSEC-2026-4828-K
-     */
-    private function rollbackModuleUpdate(
-        array $installed,
-        array $backedUp,
-        string $backupPath,
-        string $moduleRoot
-    ): void {
-        foreach (array_reverse($installed) as $relativePath) {
-            $destination = $moduleRoot
-                . DIRECTORY_SEPARATOR
-                . $relativePath;
-
-            if (isset($backedUp[$relativePath])) {
-                $backup = $backupPath . DIRECTORY_SEPARATOR . $relativePath;
-
-                if (is_file($backup)) {
-                    $this->copyModuleFile($backup, $destination);
-                }
-            } elseif (is_file($destination)) {
-                unlink($destination);
-            }
-        }
-    }
-
-    /**
      * Remove the isolated module update workspace.
      *
      * CMSEC-2026-4828-D
@@ -1984,62 +1931,6 @@ class admin extends controller
             error_log('Module update workspace cleanup failed: ' . $error->getMessage());
         }
     }
-
-    /** Caller holds the module maintenance lock and has confirmed filesystem-only recovery. */
-    private function restorePreviousModuleFiles(string $module): array
-    {
-        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $module) || $this->isCore($module)) {
-            throw new RuntimeException('Invalid rollback target.');
-        }
-        $parent = realpath(USERROOT . '/modules');
-        if ($parent === false) {
-            throw new RuntimeException('Module directory is unavailable.');
-        }
-        $live = $parent . DIRECTORY_SEPARATOR . $module;
-        $previous = $parent . DIRECTORY_SEPARATOR . '.' . $module . '.previous';
-        $resolved = realpath($previous);
-        if (is_link($previous) || $resolved === false || !is_dir($previous)
-            || dirname($resolved) !== $parent || is_link($live)) {
-            throw new RuntimeException('No valid previous module files are available.');
-        }
-        $metadataFile = $previous . DIRECTORY_SEPARATOR . 'module.json';
-        if (is_link($metadataFile)) {
-            throw new RuntimeException('Previous module metadata is invalid.');
-        }
-        $metadata = $this->readModuleJson($metadataFile);
-        if (($metadata['module'] ?? '') !== $module || !is_string($metadata['version'] ?? null)) {
-            throw new RuntimeException('Previous module identity is invalid.');
-        }
-        $displaced = $parent . DIRECTORY_SEPARATOR . '.' . $module . '.rollback-' . bin2hex(random_bytes(8));
-        $moved = false;
-        if (file_exists($live)) {
-            if (!is_dir($live) || !rename($live, $displaced)) {
-                throw new RuntimeException('Current module files could not be moved aside.');
-            }
-            $moved = true;
-        }
-        try {
-            if (!rename($previous, $live)) {
-                throw new RuntimeException('Previous module files could not be activated.');
-            }
-        } catch (Throwable $error) {
-            if ($moved && !rename($displaced, $live)) {
-                throw new RuntimeException('Rollback failed and current files could not be restored. Preserve both recovery directories.');
-            }
-            throw $error;
-        }
-        $message = 'Previous module files restored. Database changes were NOT reversed; verify schema compatibility before using the module.';
-        if ($moved) {
-            try {
-                $this->deleteModuleDirectory($displaced);
-            } catch (Throwable $error) {
-                error_log('Rolled-back module cleanup failed: ' . $error->getMessage());
-                $message .= ' Removed-release directory cleanup requires attention.';
-            }
-        }
-        return ['version' => $metadata['version'], 'message' => $message];
-    }
-    /* [End AI:GPT-5.6 Sol] */
 
     /**
      * Copy a directory recursively.
@@ -2151,15 +2042,8 @@ class admin extends controller
             $this->error_page('Installed module could not be quarantined.');
         }
 
-        /* [AI:GPT-5.6 Sol | 2026-09-04 14:04:16 UTC] */
-        $cleanupStage = 'previous module backup';
+        $cleanupStage = 'database';
         try {
-            // Remove retained source before database destruction. On failure,
-            // restore the quarantined live module and leave the database alone.
-            $this->deleteModuleDirectory(
-                dirname($moduleRoot) . DIRECTORY_SEPARATOR . '.' . $module . '.previous'
-            );
-            $cleanupStage = 'database';
             if ($tables !== []) {
                 $moduleModel = $this->model('modules_model');
 
@@ -2176,8 +2060,6 @@ class admin extends controller
 
             $this->error_page('Module ' . $cleanupStage . ' cleanup failed.');
         }
-        /* [End AI:GPT-5.6 Sol] */
-
         /*
          * CMSEC-2026-4828-K
          *
