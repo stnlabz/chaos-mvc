@@ -111,5 +111,5 @@ they must match. The `signing` object above describes a checksum, not
 cryptographic publisher authentication. No RSA, PEM, key ID, or private key
 is required. The update validates the downloaded ZIP's SHA-256 before
 extracting and replacing files. HTTPS and package-host restrictions,
-archive safety checks, and rollback remain enforced.
+archive safety checks, and automatic restoration on failed activation remain enforced. Manual rollback and retained previous-release snapshots are not supported.
 
