@@ -59,15 +59,23 @@ final class db_lifecycle_test_model extends model
         if ($this->tableExists() || $this->targetVersion() !== '1.0.0') {
             throw new RuntimeException('Initial schema installation is not permitted in this state.');
         }
-        $this->query(
-            'CREATE TABLE `' . self::TABLE . '` ('
-            . 'id INT UNSIGNED NOT NULL PRIMARY KEY, '
-            . 'note VARCHAR(120) NOT NULL'
-            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-        );
-        $this->query(
-            'INSERT INTO `' . self::TABLE . '` (id, note) VALUES (1, :note)',
-            ['note' => 'ChAoS MVC database lifecycle qualification']
-        );
+        // Execute the same packaged schema.sql developers inspect and ship.
+        $file = __DIR__ . '/../sql/schema.sql';
+        if (!is_file($file) || is_link($file)) {
+            throw new RuntimeException('Disposable schema file is missing.');
+        }
+        $sql = file_get_contents($file);
+        if (!is_string($sql) || trim($sql) === '') {
+            throw new RuntimeException('Disposable schema is empty.');
+        }
+        $statements = preg_split('/;\\s*(?:\\r?\\n|$)/', $sql);
+        if (!is_array($statements)) {
+            throw new RuntimeException('Disposable schema could not be parsed.');
+        }
+        foreach ($statements as $statement) {
+            if (trim($statement) !== '') {
+                $this->query(trim($statement));
+            }
+        }
     }
 }
