@@ -7,6 +7,14 @@
 
 ## Initial Development — September 12, 2026
 
+## The idea
+Why create a full module just to render some text
+ - Use JSON
+ - Use Markdown
+ - Use text
+ 
+---
+ 
 ## Architecture
 - Added the Core Pages subsystem as a filesystem-backed content system.
 - Established `/user/pages/{slug}/` as the canonical ownership boundary for each page.
