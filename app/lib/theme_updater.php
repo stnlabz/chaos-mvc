@@ -17,10 +17,6 @@ final class theme_updater
             $slug = basename($directory);
             if ($this->validSlug($slug) && !is_link($directory)) $slugs[$slug] = true;
         }
-        foreach (glob($root . '/.*.previous', GLOB_ONLYDIR) ?: [] as $directory) {
-            if (preg_match('/^\.([a-z][a-z0-9_-]{0,62})\.previous$/', basename($directory), $match)
-                && !is_link($directory)) $slugs[$match[1]] = true;
-        }
         $items = [];
         foreach (array_keys($slugs) as $slug) {
             $config = [];
@@ -46,8 +42,6 @@ final class theme_updater
                 'update_source_error' => $sourceError,
                 'domain' => (string) ($config['domain'] ?? ''),
                 'certified' => filter_var($config['certified'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'Yes' : 'No',
-                'rollback_available' => is_dir($root . '/.' . $slug . '.previous')
-                    && !is_link($root . '/.' . $slug . '.previous'),
             ];
         }
         usort($items, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
@@ -118,7 +112,7 @@ final class theme_updater
             if (file_put_contents($incoming . '/theme.json', $json . PHP_EOL, LOCK_EX) !== strlen($json . PHP_EOL)) {
                 throw new RuntimeException('Could not preserve installed theme trust.');
             }
-            $message = $this->activate($slug, $incoming, true);
+            $message = $this->activate($slug, $incoming);
             return ['success' => true, 'version' => $manifest['version'], 'message' => $message];
         } finally {
             if ($workspace !== null) $this->cleanup($workspace);
@@ -127,26 +121,11 @@ final class theme_updater
         }
     }
 
-    public function rollback(string $slug): array
-    {
-        $lock = $this->lock($slug);
-        try {
-            $previous = $this->root() . '/.' . $slug . '.previous';
-            $config = $this->metadata($previous, $slug);
-            return [
-                'success' => true,
-                'version' => $config['version'],
-                'message' => $this->activate($slug, $previous, false),
-            ];
-        } finally { flock($lock, LOCK_UN); fclose($lock); }
-    }
-
     /** Exchange complete directories. Exceptions during activation restore the old files. */
-    private function activate(string $slug, string $incoming, bool $retain): string
+    private function activate(string $slug, string $incoming): string
     {
         $root = $this->root();
         $live = $root . '/' . $slug;
-        $previous = $root . '/.' . $slug . '.previous';
         $backup = $root . '/.' . $slug . '.backup-' . bin2hex(random_bytes(8));
         if (is_link($live) || (file_exists($live) && (!is_dir($live) || dirname(realpath($live)) !== $root))) {
             throw new RuntimeException('Installed theme boundary is invalid.');
@@ -159,10 +138,6 @@ final class theme_updater
         try {
             if (!rename($incoming, $live)) throw new RuntimeException('Could not activate theme files.');
             $activated = true;
-            if ($retain && $hadLive) {
-                $this->removeTree($previous);
-                if (!rename($backup, $previous)) throw new RuntimeException('Could not retain previous theme files.');
-            }
         } catch (Throwable $error) {
             try {
                 if ($activated && !rename($live, $incoming)) throw new RuntimeException('Could not move failed theme aside.');
@@ -173,11 +148,15 @@ final class theme_updater
             throw new RuntimeException($error->getMessage() . ' Previous filesystem state restored.', 0, $error);
         }
         $warning = '';
-        if (!$retain && $hadLive && !$this->cleanup($backup)) $warning = ' Replaced-file cleanup requires attention.';
+        if ($hadLive && !$this->cleanup($backup)) {
+            $warning = ' Old theme backup cleanup requires attention.';
+        }
+        $legacy = $root . '/.' . $slug . '.previous';
+        if (is_dir($legacy) && !$this->cleanup($legacy)) {
+            $warning .= ' Previous theme directory cleanup requires attention.';
+        }
         $this->invalidatePhp($live);
-        return ($retain
-            ? 'Theme updated. One previous filesystem version is available for rollback.'
-            : 'Previous theme files restored.') . $warning;
+        return 'Theme updated.' . $warning;
     }
 
     private function manifest(array $config, string $slug, bool $verify): array
