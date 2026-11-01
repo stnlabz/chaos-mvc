@@ -1,6 +1,7 @@
 CREATE TABLE db_lifecycle_test_records (
     id INT UNSIGNED NOT NULL PRIMARY KEY,
-    note VARCHAR(120) NOT NULL
+    note VARCHAR(120) NOT NULL,
+    qualified_at TIMESTAMP NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO db_lifecycle_test_records (id, note)
