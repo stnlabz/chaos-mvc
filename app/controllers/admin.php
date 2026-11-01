@@ -707,8 +707,8 @@ class admin extends controller
             /*
              * CMSEC-2026-4828-Q — Trust and release metadata separation
              *
-             * Signed packaged metadata may advance with the release, while
-             * installation-local network and signing trust remains pinned.
+             * Packaged metadata may advance with the release, while
+             * installation-local network trust remains pinned.
              */
             $updatedConfig = $stagedConfig;
             unset($updatedConfig['signing']);
@@ -1243,12 +1243,6 @@ class admin extends controller
         return $lock;
     }
 
-    /**
-     * Verify a developer-signed release statement against locally pinned
-     * module trust metadata.
-     *
-     * CMSEC-2026-4828-M — Developer release authenticity
-     */
     /**
      * Reject update destinations that cross the verified module root through
      * an existing symbolic link, junction, or other resolved ancestor.
