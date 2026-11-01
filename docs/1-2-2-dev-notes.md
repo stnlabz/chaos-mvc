@@ -1,5 +1,19 @@
 # v1.2.2 Development Notes
 
+## Manual Rollback Removed — 20261101
+
+Core no longer exposes manual rollback of an installed module or theme.
+The Admin rollback buttons, POST rollback actions, and retained
+`.previous` release snapshots were removed. An update still keeps an
+isolated temporary backup while activating the new version and automatically
+restores the old files on a failed activation. After a successful activation,
+temporary backup directories are deleted. Historical `.previous` snapshots
+are cleaned during a later successful update, not used for rollback.
+
+This is a source change pending live qualification. It intentionally does not
+promise reversal of completed database migrations.
+
+
 ## Versioned Module ZIP Roots — 20261101
 
 Module updates accept either `lifecycle_test/` or a matching versioned
@@ -33,7 +47,7 @@ and theme metadata as part of a successful update.
 
 HTTPS source restrictions, authorized package hosts, ZIP path confinement,
 archive validation, temporary staging, integrity verification, and atomic
-replacement/rollback remain in place. Checksum verification detects package
+replacement/automatic failure recovery remain in place. Checksum verification detects package
 mismatch, but cannot establish publisher identity if both manifest and ZIP
 are compromised.
 
