@@ -2088,6 +2088,19 @@ class admin extends controller
             $this->error_page('Module files could not be removed.');
         }
 
+        // Remove any legacy manual-rollback snapshot left by older Core releases.
+        // Its cleanup must not reverse an otherwise successful Nuke.
+        try {
+            $this->deleteModuleDirectory(
+                dirname($moduleRoot) . DIRECTORY_SEPARATOR . '.' . $module . '.previous'
+            );
+        } catch (Throwable $cleanupError) {
+            error_log(
+                'Legacy module snapshot cleanup failed for [' . $module . ']: '
+                . $cleanupError->getMessage()
+            );
+        }
+
         try {
             require_once APPROOT . '/models/accounts_model.php';
             (new accounts_model())->revoke_admin_module_access($module);
