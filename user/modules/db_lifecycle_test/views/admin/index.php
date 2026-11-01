@@ -18,12 +18,27 @@ $state = (string) ($data['state'] ?? 'invalid');
     <?php if (!empty($data['error'])): ?>
         <p role="alert"><?= htmlspecialchars((string) $data['error'], ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
-    <?php if ($state === 'missing'): ?>
+    <?php if ($state === 'missing' || $state === 'update'): ?>
         <form method="POST" action="/admin/db_lifecycle_test">
             <?= $this->csrf_field() ?>
-            <input type="hidden" name="action" value="install_sql">
-            <button type="submit">Install Disposable SQL</button>
+            <input type="hidden" name="action" value="<?= $state === 'missing' ? 'install_sql' : 'update_sql' ?>">
+            <button type="submit"><?= $state === 'missing' ? 'Install SQL' : 'Update SQL' ?></button>
         </form>
+    <?php elseif ($state === 'current'): ?>
+        <div style="display:flex; gap:.75rem; flex-wrap:wrap">
+            <form method="POST" action="/admin/db_lifecycle_test" onsubmit="return confirm('Delete the disposable module records?')">
+                <?= $this->csrf_field() ?>
+                <input type="hidden" name="action" value="delete_data">
+                <button type="submit">Delete Data</button>
+            </form>
+            <form method="POST" action="/admin/db_lifecycle_test">
+                <?= $this->csrf_field() ?>
+                <input type="hidden" name="action" value="reset_data">
+                <button type="submit">Data Reset</button>
+            </form>
+        </div>
+    <?php else: ?>
+        <p role="alert">Database state is unsupported. No modification is available.</p>
     <?php endif; ?>
 </div>
 <?php require APPROOT . '/views/inc/foot.php'; ?>
