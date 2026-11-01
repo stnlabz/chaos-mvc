@@ -11,6 +11,7 @@ final class admin_access
         'accounts',
         'admin',
         'auth',
+        'cdm',
         'error_handler',
         'install',
         'modules',

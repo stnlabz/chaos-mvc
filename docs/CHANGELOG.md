@@ -11,6 +11,15 @@
         - cURL
     - Known PHP/SAPI Version Write Permissions
 
+### Core Diagnostics - 20261031
+
+- Promoted the verified CDM Diagnostic Service from a user module into protected ChAoS Core ownership.
+- Added level-9 passive runtime observations, bounded filesystem/logging/database capability probes, and inert installed-module contract inspection at `/admin/cdm`.
+- Classified diagnostic evidence as observed, demonstrated, unverified, failed, confirmed, or potentially mismatched instead of treating server identity or permission metadata as operational proof.
+- Restricted CDM to level-9 administrators and excluded it from Developer and AI module grants.
+- Removed the obsolete `user/modules/cdm` package after migrating its controller, model, and administration view into Core.
+- Added focused regression coverage for Core ownership, authorization, probe cleanup, manifest validation, and route-parameter inspection.
+
 ### Security - 20261022
 
 - Added Core-owned Developer and AI account classifications with authority level 7 and explicit per-module Admin access grants.

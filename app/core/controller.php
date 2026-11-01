@@ -42,6 +42,7 @@ class controller
         'posts',
         'media',
         'accounts',
+        'cdm',
         'health',
         'modules',
         'site',

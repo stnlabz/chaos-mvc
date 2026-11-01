@@ -1,6 +1,17 @@
 # v1.2.2 Development Notes
 Various things to be addressed, added, removed or updated.
 
+## Core Diagnostic Service — Implemented 20261031
+
+CDM is now a protected, level-9 Core component available at `/admin/cdm`.
+It provides passive runtime observations, controlled capability probes, and
+bounded inspection of installed user modules without executing module PHP.
+Server identity, ownership, permission bits, and configuration values remain
+observations until an operation through the active web runtime demonstrates
+the corresponding capability.
+
+See `CDM.md` for the diagnostic contract and operating boundaries.
+
 ## PHP 8.5 Compatibility — cURL lifecycle
 - Remove the deprecated `curl_close()` call from `app/controllers/site_json.php`. Review confirmed no other ChAoS MVC Core use of `curl_close()`.
 
