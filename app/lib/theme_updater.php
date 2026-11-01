@@ -215,6 +215,8 @@ final class theme_updater
         if (!$this->isAuthorizedThemePackageHost($url, $download, $config)) {
             throw new RuntimeException('Theme package host is not authorized by installed metadata.');
         }
+        // Normalize both supported manifest layouts for the install stage.
+        $manifest['sha256'] = strtolower($sha);
         return $manifest;
     }
 
