@@ -815,7 +815,7 @@ class admin extends controller
              */
             if (in_array($migrationState, ['applied', 'previously_applied'], true)) {
                 $message .= ' The database migration is recorded as complete; '
-                    . 'retry the same signed update to finish source activation.';
+                    . 'retry the same verified update to finish source activation.';
             } elseif ($migrationState === 'started') {
                 $message .= ' The database migration did not complete and may '
                     . 'have applied partially; inspect the module database before retrying.';
