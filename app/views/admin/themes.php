@@ -121,7 +121,6 @@ async function themeMaintenance(card, action) {
 }
 document.querySelectorAll('.theme-card').forEach(card => {
     const update = card.querySelector('.theme-update');
-    const rollback = card.querySelector('.theme-rollback');
     if (update) {
         update.addEventListener('click', () => themeMaintenance(card, update.dataset.action));
         themeMaintenance(card, 'check_update');
