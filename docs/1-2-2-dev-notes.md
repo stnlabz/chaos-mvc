@@ -12,6 +12,24 @@ the corresponding capability.
 
 See `CDM.md` for the diagnostic contract and operating boundaries.
 
+## Installer Preflight Scope — Corrected 20261101
+
+An Apache2 test (`Apache/2.4.66`, PHP `8.5.4`, `apache2handler`,
+runtime user `www-data`) demonstrated successful required capability checks
+except for `tmp/updater/` and `backups/updater/`, which are not part of a
+fresh installation. Their absence unnecessarily blocked installation.
+
+Removed these two Core Updater workspaces from installer qualification and
+`prepareRuntimeDirectories()`. The user confirmed that this correction
+resolved the reported preflight refusal.
+
+Core Updater workspace and rollback path readiness must be checked when those
+operations are performed. The installer continues to qualify its existing
+mandatory runtime resources, including `app/data/updater/`. This test does
+not establish complete Apache2 or Hostinger deployment qualification.
+
+See `PREFLIGHT.md` for the installation-versus-update capability boundary.
+
 ## PHP 8.5 Compatibility — cURL lifecycle
 - Remove the deprecated `curl_close()` call from `app/controllers/site_json.php`. Review confirmed no other ChAoS MVC Core use of `curl_close()`.
 
