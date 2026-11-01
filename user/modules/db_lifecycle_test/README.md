@@ -11,15 +11,23 @@ Disposable, database-backed fixture. No Core table is modified.
 
 ## Migration to 1.0.1
 
-Publish a version 1.0.1 ZIP and HTTPS manifest using the existing DCT/ChAoS module updater:
-- update `module.json` version and schema_version to `1.0.1`;
-- add `"migrations": {"1.0.0-to-1.0.1": "sql/patches/1.0.0-to-1.0.1.sql"}`;
-- retain the same declared database table and supplied SQL patch;
-- set the installed 1.0.0 module's HTTPS `update_url` to the released 1.0.1 manifest.
+The repository fixture is now **1.0.1**. Its `module.json` declares
+`schema_version: 1.0.1` and the exact migration
+`sql/patches/1.0.0-to-1.0.1.sql`, which adds the `qualified_at` column.
 
-The Core updater must apply the exact declared migration, record it in
-`module_migrations`, and activate the 1.0.1 files. Admin should then show
-`current`, record count `1`, reference row `YES`, migration column `YES`.
+1. **Leave the VPS-installed 1.0.0 files intact**; the baseline schema and its reference row are already verified.
+2. Package the repository's 1.0.1 fixture with DCT. The updater supports `db_lifecycle_test/` and `db_lifecycle_test-1.0.1/` ZIP roots.
+3. Publish the ZIP and HTTPS update JSON with its actual SHA-256 checksum. No RSA keys or signatures.
+4. Ensure the installed 1.0.0 module's `update_url` points to the published update manifest.
+5. Trigger the standard Admin module Update action, not a direct edit of installed version metadata.
+
+The Core updater must apply the declared migration and record it in
+`module_migrations` before activating the 1.0.1 files. After updating,
+`/admin/db_lifecycle_test` should show `current`, record count `1`,
+reference row `YES`, and migration column `YES`.
+
+This migration is a one-time qualification transition; it must not be rerun
+manually after the updater reports success.
 
 ## Nuke
 
@@ -29,8 +37,8 @@ Do not Nuke an established module to perform this test.
 
 ## Caveats
 
-This fixture is intentionally versioned at **1.0.0** so the update can be
-measured. Do not edit the installed 1.0.0 `module.json` to pretend the module
-has updated: that would bypass the Core migration journal test.
+The **installed** 1.0.0 baseline must remain unchanged until the updater
+applies the repository's 1.0.1 release. Do not edit the installed module's
+version fields manually: doing so bypasses the migration qualification.
 
 No production PHP, routing, or Core changes are necessary. Test only on the VPS.
