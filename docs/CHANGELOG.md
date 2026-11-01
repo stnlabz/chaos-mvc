@@ -1,19 +1,27 @@
 # Chaos MVC
 
-### Module and Theme Updater — 20261101
-
-- Removed mandatory RSA/PEM release-signature verification from module and theme updates.
-- Accept a SHA-256 checksum at the manifest root or nested in `signing` with `algorithm: sha256`.
-- Require matching checksums when both manifest formats are present.
-- Keep HTTPS, package-host checks, ZIP SHA-256 verification, safe staging, archive validation, and rollback.
-- Remove obsolete local publisher-signing metadata on successful module/theme update.
-- SHA-256 verifies downloaded package integrity, not publisher identity.
-
 **CHANGELOG**
 
 **Current Version:** 1.2.1
 
 ## v1.2.2-dev October 6, 2026
+
+### Module Update Packaging Compatibility — 20261101
+
+- Fixed the module updater to accept either a standard module ZIP root (`lifecycle_test/`) or the matching versioned ZIP root produced by DCT (`lifecycle_test-1.0.1/`).
+- Use the validated archive root consistently for staging, module metadata checks, migrations, and file copying while installing under the unversioned module directory.
+- Preserve ZIP path confinement, checksum validation, safe atomic replacement, and previous-filesystem-version rollback.
+- **Verified by operator on Apache/PHP 8.5 VPS:** `lifecycle_test` successfully updated from 1.0.0 to 1.0.1 using the existing DCT ZIP and remote SHA-256 manifest; updater reported prior filesystem version retained for rollback. Rollback itself was not tested.
+
+### Module and Theme Updater Simplification — 20261101
+
+- Removed mandatory RSA-based digital-release signatures, PEM public/private key handling, and signing key IDs from module and theme updates. RSA-SHA256 release signatures are **not authorized** for this updater workflow.
+- Accept a SHA-256 checksum at the remote manifest root or nested as `signing: {"algorithm":"sha256","sha256":"<64 hex characters>"}`.
+- Reject disagreement when both manifest SHA-256 fields are supplied; validate downloaded package bytes against the checksum before extraction or installation.
+- Keep HTTPS transport, authorized package hosts, ZIP boundary checks, safe staging, and rollback.
+- Remove obsolete publisher-signing metadata on successful module/theme updates.
+- SHA-256 is an **integrity checksum**, not cryptographic publisher authentication.
+
 - Templated
     - LightSpeed / Apache2 / OpenLiteSpeed / NGiNX / IIS, and other types of Webserver Integrations into Install
     - Various Known Security Updates
