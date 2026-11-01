@@ -20,6 +20,21 @@ final class cdm_model
     }
 
     /**
+     * Public installer-safe CDM observations.
+     *
+     * This method performs no filesystem, database, logging, module or
+     * authenticated-session inspection. Full diagnostics remain Level 9 only.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public function installationObservations(): array
+    {
+        return [
+            'PHP Extensions' => $this->extensionObservations(),
+        ];
+    }
+
+    /**
      * Run bounded probes only after authenticated, CSRF-verified POST.
      *
      * @return array<string, array<int, array<string, mixed>>>
