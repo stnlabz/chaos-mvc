@@ -1,8 +1,8 @@
 {
     "name": "Database Lifecycle Test",
     "module": "db_lifecycle_test",
-    "version": "1.0.0",
-    "schema_version": "1.0.0",
+    "version": "1.0.1",
+    "schema_version": "1.0.1",
     "description": "Disposable database lifecycle qualification fixture for ChAoS MVC 1.2.2.",
     "creator": "ChAoS Foundation",
     "domain": "chaos-mvc.org",
@@ -21,5 +21,8 @@
     ],
     "database_tables": [
         "db_lifecycle_test_records"
-    ]
+    ],
+    "migrations": {
+        "1.0.0-to-1.0.1": "sql/patches/1.0.0-to-1.0.1.sql"
+    }
 }
