@@ -59,7 +59,7 @@ $preflightPassed = ($preflight['passed'] ?? false) === true;
                     <?php foreach ($observations as $observation) : ?>
                         <tr>
                             <td><?= htmlspecialchars((string) ($observation['status'] ?? 'UNVERIFIED'), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) ($observation['check'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars((string) ($observation['summary'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) ($observation['evidence'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         </tr>
                     <?php endforeach; ?>
