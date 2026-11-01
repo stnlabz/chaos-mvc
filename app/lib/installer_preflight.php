@@ -93,8 +93,6 @@ final class installer_preflight
             self::directoryRequirement('User themes', USERROOT . '/themes'),
             self::directoryRequirement('Generated public resources', PUBROOT),
             self::directoryRequirement('Media uploads', PUBROOT . '/uploads'),
-            self::directoryRequirement('Core updater workspace', $root . '/tmp/updater'),
-            self::directoryRequirement('Core updater rollback', $root . '/backups/updater'),
             self::directoryRequirement('PHP temporary workspace', sys_get_temp_dir(), false),
         ];
 
@@ -138,8 +136,6 @@ final class installer_preflight
             USERROOT . '/modules',
             USERROOT . '/themes',
             PUBROOT . '/uploads',
-            $root . '/tmp/updater',
-            $root . '/backups/updater',
         ];
 
         foreach ($directories as $directory) {
