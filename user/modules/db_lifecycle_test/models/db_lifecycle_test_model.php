@@ -34,7 +34,9 @@ final class db_lifecycle_test_model extends model
         if (!$this->tableExists()) return 'missing';
         $target = $this->targetVersion();
         if ($target === '1.0.0' && !$this->hasMigrationColumn()) return 'current';
-        if ($target === '1.0.1' && $this->hasMigrationColumn()) return 'current';
+        if ($target === '1.0.1') {
+            return $this->hasMigrationColumn() ? 'current' : 'update';
+        }
         return 'invalid';
     }
 
@@ -54,23 +56,65 @@ final class db_lifecycle_test_model extends model
         );
     }
 
+    /** Install a fresh schema at the module's declared target version. */
     public function installSchema(): void
     {
-        if ($this->tableExists() || $this->targetVersion() !== '1.0.0') {
-            throw new RuntimeException('Initial schema installation is not permitted in this state.');
+        if ($this->databaseState() !== 'missing') {
+            throw new RuntimeException('Schema is already installed.');
         }
-        // Execute the same packaged schema.sql developers inspect and ship.
-        $file = __DIR__ . '/../sql/schema.sql';
+        if (!in_array($this->targetVersion(), ['1.0.0', '1.0.1'], true)) {
+            throw new RuntimeException('Unsupported database schema target.');
+        }
+        $this->executeSqlFile(__DIR__ . '/../sql/schema.sql');
+    }
+
+    /** Update only this module's existing 1.0.0 table to schema 1.0.1. */
+    public function updateSchema(): void
+    {
+        if ($this->databaseState() !== 'update' || $this->targetVersion() !== '1.0.1') {
+            throw new RuntimeException('No supported database schema update is pending.');
+        }
+        $this->executeSqlFile(__DIR__ . '/../sql/patches/1.0.0-to-1.0.1.sql');
+        if ($this->databaseState() !== 'current') {
+            throw new RuntimeException('Database schema update did not complete.');
+        }
+    }
+
+    /** Data-only removal; leaves the schema intact. */
+    public function deleteData(): void
+    {
+        if ($this->databaseState() !== 'current') {
+            throw new RuntimeException('Database schema must be current.');
+        }
+        $this->query('DELETE FROM `' . self::TABLE . '`');
+    }
+
+    /** Restore the module's canonical reference row. */
+    public function resetData(): void
+    {
+        if ($this->databaseState() !== 'current') {
+            throw new RuntimeException('Database schema must be current.');
+        }
+        $this->query('DELETE FROM `' . self::TABLE . '`');
+        $this->query(
+            'INSERT INTO `' . self::TABLE . '` (id, note) VALUES (1, :note)',
+            ['note' => 'ChAoS MVC database lifecycle qualification']
+        );
+    }
+
+    /** Execute only module-owned, packaged SQL files; never accept SQL from requests. */
+    private function executeSqlFile(string $file): void
+    {
         if (!is_file($file) || is_link($file)) {
-            throw new RuntimeException('Disposable schema file is missing.');
+            throw new RuntimeException('Module SQL file is missing.');
         }
         $sql = file_get_contents($file);
         if (!is_string($sql) || trim($sql) === '') {
-            throw new RuntimeException('Disposable schema is empty.');
+            throw new RuntimeException('Module SQL file is empty.');
         }
         $statements = preg_split('/;\\s*(?:\\r?\\n|$)/', $sql);
         if (!is_array($statements)) {
-            throw new RuntimeException('Disposable schema could not be parsed.');
+            throw new RuntimeException('Module SQL file could not be parsed.');
         }
         foreach ($statements as $statement) {
             if (trim($statement) !== '') {
