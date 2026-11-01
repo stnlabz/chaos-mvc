@@ -87,3 +87,29 @@ Selecting **Chaos MVC** restores the built-in Core layout. An absent, invalid,
 or incomplete selected theme also falls back to the Core layout.
 
 Core updates do not overwrite `user/themes/`.
+
+## Theme Updates
+
+An installed theme may specify an HTTPS `update_url` in its local
+`theme.json`. The remote manifest declares the theme slug, newer version,
+package download URL, and SHA-256 checksum:
+
+```json
+{
+  "theme": "example",
+  "version": "1.0.1",
+  "download": "https://example.org/packages/example-1.0.1.zip",
+  "signing": {
+    "algorithm": "sha256",
+    "sha256": "<64-character hex SHA-256 of the ZIP>"
+  }
+}
+```
+
+For compatibility, a top-level `sha256` is also accepted. If both appear,
+they must match. The `signing` object above describes a checksum, not
+cryptographic publisher authentication. No RSA, PEM, key ID, or private key
+is required. The update validates the downloaded ZIP's SHA-256 before
+extracting and replacing files. HTTPS and package-host restrictions,
+archive safety checks, and rollback remain enforced.
+
