@@ -6,19 +6,28 @@
 
 ## v1.2.2-dev October 6, 2026
 
+### Module and Theme Rollback Removal — 20261101
+
+- Removed **user-triggered rollback** for modules and themes, including POST action branches, restoration helpers, and Admin controls.
+- Updates no longer retain a `.previous` release. After successful activation, the temporary backup is cleaned up; leftover legacy `.previous` directories are cleaned on subsequent successful updates.
+- **Preserved automatic recovery during a failed activation**. Previous files are restored from the temporary transaction backup if activation fails; no administrator-facing rollback functionality remains.
+- Simplified uninstall by removing dependency on previous-release snapshot cleanup.
+- Earlier changelog entries describing optional manual rollback document previous development behavior and are superseded by this 1.2.2 decision. This change has **not** been tested on a live installation yet.
+
+
 ### Module Update Packaging Compatibility — 20261101
 
 - Fixed the module updater to accept either a standard module ZIP root (`lifecycle_test/`) or the matching versioned ZIP root produced by DCT (`lifecycle_test-1.0.1/`).
 - Use the validated archive root consistently for staging, module metadata checks, migrations, and file copying while installing under the unversioned module directory.
-- Preserve ZIP path confinement, checksum validation, safe atomic replacement, and previous-filesystem-version rollback.
-- **Verified by operator on Apache/PHP 8.5 VPS:** `lifecycle_test` successfully updated from 1.0.0 to 1.0.1 using the existing DCT ZIP and remote SHA-256 manifest; updater reported prior filesystem version retained for rollback. Rollback itself was not tested.
+- Preserve ZIP path confinement, checksum validation, safe atomic replacement, and automatic failed-activation restoration.
+- **Verified by operator on Apache/PHP 8.5 VPS:** `lifecycle_test` successfully updated from 1.0.0 to 1.0.1 using the existing DCT ZIP and remote SHA-256 manifest; updater reported the former previous-version retention behavior, which is removed in the subsequent 1.2.2 cleanup.
 
 ### Module and Theme Updater Simplification — 20261101
 
 - Removed mandatory RSA-based digital-release signatures, PEM public/private key handling, and signing key IDs from module and theme updates. RSA-SHA256 release signatures are **not authorized** for this updater workflow.
 - Accept a SHA-256 checksum at the remote manifest root or nested as `signing: {"algorithm":"sha256","sha256":"<64 hex characters>"}`.
 - Reject disagreement when both manifest SHA-256 fields are supplied; validate downloaded package bytes against the checksum before extraction or installation.
-- Keep HTTPS transport, authorized package hosts, ZIP boundary checks, safe staging, and rollback.
+- Keep HTTPS transport, authorized package hosts, ZIP boundary checks, safe staging, and automatic failed-activation recovery.
 - Remove obsolete publisher-signing metadata on successful module/theme updates.
 - SHA-256 is an **integrity checksum**, not cryptographic publisher authentication.
 
