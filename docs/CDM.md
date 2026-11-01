@@ -26,6 +26,20 @@ CDM is the protected ChAoS MVC diagnostic service available to authority-level
 - `POTENTIAL MISMATCH` — source and metadata may disagree, but execution was
   not performed.
 
+## Installer-facing interface
+
+The Core installer uses `cdm_model::installationObservations()` for passive PHP
+extension observations. This method performs no filesystem, database, logging,
+module-source, or authenticated-session inspection. It requires no administrator
+session because it exposes only the bounded extension-availability results.
+
+The installer still owns its independent fail-closed environment and filesystem
+capability qualification through `installer_preflight::qualify()`. An observed
+extension is not proof that the required operation will succeed.
+
+The installer-facing method does not authorize calling `overview()`,
+`capabilityProbes()`, or `diagnose()` from public routes.
+
 ## Authority boundary
 
 Both CDM entry points require authority level 9. CDM is registered as a
