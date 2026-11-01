@@ -46,6 +46,29 @@ $preflightPassed = ($preflight['passed'] ?? false) === true;
         <?php endforeach; ?>
     </section>
 
+    <section class="mb-4" aria-labelledby="installer-cdm">
+        <h2 id="installer-cdm">CDM Runtime Observations</h2>
+        <p>Extension status is observed telemetry, not proof of installation
+           capability. The qualification results below determine readiness.</p>
+        <?php foreach (($preflight['diagnostics'] ?? []) as $group => $observations) : ?>
+            <h3><?= htmlspecialchars((string) $group, ENT_QUOTES, 'UTF-8') ?></h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead><tr><th>Status</th><th>Check</th><th>Evidence</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($observations as $observation) : ?>
+                        <tr>
+                            <td><?= htmlspecialchars((string) ($observation['status'] ?? 'UNVERIFIED'), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars((string) ($observation['check'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars((string) ($observation['evidence'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endforeach; ?>
+    </section>
+
     <section class="mb-4" aria-labelledby="installer-capabilities">
         <h2 id="installer-capabilities">Capability Qualification</h2>
         <div class="table-responsive">
