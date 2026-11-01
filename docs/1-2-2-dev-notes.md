@@ -1,4 +1,28 @@
 # v1.2.2 Development Notes
+
+## Module and Theme Update Simplification — 20261101
+
+Module and theme update installation no longer requires RSA/PEM public keys,
+private-key signatures, or key IDs. A configured HTTPS update URL advertises
+a newer version and package location. The downloaded ZIP must match the
+manifest SHA-256 checksum before its contents are extracted or installed.
+
+Both remote manifest formats are accepted:
+
+- `"sha256": "<64-character hex SHA-256>"` at the manifest root
+- `"signing": {"algorithm":"sha256","sha256":"<64-character hex SHA-256>"}`
+
+If both are present, the checksums must agree. The nested `signing` field
+is a checksum declaration, not publisher authentication. Legacy RSA signing
+fields are no longer required and are removed from locally installed module
+and theme metadata as part of a successful update.
+
+HTTPS source restrictions, authorized package hosts, ZIP path confinement,
+archive validation, temporary staging, integrity verification, and atomic
+replacement/rollback remain in place. Checksum verification detects package
+mismatch, but cannot establish publisher identity if both manifest and ZIP
+are compromised.
+
 Various things to be addressed, added, removed or updated.
 
 ## Core Diagnostic Service — Implemented 20261031
