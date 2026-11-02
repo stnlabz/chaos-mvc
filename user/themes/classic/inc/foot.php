@@ -1,5 +1,4 @@
 <?php
-/* [AI:GPT-5.6 Sol | 2026-08-30 18:10:00 UTC] */
 
 $siteName = $SITE['name'] ?? 'Chaos MVC';
 
@@ -43,5 +42,3 @@ $copyrightName = $SITE['copyright_name']
 
 </body>
 </html>
-
-<?php /* [End AI:GPT-5.6 Sol] */ ?>

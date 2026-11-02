@@ -53,6 +53,14 @@ are compromised.
 
 Various things to be addressed, added, removed or updated.
 
+## Core Updater Serialization — Implemented 20261102
+
+Core update and rollback now share a non-blocking exclusive operation lock.
+Concurrent authorized maintenance requests cannot operate on the shared Core
+package, staging, backup, maintenance, or status lifecycle. Verification before
+activation, failure recovery, and the single previous-Core rollback remain
+unchanged.
+
 ## Core Diagnostic Service — Implemented 20261031
 
 CDM is now a protected, level-9 Core component available at `/admin/cdm`.

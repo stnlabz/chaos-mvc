@@ -2,9 +2,15 @@
 
 **CHANGELOG**
 
-**Current Version:** 1.2.1
+**Current Version:** 1.2.2
 
-## v1.2.2-dev October 6, 2026
+## v1.2.2 — November 2, 2026
+
+### Core Updater Concurrency — 20261102
+
+- Serialized Core update and rollback operations with one non-blocking exclusive maintenance lock.
+- Prevented concurrent authorized requests from sharing the Core package, staging, backup, maintenance, and status lifecycle.
+- Preserved verification-before-activation, automatic failure rollback, and the single previous-Core rollback contract.
 
 ### Module and Theme Rollback Removal — 20261101
 

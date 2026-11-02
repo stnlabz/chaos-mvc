@@ -4,15 +4,10 @@
     "version": "2.0.0",
     "schema_version": "2.0.0",
     "description": "Canonical ChAoS MVC user Module reference for MVC structure, Module and Data Lifecycles, Data Reset, and complete CRUD.",
-    "update_url": "https://yourdomain.com/updates/modules/example.json",
-    "creator": "Your Initials",
-    "domain": "www.yourdomain.com",
-    "certified": "No",
-    "signing": {
-        "algorithm": "rsa-sha256",
-        "key_id": "Your-keys-id",
-        "public_key": "your base64 public key from public.pem"
-    },
+    "update_url": "https://www.chaos-mvc.org/updates/example.json",
+    "creator": "Team Chaos",
+    "domain": "www.chaos-mvc.org",
+    "certified": "Yes",
     "files": [
         "controllers/example.php",
         "models/example_model.php",

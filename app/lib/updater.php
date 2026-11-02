@@ -54,6 +54,13 @@ class updater_engine
     private string $maintenanceFile;
 
     /**
+     * Exclusive Core maintenance transaction lock.
+     *
+     * @var string
+     */
+    private string $operationLockFile;
+
+    /**
      * Initialize updater paths.
      */
     public function __construct()
@@ -74,6 +81,9 @@ class updater_engine
 
         $this->maintenanceFile =
             $this->runtimeDir . '/maintenance.lock';
+
+        $this->operationLockFile =
+            $this->runtimeDir . '/operation.lock';
     }
 
     /**
@@ -200,21 +210,28 @@ class updater_engine
     /** Restore and consume the one retained previous Core snapshot. */
     public function rollback(): array
     {
-        $backupDir = $this->backupRoot . '/previous';
-        if (!$this->canRollback()) {
-            throw new RuntimeException('No previous Core is available for rollback.');
-        }
-        $current = $this->getCurrentVersion();
-        $this->enterMaintenance($current);
+        $this->ensureDirectory($this->runtimeDir);
+        $operationLock = $this->acquireOperationLock();
+
         try {
-            $this->restoreBackup($backupDir);
-            $restored = $this->getCurrentVersionFromDisk();
-            $this->leaveMaintenance();
-            $this->setStatus('complete', 'Rollback complete', 100, $restored, $restored, 'Previous Core restored.');
-            return ['success' => true, 'version' => $restored, 'message' => 'Previous Core restored.'];
-        } catch (Throwable $error) {
-            $this->setStatus('failed', 'Rollback failed', 100, $current, null, 'Previous Core could not be restored.', $error->getMessage());
-            throw $error;
+            $backupDir = $this->backupRoot . '/previous';
+            if (!$this->canRollback()) {
+                throw new RuntimeException('No previous Core is available for rollback.');
+            }
+            $current = $this->getCurrentVersion();
+            $this->enterMaintenance($current);
+            try {
+                $this->restoreBackup($backupDir);
+                $restored = $this->getCurrentVersionFromDisk();
+                $this->leaveMaintenance();
+                $this->setStatus('complete', 'Rollback complete', 100, $restored, $restored, 'Previous Core restored.');
+                return ['success' => true, 'version' => $restored, 'message' => 'Previous Core restored.'];
+            } catch (Throwable $error) {
+                $this->setStatus('failed', 'Rollback failed', 100, $current, null, 'Previous Core could not be restored.', $error->getMessage());
+                throw $error;
+            }
+        } finally {
+            $this->releaseOperationLock($operationLock);
         }
     }
 
@@ -246,6 +263,8 @@ class updater_engine
         $this->ensureDirectory(
             $this->backupRoot
         );
+
+        $operationLock = $this->acquireOperationLock();
 
         $target = null;
         $packageFile = '';
@@ -567,7 +586,37 @@ class updater_engine
                 'version' => $current,
                 'message' => $e->getMessage()
             ];
+        } finally {
+            $this->releaseOperationLock($operationLock);
         }
+    }
+
+    /** @return resource */
+    private function acquireOperationLock()
+    {
+        $lock = fopen($this->operationLockFile, 'c+b');
+
+        if ($lock === false) {
+            throw new RuntimeException(
+                'Core maintenance lock is unavailable.'
+            );
+        }
+
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+            throw new RuntimeException(
+                'Another Core maintenance operation is active.'
+            );
+        }
+
+        return $lock;
+    }
+
+    /** @param resource $lock */
+    private function releaseOperationLock($lock): void
+    {
+        flock($lock, LOCK_UN);
+        fclose($lock);
     }
 
     /**

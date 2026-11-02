@@ -12,9 +12,9 @@ The **ChAoS MVC** is now owned, operated, maintained and supported by the [ChAoS
 
 **NOTICE** Current Source does **NOT** mean Current Version. Please see the [Releases](https://github.com/stnlabz/chaos-mvc/releases) for current version.
 
-**Current Release**: 1.2.1
+**Current Release**: 1.2.2
 
-**Current Source**: 1.2.1
+**Current Source**: 1.2.2
 
 The framework was designed to remain predictable and maintainable while avoiding the complexity that often grows inside large CMS systems.
 On the Webz at [Chaos MVC](https://www.chaos-mvc.org)
@@ -436,7 +436,7 @@ Use the release artifact and installation documentation for the version being de
 
 Chaos MVC is an actively developed framework and currently powers live systems.
 
-The current source is the released 1.2.1 line. Changes since 1.2.0 include the filesystem-backed Pages subsystem, expanded Markdown support, modernized SEO/discovery generation, RSS, schema-validated `site.json`, Theme infrastructure, updater/release hardening, and continued refinement of user-Module lifecycle and development practices.
+The current source is the released 1.2.2 line.
 
 The current development objective remains a small, deterministic, understandable framework with a protected Core and clearly owned userland.
 

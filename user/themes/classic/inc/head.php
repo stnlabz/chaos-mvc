@@ -1,5 +1,4 @@
 <?php
-/* [AI:GPT-5.6 Sol | 2026-08-30 18:10:00 UTC] */
 
 $og = $og ?? [];
 
@@ -140,5 +139,3 @@ $ogType = $og['type'] ?? 'website';
 
     <main class="site-main">
         <div class="site-content">
-
-<?php /* [End AI:GPT-5.6 Sol] */ ?>
