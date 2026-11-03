@@ -14,7 +14,7 @@ final class chat extends controller
 
     public function index(array $params = []): void
     {
-        $this->require_admin(9);
+        $this->require_admin(7);
         $ajax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             header('Content-Type: text/html; charset=utf-8');
@@ -65,7 +65,7 @@ final class chat extends controller
 
     public function status(array $params = []): void
     {
-        $this->require_admin(9);
+        $this->require_admin(7);
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
             $this->json(405, ['ok' => false, 'error' => 'Method not allowed.']);
             return;
