@@ -1,8 +1,8 @@
 {
     "module": "chat",
     "name": "Digit Chat",
-    "version": "0.3.0",
-    "description": "Persistent, isolated project conversations with MySQL-backed Digit delivery.",
+    "version": "0.3.1",
+    "description": "Persistent project conversations, with chats created and displayed beneath their parent project.",
     "creator": "STN-LABZ",
     "domain": "stn-labz.com",
     "certified": "No",
