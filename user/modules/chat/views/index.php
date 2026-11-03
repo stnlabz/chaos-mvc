@@ -27,7 +27,7 @@ $submitted = (string) ($data['submitted'] ?? '');
         <form action="/chat" method="POST">
             <?= $this->csrf_field() ?>
             <label for="chat-message">Message</label>
-            <textarea id="chat-message" name="message" maxlength="2047" rows="5" required></textarea>
+            <textarea id="chat-message" name="message" maxlength="2047" rows="5" required><?= htmlspecialchars($submitted, ENT_QUOTES, 'UTF-8') ?></textarea>
             <button type="submit">Send</button>
         </form>
     <?php endif; ?>
