@@ -215,13 +215,14 @@ final class chat extends controller
     public function status(array $params = []): void
     {
         $this->require_admin(7);
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             $this->json(405, ['ok' => false, 'error' => 'Method not allowed.']);
             return;
         }
+        $this->require_csrf();
         try {
             $state = $this->model('chat_model')->status(
-                (string) ($_GET['id'] ?? ''),
+                (string) ($_POST['id'] ?? ''),
                 hash('sha256', session_id()),
                 $this->account()
             );
