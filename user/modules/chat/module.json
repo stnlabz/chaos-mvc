@@ -1,0 +1,19 @@
+{
+    "module": "chat",
+    "name": "Digit Chat",
+    "version": "0.1.0",
+    "description": "Restricted web chat interface to the local Digit transport; inactive pending native qualification.",
+    "creator": "STN-LABZ",
+    "domain": "stn-labz.com",
+    "certified": "No",
+    "files": [
+        "controllers/chat.php",
+        "models/chat_model.php",
+        "views/index.php",
+        "README.md"
+    ],
+    "routes": [
+        "index"
+    ],
+    "database_tables": []
+}
