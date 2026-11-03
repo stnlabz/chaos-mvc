@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
  account_id BIGINT UNSIGNED NOT NULL,
  project_id BIGINT UNSIGNED NOT NULL,
  title VARCHAR(120) NOT NULL,
+ github_repo VARCHAR(159) NULL DEFAULT NULL,
  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  UNIQUE KEY uq_chat_convo_scope (id, account_id, project_id),
@@ -54,3 +55,10 @@ CREATE TABLE IF NOT EXISTS chat_deliveries (
  CONSTRAINT fk_chat_delivery_convo FOREIGN KEY (conversation_id, account_id, project_id)
    REFERENCES chat_conversations (id, account_id, project_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS chat_schema (
+ id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+ schema_version VARCHAR(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO chat_schema (id, schema_version) VALUES (1, '1.1.0');
