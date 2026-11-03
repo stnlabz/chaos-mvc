@@ -46,7 +46,28 @@ final class chat_model extends model
         );
 
         if (!is_resource($socket)) {
-            throw new RuntimeException('Local transport connection failed.');
+            // Keep the socket pathname and native error text in server logs.
+            // Only the bounded failure category is displayed in the chat UI.
+            error_log(
+                'Digit Chat connect failed (errno ' . $errno . '): ' . $errstr
+            );
+
+            $detail = strtolower($errstr);
+            $reason = match (true) {
+                $errno === 13 || str_contains($detail, 'permission denied')
+                    => 'permission denied',
+                $errno === 2 || str_contains($detail, 'no such file')
+                    => 'socket unavailable',
+                $errno === 111 || str_contains($detail, 'connection refused')
+                    => 'no listener',
+                $errno === 110 || str_contains($detail, 'timed out')
+                    => 'connection timeout',
+                default => 'connection error',
+            };
+
+            throw new RuntimeException(
+                'Local transport connection failed (' . $reason . ').'
+            );
         }
 
         try {
