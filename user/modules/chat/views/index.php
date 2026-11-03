@@ -199,8 +199,7 @@ if (!theme::render('head', get_defined_vars())) {
         let lastState = '';
         while (Date.now() < until) {
             await sleep(800);
-            const result = await readJson(await fetch('/chat/status?id=' + encodeURIComponent(id),
-                {credentials: 'same-origin', cache: 'no-store'}));
+            const result = await post('/chat/status', {id});
             if (result.state !== lastState) {
                 lastState = result.state;
                 status.textContent = result.state === 'queued' ? 'Queued for Digit…'
