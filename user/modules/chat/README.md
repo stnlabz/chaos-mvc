@@ -1,35 +1,84 @@
-# Digit Chat — ChAoS MVC module 0.2.0
+# Digit Chat 0.3.0 — project-isolated persistence
 
-## Integration
-Digit Web Transport v1.0.1 initiates local HTTP POST to `http://127.0.0.1/chat/transport`. PHP does not contact Digit or use a Unix socket. Digit polls with `{"type":"poll"}`, receives one `{"id":"...","message":"...","display_name":"..."}` or HTTP 204, and POSTs a `{"type":"reply","id":"...","status":"ok|error","message":"..."}` response. An acknowledged reply receives HTTP 200. Digit Core routing and ABI remain unchanged. The authorized ChAoS MVC login controller now includes the existing account `display_name` in the PHP session.
+## Scope
 
-`/chat`: Level 7+ with existing module permission authorized GET interface and CSRF-checked POST enqueue (HTTP 202 JSON, request ID).
+ChAoS MVC owns the authenticated account, project, conversation, message history
+and SQL lifecycle. Digit Web Transport still polls /chat/transport using its
+existing outbound HTTP contract. Digit Core and framework Core are unchanged.
 
-`/chat/status?id=...`: Level 7+ with existing module permission authorized GET response retrieval, scoped to the originating website session. Other sessions cannot read the response.
+**Absolute context isolation:** Only the selected account + project +
+conversation may supply past messages to Digit. Conversations within the same
+project remain separate. No global search, account-wide history, other
+project messages, or inferred fallback is allowed.
 
-`/chat/transport`: POST-only JSON operation, currently gated to source address 127.0.0.1. Does not use website session authentication because Digit's native transport is a background process. **Loopback address alone does not authenticate the Digit process.** Before accepting deployment, restrict access to this route at the web-server boundary and verify no other local users/processes can impersonate Digit. Digit v1.0.1 does not send a shared secret or signed authentication header; robust transport-origin authentication requires a separately authorized contract change.
+## Install
 
-## Queue
-Small, short-lived file queue in a private, 0700 per-site directory under the PHP temporary directory, with a 0600 JSON file and `flock` serialization. Request IDs are random. A message is atomically transitioned from queued to processing on first poll; duplicate replies are rejected. Expired entries are cleaned on subsequent requests (90-second TTL). Maximum 100 queue entries. Queue data is ephemeral and is not durable conversation history. Do not run chat across multiple independent PHP hosts or isolated /tmp directories without changing the storage architecture by authorization.
+1. Update the Chat module files from this release.
+2. Open /admin/chat as Level 9. The module must report the database as missing.
+3. Submit **Install SQL** with the existing CSRF control.
+4. Verify all four Chat-owned tables exist and the admin view reports current.
+5. Open /chat, create a project, then create a conversation and send a message.
 
-The browser uses fetch to submit, then polls for results without a page refresh. The interface distinguishes queued, processing, completed and failed delivery states. Only a completed status=ok result is rendered as a successful Digit reply. It displays text with `textContent`, not HTML.
+The module does not install SQL on a visitor request. The SQL file is
+user/modules/chat/sql/schema.sql. The module manifest declares all four owned
+tables for ChAoS MVC's module lifecycle and Nuke.
 
-## Requirements and limits
-- Browser message: 1 to 2047 UTF-8 bytes, no ASCII control characters; Digit's parser does not accept embedded newlines.
-- Digit reply: up to 511 UTF-8 bytes.
-- One request per native transport poll. No streaming or persistent history.
-- Verify that `http://127.0.0.1/chat/transport` resolves to the intended ChAoS MVC virtual host; Digit does not use the public hostname by default.
-- Verify that Digit v1.0.1 Web Transport has been built, qualified, installed, and activated on the server.
-- Test negative access, CSRF, session isolation, queue roundtrip, and error behavior. Source commits are not live acceptance evidence.
+**Cutover:** The previous 0.2.x temporary-file queue is not imported or
+read by 0.3.0. Do not cut over while previous requests are still in flight.
+There is no automatic recovery of file-backed conversation data, because 0.2.x
+did not persist it as conversation history.
 
-Scope of the display-name enhancement: `app/controllers/auth.php` (authorized login session assignment), Chat module queue/controller, and Digit native Web module sender mapping. Digit Core is unchanged.
+## Conversation contract
 
-## Source-review findings
+- Browser-visible route stays exactly **/chat**. Project and conversation IDs
+  are sent in CSRF-protected POST bodies, never in path segments or query strings.
+- GET /chat renders only the authenticated account's projects. The last
+  selected conversation is retained in the PHP session and revalidated.
+- POST /chat/workspace with explicit allowlisted action creates projects and
+  conversations or opens a scoped project/conversation.
+- POST /chat queues messages for one explicit account, project and conversation.
+  It does not rely on whatever another browser tab selected.
+- POST /chat/status uses the session-bound delivery receipt and account.
+  The request ID is sent in the POST body, not the URL.
+- Digit /chat/transport remains loopback-gated; **loopback is not process
+  authentication** and the existing server-side hardening requirement remains.
 
-Digit's IRC and Web modules both invoke `digit.router.dispatch`. The Ask module owns greetings and ordinary conversation. Web transport uses the authenticated account display name as the router sender, falling back to `digit-web` for legacy queued jobs; IRC forwards its IRC nickname; neither transport should synthesize a reply. Digit Web now reports changing HTTP polling failures in its journal without logging message bodies. This identifies wrong virtual host/404, denial/403, and malformed job payload/200 during deployment verification. The native module is still responsible for activation and HTTP reachability.
+Context is sourced from the exact selected conversation's recent messages
+(maximum 8 recent messages, 180 bytes each) and the same project's optional
+context notes. The context envelope fits within the existing 2047-byte native
+route limit and preserves UTF-8 boundaries. New conversations and slash commands
+retain the established raw-message behavior. Existing identity questions remain
+unchanged. For a returning greeting, the Chat model sends a scoped [resume]
+envelope; **Digit Ask v1.0.9** renders an evidence-based welcome referencing
+the retrieved thread, without Ollama inference. Ordinary contextual prompts
+use [conversation] and are handled by the current inference service.
 
-The Level 7 account accesses Chat through ordinary ChAoS MVC login with explicit Chat module permission. This integration does not implement automated login or change Core authentication.
+Only the user's original submitted text is saved as their chat message.
+The context envelope is transport-only and not displayed as the user's message.
+Digit's completed reply is stored in the same authenticated, scoped conversation.
 
-## Display-name identity boundary
+**Important:** This release persists message history. It does not yet implement
+semantic summarization of arbitrarily old conversations; the native prompt
+uses only recent exchanges. Do not claim months-old details are recalled
+unless they appear in the retrieved context.
 
-`display_name` is read from the authenticated PHP session, not browser-submitted form data. Existing authenticated sessions without the field load it once by account ID from the existing `accounts` table and cache it in the session. A blank configured display name falls back to the account username. The queue includes only the display name, message and correlation ID in the Digit poll result; session hash stays server-side. Digit passes this name as `digit_route_request_t.sender`, while leaving privileged `account` empty. It is a conversational label, **not authorization or an authenticated Digit account assertion**. New login sessions receive the field via `app/controllers/auth.php`.
+## Acceptance and security tests
+
+- Level 9 explicitly installs SQL; ordinary GET does not create tables.
+- Level 7 requires normal Chat module permission; other users denied.
+- Account A must not access Account B's project/conversation through forged IDs.
+- Conversation X must not read message history from sibling conversation Y.
+- Project A must never retrieve any messages from project B.
+- Late replies must be stored against their original account/project/conversation,
+  even if the user changes conversations in another tab.
+- Sending "hey" in a previously used thread must reference that thread's recent
+  history; sending "hey" in a new thread must remain the normal greeting.
+- /github commands and direct identity questions must retain normal routing.
+- Restart the PHP/web server and log in again. Projects and messages persist;
+  selection can be restored manually if the PHP session was replaced.
+
+## Runtime status
+
+Source implementation is committed. Native build, PHP lint, SQL installation,
+cross-account isolation tests against a real MySQL database and live acceptance
+must be performed before calling this release production-ready.
