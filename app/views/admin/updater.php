@@ -337,10 +337,24 @@ $targetVersion = (string) (
                     await response.json();
 
                 if (!result.success) {
-                    await pollStatus();
+                    renderStatus({
+                        status: 'failed',
+                        stage: 'Update failed',
+                        percent: 100,
+                        message: result.message || 'The update could not be started.',
+                        error: result.message || 'The update could not be started.'
+                    });
                 }
             } catch (error) {
-                await pollStatus();
+                renderStatus({
+                    status: 'failed',
+                    stage: 'Update failed',
+                    percent: 100,
+                    message: 'The updater returned an invalid response.',
+                    error: error instanceof Error
+                        ? error.message
+                        : 'The updater returned an invalid response.'
+                });
             }
         }
     );

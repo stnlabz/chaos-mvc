@@ -11,6 +11,9 @@
 - Serialized Core update and rollback operations with one non-blocking exclusive maintenance lock.
 - Prevented concurrent authorized requests from sharing the Core package, staging, backup, maintenance, and status lifecycle.
 - Preserved verification-before-activation, automatic failure rollback, and the single previous-Core rollback contract.
+- Moved Core staging and new rollback snapshots beneath the installer-qualified writable `app/data/updater/` boundary so updates no longer require PHP write access to installation-root `tmp/` and `backups/` directories.
+- Retained discovery and consumption of the pre-1.2.2 root-level previous-Core snapshot for compatibility.
+- Displayed startup failures returned before updater status initialization instead of leaving the Admin interface at Idle 0%.
 
 ### Module and Theme Rollback Removal — 20261101
 

@@ -40,6 +40,13 @@ class updater_engine
     private string $backupRoot;
 
     /**
+     * Pre-1.2.2 backup directory retained for one compatibility rollback.
+     *
+     * @var string
+     */
+    private string $legacyBackupRoot;
+
+    /**
      * Status file.
      *
      * @var string
@@ -71,9 +78,12 @@ class updater_engine
             APPROOT . '/data/updater';
 
         $this->tempDir =
-            $root . '/tmp/updater';
+            $this->runtimeDir . '/workspace';
 
         $this->backupRoot =
+            $this->runtimeDir . '/backups';
+
+        $this->legacyBackupRoot =
             $root . '/backups/updater';
 
         $this->statusFile =
@@ -204,7 +214,7 @@ class updater_engine
 
     public function canRollback(): bool
     {
-        return is_file($this->backupRoot . '/previous/backup.json');
+        return $this->rollbackBackupDirectory() !== null;
     }
 
     /** Restore and consume the one retained previous Core snapshot. */
@@ -214,8 +224,8 @@ class updater_engine
         $operationLock = $this->acquireOperationLock();
 
         try {
-            $backupDir = $this->backupRoot . '/previous';
-            if (!$this->canRollback()) {
+            $backupDir = $this->rollbackBackupDirectory();
+            if ($backupDir === null) {
                 throw new RuntimeException('No previous Core is available for rollback.');
             }
             $current = $this->getCurrentVersion();
@@ -233,6 +243,22 @@ class updater_engine
         } finally {
             $this->releaseOperationLock($operationLock);
         }
+    }
+
+    private function rollbackBackupDirectory(): ?string
+    {
+        foreach (
+            [
+                $this->backupRoot . '/previous',
+                $this->legacyBackupRoot . '/previous',
+            ] as $directory
+        ) {
+            if (is_file($directory . '/backup.json')) {
+                return $directory;
+            }
+        }
+
+        return null;
     }
 
     private function getCurrentVersionFromDisk(): string
@@ -475,6 +501,24 @@ class updater_engine
             $this->verifyInstalledFiles(
                 $filesManifest
             );
+
+            /*
+             * A successful update has retained the immediately previous Core
+             * in the installation-owned updater data directory. Any older
+             * root-level snapshot is now obsolete.
+             */
+            if (is_dir($this->legacyBackupRoot . '/previous')) {
+                try {
+                    $this->removeDirectory(
+                        $this->legacyBackupRoot . '/previous'
+                    );
+                } catch (Throwable $cleanupError) {
+                    error_log(
+                        'Legacy Core backup cleanup failed: '
+                        . $cleanupError->getMessage()
+                    );
+                }
+            }
 
             /*
              * SUCCESS

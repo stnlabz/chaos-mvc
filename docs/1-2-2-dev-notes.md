@@ -61,6 +61,11 @@ package, staging, backup, maintenance, or status lifecycle. Verification before
 activation, failure recovery, and the single previous-Core rollback remain
 unchanged.
 
+Core staging and new rollback snapshots now live beneath
+`app/data/updater/`, which the installer already qualifies as writable. The
+updater continues to recognize a pre-1.2.2 root-level previous-Core snapshot
+for one compatibility rollback.
+
 ## Core Diagnostic Service — Implemented 20261031
 
 CDM is now a protected, level-9 Core component available at `/admin/cdm`.
