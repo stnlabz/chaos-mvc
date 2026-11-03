@@ -1,45 +1,25 @@
-# Digit Chat — ChAoS MVC user module
+# Digit Chat — ChAoS MVC module 0.2.0
 
-**Route:** `/chat` (native router, no aliases or Core changes)
+## Integration
+Digit Web Transport v1.0.1 initiates local HTTP POST to `http://127.0.0.1/chat/transport`. PHP does not contact Digit or use a Unix socket. Digit polls with `{"type":"poll"}`, receives one `{"id":"...","message":"..."}` or HTTP 204, and POSTs a `{"type":"reply","id":"...","status":"ok|error","message":"..."}` response. An acknowledged reply receives HTTP 200. Both Core implementations remain unchanged.
 
-**Status:** Source-level implementation, deliberately disabled.
-Digit Web Transport native qualification and activation are still pending.
+`/chat`: Level 9 authorized GET interface and CSRF-checked POST enqueue (HTTP 202 JSON, request ID).
 
-## Architecture
+`/chat/status?id=...`: Level 9 authorized GET response retrieval, scoped to the originating website session. Other sessions cannot read the response.
 
-- Controller: Level-9-only access, request flow, CSRF and response presentation.
-- Model: local Unix stream socket and complete binary framing.
-- View: server-rendered chat, escaped text; no browser-to-Digit transport.
-- Database: none (`database_tables: []`).
-- Public access: not enabled; unauthenticated and lower-level users cannot
-  use the interface. Current access policy is intentionally restrictive.
+`/chat/transport`: POST-only JSON operation, currently gated to source address 127.0.0.1. Does not use website session authentication because Digit's native transport is a background process. **Loopback address alone does not authenticate the Digit process.** Before accepting deployment, restrict access to this route at the web-server boundary and verify no other local users/processes can impersonate Digit. Digit v1.0.1 does not send a shared secret or signed authentication header; robust transport-origin authentication requires a separately authorized contract change.
 
-## Protocol contract
+## Queue
+Small, short-lived file queue in a private, 0700 per-site directory under the PHP temporary directory, with a 0600 JSON file and `flock` serialization. Request IDs are random. A message is atomically transitioned from queued to processing on first poll; duplicate replies are rejected. Expired entries are cleaned on subsequent requests (90-second TTL). Maximum 100 queue entries. Queue data is ephemeral and is not durable conversation history. Do not run chat across multiple independent PHP hosts or isolated /tmp directories without changing the storage architecture by authorization.
 
-Request: unsigned 32-bit big-endian byte count (1–2047), then UTF-8 bytes.
+The browser uses fetch to submit, then polls for results without a page refresh. It displays text with `textContent`, not HTML.
 
-Response: status byte (0 success, 1 error), unsigned 32-bit big-endian byte
-count (0–511), then UTF-8 bytes. Reads/writes loop across partial transfers;
-stream operations use bounded timeouts. Status 1 is treated as failure; no
-unqualified extended reply or Digit authentication is presumed.
+## Requirements and limits
+- Browser message: 1 to 2047 UTF-8 bytes, no ASCII control characters; Digit's parser does not accept embedded newlines.
+- Digit reply: up to 511 UTF-8 bytes.
+- One request per native transport poll. No streaming or persistent history.
+- Verify that `http://127.0.0.1/chat/transport` resolves to the intended ChAoS MVC virtual host; Digit does not use the public hostname by default.
+- Verify that Digit v1.0.1 Web Transport has been built, qualified, installed, and activated on the server.
+- Test negative access, CSRF, session isolation, queue roundtrip, and error behavior. Source commits are not live acceptance evidence.
 
-The Unix socket path is server-side configuration and must never be
-rendered to the visitor. Backend errors are not surfaced to end users.
-
-## Qualification and activation
-
-Before enabling `chat_model::ENABLED`, an authorized operator must verify:
-1. Digit's native web transport is qualified and actively serving the agreed
-   Unix socket framed protocol.
-2. The PHP worker can access that socket under correct least-privilege
-   Unix filesystem permissions.
-3. Request/reply framing with partial I/O, timeouts, incorrect lengths,
-   invalid UTF-8, status 1, and peer disconnection.
-4. CSRF and access controls, including unauthenticated and unauthorized users.
-5. Practical end-to-end exchanges and explicit Director authorization.
-
-Only after this evidence and authorization, set `ENABLED` to `true` and
-deploy through the standard module lifecycle. Do not advertise the interface
-or link it in public navigation until formally qualified.
-
-No Core files are modified.
+No ChAoS MVC Core or Digit source changes were made by this integration.
