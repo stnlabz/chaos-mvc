@@ -74,7 +74,24 @@ final class chat_model extends model
         }
     }
 
-    public function submit(string $message, string $session): string
+    /** Resolve the authoritative account label for sessions created before the login update. */
+    public function displayNameForUser(int $userId): string
+    {
+        if ($userId < 1) {
+            throw new InvalidArgumentException('Invalid account.');
+        }
+        $row = $this->fetch(
+            'SELECT display_name, username FROM accounts WHERE id = ? LIMIT 1',
+            [$userId]
+        );
+        if (!is_array($row)) {
+            throw new RuntimeException('Chat account is unavailable.');
+        }
+        $name = trim((string) ($row['display_name'] ?? ''));
+        return $name !== '' ? $name : (string) $row['username'];
+    }
+
+    public function submit(string $message, string $session, string $displayName): string
     {
         $size = strlen($message);
         if ($size < 1 || $size > self::MAX_REQUEST ||
@@ -82,13 +99,20 @@ final class chat_model extends model
             preg_match('/[\x00-\x1f\x7f]/', $message) === 1) {
             throw new InvalidArgumentException('Enter a single-line UTF-8 message (1–2047 bytes).');
         }
-        return $this->transact(static function (array &$records) use ($message, $session): string {
+        $displayName = trim($displayName);
+        if ($displayName === '' || strlen($displayName) > 127 ||
+            preg_match('//u', $displayName) !== 1 ||
+            preg_match('/[\\x00-\\x1f\\x7f]/', $displayName) === 1) {
+            throw new InvalidArgumentException('Invalid account display name.');
+        }
+        return $this->transact(static function (array &$records) use ($message, $session, $displayName): string {
             if (count($records) >= self::MAX_RECORDS) {
                 throw new RuntimeException('Chat queue is busy.');
             }
             $id = bin2hex(random_bytes(16));
             $records[$id] = [
                 'session' => $session, 'message' => $message,
+                'display_name' => $displayName,
                 'state' => 'queued', 'created' => time(),
                 'reply' => null, 'result' => null
             ];
@@ -104,7 +128,11 @@ final class chat_model extends model
                     continue;
                 }
                 $record['state'] = 'processing';
-                return ['id' => $id, 'message' => $record['message']];
+                return [
+                    'id' => $id,
+                    'message' => $record['message'],
+                    'display_name' => $record['display_name'] ?? 'digit-web'
+                ];
             }
             return null;
         });
