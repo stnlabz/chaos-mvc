@@ -1,8 +1,8 @@
 {
     "module": "chat",
     "name": "Digit Chat",
-    "version": "0.1.0",
-    "description": "Restricted web chat interface to the local Digit transport; inactive pending native qualification.",
+    "version": "0.2.0",
+    "description": "JavaScript chat interface and asynchronous queue for Digit Web Transport v1.0.1 outbound HTTP polling.",
     "creator": "STN-LABZ",
     "domain": "stn-labz.com",
     "certified": "No",
@@ -13,7 +13,9 @@
         "README.md"
     ],
     "routes": [
-        "index"
+        "index",
+        "status",
+        "transport"
     ],
     "database_tables": []
 }
