@@ -32,7 +32,7 @@ final class chat_model extends model
         if ($this->databaseState() !== 'missing') {
             throw new RuntimeException('Chat database already installed.');
         }
-        $path = USERROOT . '/modules/chat/sql/schema.sql';
+        $path = __DIR__ . '/../sql/schema.sql';
         $sql = file_get_contents($path);
         if (!is_string($sql) || $sql === '') {
             throw new RuntimeException('Chat SQL file unavailable.');
