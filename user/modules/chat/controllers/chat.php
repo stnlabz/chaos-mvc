@@ -31,8 +31,20 @@ final class chat extends controller
             $httpCode = 422;
         } else {
             try {
-                $id = $this->model('chat_model')->submit(
-                    $message, hash('sha256', session_id())
+                $model = $this->model('chat_model');
+                // Login now sets this session field; older sessions need one
+                // authoritative account lookup rather than a forced logout.
+                $displayName = $_SESSION['display_name'] ?? null;
+                if (!is_string($displayName) || trim($displayName) === '') {
+                    $displayName = $model->displayNameForUser(
+                        (int) ($_SESSION['user_id'] ?? 0)
+                    );
+                    $_SESSION['display_name'] = $displayName;
+                }
+                $id = $model->submit(
+                    $message,
+                    hash('sha256', session_id()),
+                    $displayName
                 );
             } catch (InvalidArgumentException $e) {
                 $httpCode = 422;
