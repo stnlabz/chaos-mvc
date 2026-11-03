@@ -47,22 +47,28 @@ final class chat extends controller
         $error = null;
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $this->require_csrf();
+            $action = $_POST['action'] ?? '';
             try {
-                if (($_POST['action'] ?? null) !== 'install_sql' || $state !== 'missing') {
-                    throw new InvalidArgumentException('Unsupported Chat administration action.');
+                if ($action === 'install_sql' && $state === 'missing') {
+                    $model->installSchema();
+                    header('Location: /admin/chat?status=installed');
+                    exit;
                 }
-                $model->installSchema();
-                header('Location: /admin/chat?installed=1');
-                exit;
+                if ($action === 'update_sql' && $state === 'update') {
+                    $model->updateSchema();
+                    header('Location: /admin/chat?status=updated');
+                    exit;
+                }
+                throw new InvalidArgumentException('Chat database action unavailable.');
             } catch (Throwable $e) {
-                error_log('Chat schema install: ' . $e->getMessage());
-                $error = 'The Chat schema could not be installed.';
+                error_log('Chat schema lifecycle: ' . $e->getMessage());
+                $error = 'Chat database operation failed. Check the server error log.';
             }
         }
         $this->view('admin/index', [
             'database_state' => $model->databaseState(),
             'error' => $error,
-            'installed' => isset($_GET['installed']),
+            'status' => $_GET['status'] ?? null,
         ]);
     }
 
@@ -181,6 +187,27 @@ final class chat extends controller
                 $this->remember((int) $project, 0);
                 $this->json(200, ['ok' => true, 'project' => $project, 'conversation' => 0,
                     'conversations' => $conversations, 'history' => null]);
+                return;
+            }
+            if ($action === 'assign_repository') {
+                $conversation = filter_var(
+                    $_POST['conversation_id'] ?? null,
+                    FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]
+                );
+                $repository = $_POST['repository'] ?? null;
+                if (!$conversation || !is_string($repository)) {
+                    throw new InvalidArgumentException('Select a chat and repository.');
+                }
+                $model->assignRepository(
+                    $account, (int) $project, (int) $conversation, $repository
+                );
+                $history = $model->history($account, (int) $project, (int) $conversation);
+                $this->remember((int) $project, (int) $conversation);
+                $this->json(200, [
+                    'ok' => true, 'project' => $project, 'conversation' => $conversation,
+                    'conversations' => $model->conversations($account, (int) $project),
+                    'history' => $history
+                ]);
                 return;
             }
             if ($action === 'create_conversation') {
