@@ -1,4 +1,4 @@
-# Digit Chat 0.3.1 — project-isolated persistence
+# Digit Chat 0.4.0 — project-isolated persistence
 
 ## Scope
 
@@ -88,3 +88,37 @@ must be performed before calling this release production-ready.
 The sidebar now displays chats directly beneath their parent project instead of in a visually detached global conversation list. Each project row has its own **+ Chat** action, explicitly creating a conversation under that project's ID through the existing CSRF-protected workspace endpoint. Creating a project selects it; its empty state points to the per-project chat action. Selecting a chat stays at `/chat` with identifiers only in authenticated POST bodies. No SQL migration, account scope modification, or Digit native transport change was necessary.
 
 An existing conversation remains assigned to the project under which it was originally created; this version does not silently move or merge chats between projects.
+
+## 0.4.0 — GitHub chat assignment and Example-style SQL lifecycle
+
+**Upgrade existing installations through /admin/chat, not manual SQL.**
+The Chat module upgrades schema 1.0.0 to 1.1.0 using
+`sql/patches/1.0.0-to-1.1.0.sql`, after a Level 9 account
+explicitly submits **Update SQL** (POST plus CSRF). Previously installed
+0.3.x schemas have four Chat tables but no version table; the model
+recognizes that specific legacy layout as schema 1.0.0. A partial or
+unknown layout reports **invalid**, never auto-migrates. Fresh installs
+create the versioned 1.1.0 layout directly. The new `chat_schema`
+table is declared in `module.json` for the Core-owned Nuke lifecycle.
+
+Once current, select an individual chat and use **Assign repository**.
+Enter one GitHub `owner/repo` (e.g., `stnlabz/chaos-mvc`).
+The binding is stored on that particular `chat_conversations` row.
+Other chats and projects are not modified or searched. Clearing the
+field removes the assignment.
+
+The Chat module supports a small deterministic, read-only command vocabulary:
+`repo summary`, `repo tree`, `repo tree modules`, `repo commits`,
+`repo issues`, `repo prs`, `repo file README.md`, and
+`repo inspect user/modules/chat/models/chat_model.php`.
+These are rewritten server-side to `/github <assigned owner/repo> <operation>`
+through the existing Digit GitHub module. A direct raw `/github owner/repo`
+message is rejected by Chat to prevent bypassing the chat assignment.
+Digit's separate production `repos.conf` allowlist must also approve
+the repository; a Chat assignment does not expand its privileges.
+
+This release is **read-only**: no checkout, patch, commit, PR creation,
+private GitHub access, autonomous engineering, or cross-conversation
+memory transfer. The URL remains `/chat`. Existing messages survive
+the supported migration; no automated deployment or SQL execution is
+performed by GitHub commits.
