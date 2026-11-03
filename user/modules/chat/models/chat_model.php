@@ -1,142 +1,149 @@
 <?php
 declare(strict_types=1);
 
-/**
- * Digit Chat local Unix stream transport.
- * Framing: uint32 BE + UTF-8 request; uint8 status + uint32 BE + UTF-8 reply.
- */
+/** Digit 1.0.1 outbound HTTP transport queue. No connection to Digit is made by PHP. */
 final class chat_model extends model
 {
-    private const SOCKET = '/run/digit-web/digit.sock';
     private const MAX_REQUEST = 2047;
-    private const MAX_RESPONSE = 511;
-    private const TIMEOUT_SECONDS = 3;
+    private const MAX_REPLY = 511;
+    private const TTL = 90;
+    private const MAX_RECORDS = 100;
 
-    // Operator enabled the interface for qualification. Access remains Level 9.
-    private const ENABLED = true;
-
-    public function isEnabled(): bool
+    private function queuePath(): string
     {
-        return self::ENABLED;
+        $directory = rtrim(sys_get_temp_dir(), '/') . '/chaos-chat-' .
+            substr(hash('sha256', USERROOT), 0, 24);
+        if (!is_dir($directory) && !@mkdir($directory, 0700) && !is_dir($directory)) {
+            throw new RuntimeException('Chat storage is unavailable.');
+        }
+        if (is_link($directory) || !is_dir($directory) ||
+            (fileperms($directory) & 0077) !== 0 ||
+            (function_exists('posix_geteuid') &&
+             fileowner($directory) !== posix_geteuid())) {
+            throw new RuntimeException('Chat storage permissions are unsafe.');
+        }
+        return $directory . '/messages.json';
     }
 
-    public function ask(string $message): string
+    /** All queue state transitions are serialized with an exclusive lock. */
+    private function transact(callable $operation): mixed
     {
-        if (!self::ENABLED) {
-            throw new RuntimeException('Chat is not activated.');
+        $path = $this->queuePath();
+        if (is_link($path)) {
+            throw new RuntimeException('Chat storage is unavailable.');
         }
-
-        $size = strlen($message);
-        if (
-            $size < 1
-            || $size > self::MAX_REQUEST
-            || preg_match('//u', $message) !== 1
-        ) {
-            throw new InvalidArgumentException('Enter a UTF-8 message between 1 and 2047 bytes.');
+        $file = @fopen($path, 'c+');
+        if (!is_resource($file)) {
+            throw new RuntimeException('Chat storage is unavailable.');
         }
-
-        $errno = 0;
-        $errstr = '';
-        $socket = @stream_socket_client(
-            'unix://' . self::SOCKET,
-            $errno,
-            $errstr,
-            self::TIMEOUT_SECONDS,
-            STREAM_CLIENT_CONNECT
-        );
-
-        if (!is_resource($socket)) {
-            // Keep the socket pathname and native error text in server logs.
-            // Only the bounded failure category is displayed in the chat UI.
-            error_log(
-                'Digit Chat connect failed (errno ' . $errno . '): ' . $errstr
-            );
-
-            $detail = strtolower($errstr);
-            $reason = match (true) {
-                $errno === 13 || str_contains($detail, 'permission denied')
-                    => 'permission denied',
-                $errno === 2 || str_contains($detail, 'no such file')
-                    => 'socket unavailable',
-                $errno === 111 || str_contains($detail, 'connection refused')
-                    => 'no listener',
-                $errno === 110 || str_contains($detail, 'timed out')
-                    => 'connection timeout',
-                default => 'connection error',
-            };
-
-            throw new RuntimeException(
-                'Local transport connection failed (' . $reason . ').'
-            );
-        }
-
         try {
-            stream_set_timeout($socket, self::TIMEOUT_SECONDS);
-            stream_set_blocking($socket, true);
-            $this->writeAll($socket, pack('N', $size) . $message);
-
-            $header = $this->readExact($socket, 5);
-            $status = ord($header[0]);
-            $responseSize = unpack('Nlength', substr($header, 1, 4))['length'];
-
-            if (
-                !in_array($status, [0, 1], true)
-                || $responseSize > self::MAX_RESPONSE
-            ) {
-                throw new RuntimeException('Invalid transport response.');
+            if (!flock($file, LOCK_EX)) {
+                throw new RuntimeException('Chat storage is busy.');
             }
-
-            $answer = $this->readExact($socket, $responseSize);
-
-            if (preg_match('//u', $answer) !== 1) {
-                throw new RuntimeException('Invalid response encoding.');
+            $stat = fstat($file);
+            if (!is_array($stat) || ($stat['mode'] & 0077) !== 0) {
+                @chmod($path, 0600);
+                $stat = fstat($file);
+                if (!is_array($stat) || ($stat['mode'] & 0077) !== 0) {
+                    throw new RuntimeException('Chat storage permissions are unsafe.');
+                }
             }
-
-            if ($status === 1) {
-                throw new RuntimeException('Digit returned failure status (1).');
+            rewind($file);
+            $raw = stream_get_contents($file);
+            $records = $raw === '' ? [] : json_decode((string) $raw, true);
+            if (!is_array($records)) {
+                throw new RuntimeException('Chat storage is corrupted.');
             }
-
-            return $answer;
+            $now = time();
+            foreach ($records as $id => $record) {
+                if (!is_array($record) || ($record['created'] ?? 0) < $now - self::TTL) {
+                    unset($records[$id]);
+                }
+            }
+            $result = $operation($records);
+            $encoded = json_encode($records, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            rewind($file);
+            if (!ftruncate($file, 0) || fwrite($file, $encoded) !== strlen($encoded) ||
+                !fflush($file)) {
+                throw new RuntimeException('Chat storage write failed.');
+            }
+            return $result;
         } finally {
-            fclose($socket);
+            flock($file, LOCK_UN);
+            fclose($file);
         }
     }
 
-    /** @param resource $socket */
-    private function writeAll($socket, string $data): void
+    public function submit(string $message, string $session): string
     {
-        $offset = 0;
-        $length = strlen($data);
-
-        while ($offset < $length) {
-            $written = @fwrite($socket, substr($data, $offset));
-
-            if ($written === false || $written === 0 || $this->timedOut($socket)) {
-                throw new RuntimeException('Transport write failed.');
+        $size = strlen($message);
+        if ($size < 1 || $size > self::MAX_REQUEST ||
+            preg_match('//u', $message) !== 1 ||
+            preg_match('/[\x00-\x1f\x7f]/', $message) === 1) {
+            throw new InvalidArgumentException('Enter a single-line UTF-8 message (1–2047 bytes).');
+        }
+        return $this->transact(static function (array &$records) use ($message, $session): string {
+            if (count($records) >= self::MAX_RECORDS) {
+                throw new RuntimeException('Chat queue is busy.');
             }
-            $offset += $written;
-        }
+            $id = bin2hex(random_bytes(16));
+            $records[$id] = [
+                'session' => $session, 'message' => $message,
+                'state' => 'queued', 'created' => time(),
+                'reply' => null, 'result' => null
+            ];
+            return $id;
+        });
     }
 
-    /** @param resource $socket */
-    private function readExact($socket, int $length): string
+    public function pending(): ?array
     {
-        $result = '';
-        while (strlen($result) < $length) {
-            $part = @fread($socket, $length - strlen($result));
-
-            if ($part === false || $part === '' || $this->timedOut($socket)) {
-                throw new RuntimeException('Transport read failed.');
+        return $this->transact(static function (array &$records): ?array {
+            foreach ($records as $id => &$record) {
+                if ($record['state'] !== 'queued') {
+                    continue;
+                }
+                $record['state'] = 'processing';
+                return ['id' => $id, 'message' => $record['message']];
             }
-            $result .= $part;
-        }
-        return $result;
+            return null;
+        });
     }
 
-    /** @param resource $socket */
-    private function timedOut($socket): bool
+    public function receive(string $id, string $status, string $message): bool
     {
-        $metadata = stream_get_meta_data($socket);
-        return ($metadata['timed_out'] ?? false) === true;
+        if (preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $id) !== 1 ||
+            !in_array($status, ['ok', 'error'], true) ||
+            strlen($message) > self::MAX_REPLY ||
+            preg_match('//u', $message) !== 1) {
+            throw new InvalidArgumentException('Invalid transport reply.');
+        }
+        return $this->transact(static function (array &$records) use ($id, $status, $message): bool {
+            if (!isset($records[$id]) || $records[$id]['state'] !== 'processing') {
+                return false;
+            }
+            $records[$id]['state'] = 'complete';
+            $records[$id]['result'] = $status;
+            $records[$id]['reply'] = $message;
+            return true;
+        });
+    }
+
+    public function status(string $id, string $session): ?array
+    {
+        if (preg_match('/^[a-f0-9]{32}$/D', $id) !== 1) {
+            return null;
+        }
+        return $this->transact(static function (array &$records) use ($id, $session): ?array {
+            $record = $records[$id] ?? null;
+            if (!is_array($record) || !hash_equals((string) $record['session'], $session)) {
+                return null;
+            }
+            return [
+                'state' => $record['state'],
+                'status' => $record['result'],
+                'reply' => $record['state'] === 'complete' ? $record['reply'] : null
+            ];
+        });
     }
 }
