@@ -34,10 +34,15 @@ final class chat extends controller
                 } catch (InvalidArgumentException $exception) {
                     http_response_code(422);
                     $error = $exception->getMessage();
+                } catch (RuntimeException $exception) {
+                    http_response_code(503);
+                    // These are module-owned diagnostic messages, not raw socket paths.
+                    $error = $exception->getMessage();
+                    error_log('Digit Chat transport: ' . $exception->getMessage());
                 } catch (Throwable $exception) {
                     http_response_code(503);
-                    error_log('Digit Chat transport failure: ' . get_class($exception));
-                    $error = 'Chat is temporarily unavailable.';
+                    error_log('Digit Chat unexpected error: ' . get_class($exception) . ': ' . $exception->getMessage());
+                    $error = 'An unexpected chat processing error occurred. Check the server error log.';
                 }
             }
         }
