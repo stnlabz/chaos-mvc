@@ -372,6 +372,12 @@ final class chat_model extends model
         if (!preg_match('/^[a-f0-9]{64}$/D', $sessionHash)) {
             throw new InvalidArgumentException('Invalid session.');
         }
+        // Do not permit raw /github owner/repo commands to bypass this chat's binding.
+        if (preg_match('/^\/github(?:\s|$)/i', $message)) {
+            throw new InvalidArgumentException(
+                'Use repo summary, repo tree, repo inspect path, or repo file path for the assigned repository.'
+            );
+        }
         $command = $this->repositoryCommand($account, $project, $conversation, $message);
         $transport = $command ?? $this->contextText($account, $project, $conversation, $message);
         if (strlen($transport) > self::MAX_REQUEST) {
