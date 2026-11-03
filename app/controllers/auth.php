@@ -172,6 +172,9 @@ class auth extends controller
                 $_SESSION['username'] =
                     $user['username'];
 
+                $_SESSION['display_name'] =
+                    (string) ($user['display_name'] ?? '');
+
                 $_SESSION['user_level'] =
                     $user['user_level'];
 
