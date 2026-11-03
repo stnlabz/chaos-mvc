@@ -30,6 +30,11 @@ Chaos MVC emphasizes:
 Become a Chaos Certified Developer via our **Developers Portal** and 3 Levels of **Certification**
 [Chaos Certified](https://www.chaos-mvc.org/certification)
 
+## ChAoS MVC Security Certification
+Security certification criteria are being formalized around reproducible evidence, independently checked security findings, and release qualification.
+[Security Certification](https://www.chaos-mvc.org/security-certification)
+
+
 ---
 
 ## Minimal Core Philosophy
