@@ -1,8 +1,8 @@
 {
     "module": "chat",
     "name": "Digit Chat",
-    "version": "0.3.1",
-    "description": "Persistent project conversations, with chats created and displayed beneath their parent project.",
+    "version": "0.4.0",
+    "description": "MySQL-backed isolated conversations with per-chat read-only GitHub repository assignment and Admin SQL lifecycle.",
     "creator": "STN-LABZ",
     "domain": "stn-labz.com",
     "certified": "No",
@@ -12,6 +12,7 @@
         "views/index.php",
         "views/admin/index.php",
         "sql/schema.sql",
+        "sql/patches/1.0.0-to-1.1.0.sql",
         "README.md"
     ],
     "routes": [
@@ -24,7 +25,11 @@
         "chat_projects",
         "chat_conversations",
         "chat_messages",
-        "chat_deliveries"
+        "chat_deliveries",
+        "chat_schema"
     ],
-    "schema_version": "1.0.0"
+    "schema_version": "1.1.0",
+    "migrations": {
+        "1.0.0-to-1.1.0": "sql/patches/1.0.0-to-1.1.0.sql"
+    }
 }
