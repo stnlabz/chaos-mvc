@@ -12,9 +12,8 @@ final class chat_model extends model
     private const MAX_RESPONSE = 511;
     private const TIMEOUT_SECONDS = 3;
 
-    // Fail closed. Enable only after native transport qualification, access
-    // verification, and explicit operational authorization.
-    private const ENABLED = false;
+    // Operator enabled the interface for qualification. Access remains Level 9.
+    private const ENABLED = true;
 
     public function isEnabled(): bool
     {
@@ -73,7 +72,7 @@ final class chat_model extends model
             }
 
             if ($status === 1) {
-                throw new RuntimeException('Digit reported an operation failure.');
+                throw new RuntimeException('Digit returned failure status (1).');
             }
 
             return $answer;
