@@ -6,7 +6,7 @@ if (!theme::render('head', get_defined_vars())) {
 <div class="container my-3" id="digit-chat">
     <h1>Digit Chat</h1>
     <div id="chat-history" role="log" aria-live="polite" aria-label="Chat messages"></div>
-    <p id="chat-error" role="alert" hidden></p>
+    <p id="chat-error" role="alert" <?= empty($data['initial_error']) ? 'hidden' : '' ?>><?= htmlspecialchars((string) ($data['initial_error'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
     <p id="chat-status" role="status" aria-live="polite"></p>
     <form action="/chat" method="POST" id="chat-form">
         <?= $this->csrf_field() ?>
@@ -23,6 +23,8 @@ if (!theme::render('head', get_defined_vars())) {
         const error = document.getElementById('chat-error');
         const status = document.getElementById('chat-status');
         if (!window.fetch || !window.FormData) return;
+        const initialId = <?= json_encode($data['initial_id'] ?? null) ?>;
+        const initialMessage = <?= json_encode($data['initial_message'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         function addMessage(who, content) {
@@ -47,6 +49,32 @@ if (!theme::render('head', get_defined_vars())) {
             }
             return result;
         }
+        async function awaitReply(id) {
+            status.textContent = 'Waiting for Digit…';
+            const until = Date.now() + 85000;
+            while (Date.now() < until) {
+                await sleep(750);
+                const state = await readJson(await fetch(
+                    '/chat/status?id=' + encodeURIComponent(id),
+                    {credentials: 'same-origin', cache: 'no-store'}
+                ));
+                if (state.state !== 'complete') continue;
+                addMessage('Digit', String(state.reply || (state.status === 'ok' ? '' : 'Digit could not complete the request.')));
+                status.textContent = '';
+                message.focus();
+                return;
+            }
+            throw new Error('Digit did not respond before the request expired.');
+        }
+        if (initialId && /^[a-f0-9]{32}$/.test(initialId)) {
+            addMessage('You', initialMessage);
+            send.disabled = true;
+            awaitReply(initialId).catch(failure => {
+                error.textContent = failure.message || 'Unable to retrieve response.';
+                error.hidden = false;
+                status.textContent = '';
+            }).finally(() => { send.disabled = false; });
+        }
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (send.disabled || !form.reportValidity()) return;
@@ -59,7 +87,7 @@ if (!theme::render('head', get_defined_vars())) {
                 const queued = await readJson(await fetch(form.getAttribute('action'), {
                     method: 'POST',
                     body: new FormData(form),
-                    headers: {'Accept': 'application/json'},
+                    headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
                     credentials: 'same-origin'
                 }));
                 if (!/^[a-f0-9]{32}$/.test(queued.id || '')) {
@@ -67,27 +95,7 @@ if (!theme::render('head', get_defined_vars())) {
                 }
                 addMessage('You', submitted);
                 message.value = '';
-                status.textContent = 'Waiting for Digit…';
-                const until = Date.now() + 85000;
-                let delivered = false;
-                while (Date.now() < until) {
-                    await sleep(750);
-                    const state = await readJson(await fetch(
-                        '/chat/status?id=' + encodeURIComponent(queued.id),
-                        {credentials: 'same-origin', cache: 'no-store'}
-                    ));
-                    if (state.state !== 'complete') continue;
-                    if (state.status === 'ok') {
-                        addMessage('Digit', String(state.reply ?? ''));
-                    } else {
-                        addMessage('Digit', String(state.reply || 'Digit could not complete the request.'));
-                    }
-                    delivered = true;
-                    break;
-                }
-                if (!delivered) throw new Error('Digit did not respond before the request expired.');
-                status.textContent = '';
-                message.focus();
+                await awaitReply(queued.id);
             } catch (failure) {
                 error.textContent = failure instanceof Error ? failure.message : 'Unable to deliver message.';
                 error.hidden = false;
