@@ -161,6 +161,22 @@ final class chat_model extends model
         return ['title' => $scope['title'], 'project_title' => $scope['project_title'], 'messages' => $rows];
     }
 
+    /** Clip on Unicode character boundaries; native Web Transport expects valid UTF-8. */
+    private function clipUtf8(string $text, int $bytes): string
+    {
+        if (strlen($text) <= $bytes) {
+            return $text;
+        }
+        $out = '';
+        foreach (preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            if (strlen($out) + strlen($char) > $bytes) {
+                break;
+            }
+            $out .= $char;
+        }
+        return $out;
+    }
+
     /** Construct the only context Digit may see: this exact project + conversation. */
     private function contextText(int $account, int $project, int $conversation, string $message): string
     {
@@ -174,13 +190,13 @@ final class chat_model extends model
         foreach (array_reverse($recent) as $row) {
             $line = str_replace(["\r", "\n", "\t", '|'], ' ', (string) $row['content']);
             $entries[] = ($row['role'] === 'digit' ? 'Digit: ' : 'User: ') .
-                substr($line, 0, 180);
+                $this->clipUtf8($line, 180);
         }
         $context = trim((string) $scope['context_text']);
         $prefix = 'Project ' . $scope['project_title'] . '; conversation ' .
             $scope['title'] . '. ';
         if ($context !== '') {
-            $prefix .= 'Project notes: ' . substr(str_replace(["\r", "\n"], ' ', $context), 0, 250) . '. ';
+            $prefix .= 'Project notes: ' . $this->clipUtf8(str_replace(["\r", "\n"], ' ', $context), 250) . '. ';
         }
         $history = implode(' | ', $entries);
         if ($history === '') {
@@ -196,7 +212,7 @@ final class chat_model extends model
         if ($budget < 64) {
             return $message;
         }
-        $history = substr($prefix . $history, 0, min($budget, 1100));
+        $history = $this->clipUtf8($prefix . $history, min($budget, 1100));
         $isGreeting = preg_match('/^(hi|hello|hey)[!., ]*$/i', $message) === 1;
         if ($isGreeting) {
             // Native Ask module recognizes this bounded, isolated resume envelope.
