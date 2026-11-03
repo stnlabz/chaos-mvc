@@ -1,8 +1,8 @@
 {
     "module": "chat",
     "name": "Digit Chat",
-    "version": "0.2.0",
-    "description": "JavaScript chat interface and asynchronous queue for Digit Web Transport v1.0.1 outbound HTTP polling.",
+    "version": "0.3.0",
+    "description": "Persistent, isolated project conversations with MySQL-backed Digit delivery.",
     "creator": "STN-LABZ",
     "domain": "stn-labz.com",
     "certified": "No",
@@ -10,12 +10,21 @@
         "controllers/chat.php",
         "models/chat_model.php",
         "views/index.php",
+        "views/admin/index.php",
+        "sql/schema.sql",
         "README.md"
     ],
     "routes": [
         "index",
+        "workspace",
         "status",
         "transport"
     ],
-    "database_tables": []
+    "database_tables": [
+        "chat_projects",
+        "chat_conversations",
+        "chat_messages",
+        "chat_deliveries"
+    ],
+    "schema_version": "1.0.0"
 }
