@@ -1,4 +1,4 @@
-# Digit Chat 0.3.0 — project-isolated persistence
+# Digit Chat 0.3.1 — project-isolated persistence
 
 ## Scope
 
@@ -82,3 +82,9 @@ unless they appear in the retrieved context.
 Source implementation is committed. Native build, PHP lint, SQL installation,
 cross-account isolation tests against a real MySQL database and live acceptance
 must be performed before calling this release production-ready.
+
+## 0.3.1 — Project-owned chat navigation (2026-11-03)
+
+The sidebar now displays chats directly beneath their parent project instead of in a visually detached global conversation list. Each project row has its own **+ Chat** action, explicitly creating a conversation under that project's ID through the existing CSRF-protected workspace endpoint. Creating a project selects it; its empty state points to the per-project chat action. Selecting a chat stays at `/chat` with identifiers only in authenticated POST bodies. No SQL migration, account scope modification, or Digit native transport change was necessary.
+
+An existing conversation remains assigned to the project under which it was originally created; this version does not silently move or merge chats between projects.
