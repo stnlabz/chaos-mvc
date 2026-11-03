@@ -13,6 +13,7 @@ final class chat extends controller
         // this route is exclusively accessible to a level-9 administrator.
         $this->require_admin(9);
 
+        $ajax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
         $model = $this->model('chat_model');
         $reply = null;
         $error = null;
@@ -45,6 +46,17 @@ final class chat extends controller
                     $error = 'An unexpected chat processing error occurred. Check the server error log.';
                 }
             }
+        }
+
+        if ($ajax && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store');
+            echo json_encode([
+                'ok' => $error === null,
+                'reply' => $reply,
+                'error' => $error,
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            return;
         }
 
         $this->view('index', [
