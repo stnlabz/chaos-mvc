@@ -24,6 +24,10 @@ if (!theme::render('head', get_defined_vars())) {
 #digit-chat .dc-head{padding:18px 24px;border-bottom:1px solid #344153}
 #digit-chat .dc-head-title{font-weight:700}
 #digit-chat .dc-sub{font-size:.8rem;color:#a8b8ca}
+#digit-chat .dc-repo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:.85rem}
+#digit-chat .dc-repo code{color:#cde9ff}
+#digit-chat .dc-repo button{background:#31455b;color:#fff;border:1px solid #60778e;border-radius:8px;padding:5px 10px;cursor:pointer}
+#digit-chat .dc-repo-help{color:#a8b8ca;font-size:.76rem;margin:6px 0 0}
 #digit-chat .dc-history{flex:1;min-height:280px;max-height:62vh;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:16px}
 #digit-chat .dc-empty{margin:auto;text-align:center;color:#9fb1c5;max-width:27rem;line-height:1.6}
 #digit-chat .dc-entry{display:flex;flex-direction:column;gap:5px;max-width:85%}
@@ -54,7 +58,7 @@ if (!theme::render('head', get_defined_vars())) {
     <nav class="dc-list" id="dc-projects" aria-label="Projects and their chats"></nav>
   </aside>
   <div class="dc-chat">
-    <header class="dc-head"><div class="dc-head-title" id="dc-title">Select a conversation</div><div class="dc-sub" id="dc-project-title">Conversation history is isolated by project and thread</div></header>
+    <header class="dc-head"><div class="dc-head-title" id="dc-title">Select a conversation</div><div class="dc-sub" id="dc-project-title">Conversation history is isolated by project and thread</div><div id="dc-repo-bar" class="dc-repo" hidden><span>GitHub:</span><code id="dc-repo-label">Not assigned</code><button id="dc-repo-assign" type="button">Assign repository</button></div><p id="dc-repo-help" class="dc-repo-help" hidden>Read-only commands: repo summary, repo tree, repo commits, repo inspect path/to/file</p></header>
     <div class="dc-history" id="chat-history" role="log" aria-live="polite" aria-label="Conversation"></div>
     <footer class="dc-footer">
       <p class="dc-state" id="chat-status" role="status"></p>
@@ -90,6 +94,10 @@ if (!theme::render('head', get_defined_vars())) {
     const send = document.getElementById('chat-send');
     const projectInput = document.getElementById('dc-project-id');
     const conversationInput = document.getElementById('dc-conversation-id');
+    const repoBar = document.getElementById('dc-repo-bar');
+    const repoLabel = document.getElementById('dc-repo-label');
+    const repoHelp = document.getElementById('dc-repo-help');
+    const repoAssign = document.getElementById('dc-repo-assign');
     let state = initial;
     let busy = false;
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -179,6 +187,10 @@ if (!theme::render('head', get_defined_vars())) {
             state.history?.title || 'Select a chat in a project';
         document.getElementById('dc-project-title').textContent =
             state.history?.project_title || 'Each chat belongs to its selected project';
+        repoBar.hidden = !state.conversation;
+        repoHelp.hidden = !state.conversation;
+        repoLabel.textContent = state.history?.github_repo || 'Not assigned';
+        repoAssign.textContent = state.history?.github_repo ? 'Change' : 'Assign repository';
         if (!state.conversation) {
             empty('Choose a project, then create or select a chat beneath it.');
         } else {
@@ -223,6 +235,19 @@ if (!theme::render('head', get_defined_vars())) {
         send.disabled = busy || !state.conversation;
         message.disabled = busy || !state.conversation;
     }
+    repoAssign.addEventListener('click', () => {
+        if (!state.project || !state.conversation || busy) return;
+        const repository = prompt(
+            'GitHub repository (owner/name). Leave blank to unassign.',
+            state.history?.github_repo || ''
+        );
+        if (repository === null) return;
+        workspace('assign_repository', {
+            project_id: state.project,
+            conversation_id: state.conversation,
+            repository: repository.trim()
+        });
+    });
     document.getElementById('dc-new-project').addEventListener('click', () => {
         const title = prompt('Project name');
         if (title && title.trim()) workspace('create_project', {title: title.trim()});
