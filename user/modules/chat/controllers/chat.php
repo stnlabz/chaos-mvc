@@ -15,27 +15,52 @@ final class chat extends controller
     public function index(array $params = []): void
     {
         $this->require_admin(9);
+        $ajax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Content-Type: text/html; charset=utf-8');
             $this->view('index');
             return;
         }
         $this->require_csrf();
         $message = $_POST['message'] ?? null;
+        $id = null;
+        $error = null;
+        $httpCode = 202;
         if (!is_string($message)) {
-            $this->json(422, ['ok' => false, 'error' => 'Invalid message.']);
+            $error = 'Invalid message.';
+            $httpCode = 422;
+        } else {
+            try {
+                $id = $this->model('chat_model')->submit(
+                    $message, hash('sha256', session_id())
+                );
+            } catch (InvalidArgumentException $e) {
+                $httpCode = 422;
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Digit Chat enqueue: ' . $e->getMessage());
+                $httpCode = 503;
+                $error = 'Chat delivery is unavailable.';
+            }
+        }
+
+        if ($ajax) {
+            $this->json($httpCode, [
+                'ok' => $error === null,
+                'id' => $id,
+                'error' => $error
+            ]);
             return;
         }
-        try {
-            $id = $this->model('chat_model')->submit(
-                $message, hash('sha256', session_id())
-            );
-            $this->json(202, ['ok' => true, 'id' => $id]);
-        } catch (InvalidArgumentException $e) {
-            $this->json(422, ['ok' => false, 'error' => $e->getMessage()]);
-        } catch (Throwable $e) {
-            error_log('Digit Chat enqueue: ' . $e->getMessage());
-            $this->json(503, ['ok' => false, 'error' => 'Chat delivery is unavailable.']);
-        }
+
+        // Normal HTML forms must never strand the browser on raw JSON.
+        header('Content-Type: text/html; charset=utf-8');
+        http_response_code($error === null ? 200 : $httpCode);
+        $this->view('index', [
+            'initial_id' => $id,
+            'initial_message' => is_string($message) ? $message : '',
+            'initial_error' => $error
+        ]);
     }
 
     public function status(array $params = []): void
