@@ -102,7 +102,7 @@ final class chat_model extends model
         $displayName = trim($displayName);
         if ($displayName === '' || strlen($displayName) > 127 ||
             preg_match('//u', $displayName) !== 1 ||
-            preg_match('/[\\x00-\\x1f\\x7f]/', $displayName) === 1) {
+            preg_match('/[\x00-\x1f\x7f]/', $displayName) === 1) {
             throw new InvalidArgumentException('Invalid account display name.');
         }
         return $this->transact(static function (array &$records) use ($message, $session, $displayName): string {
