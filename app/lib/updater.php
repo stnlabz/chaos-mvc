@@ -1081,6 +1081,7 @@ class updater_engine
         foreach ($this->installedCoreFiles() as $path) {
             if (!array_key_exists($path, $releaseFiles)) {
                 $destination = dirname(APPROOT) . '/' . $path;
+                $this->invalidatePhpCache($destination);
                 if (!unlink($destination)) {
                     throw new RuntimeException('Could not remove obsolete Core file ' . $path . '.');
                 }
@@ -1110,6 +1111,8 @@ class updater_engine
                     'Could not install ' . $path . '.'
                 );
             }
+
+            $this->invalidatePhpCache($destination);
         }
     }
 
@@ -1240,10 +1243,13 @@ class updater_engine
                     );
                 }
 
+                $this->invalidatePhpCache($destination);
+
                 continue;
             }
 
             if (is_file($destination)) {
+                $this->invalidatePhpCache($destination);
                 unlink($destination);
             }
         }
@@ -1251,6 +1257,19 @@ class updater_engine
         $this->removeDirectory(
             $backupDir
         );
+    }
+
+    /** Invalidate replaced PHP bytecode for the next request. */
+    private function invalidatePhpCache(string $file): void
+    {
+        clearstatcache(true, $file);
+
+        if (
+            strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) === 'php'
+            && function_exists('opcache_invalidate')
+        ) {
+            @opcache_invalidate($file, true);
+        }
     }
 
     /**
