@@ -11,6 +11,13 @@ if (!theme::render('head', get_defined_vars())) {
 #digit-chat h1{font-size:1.4rem;margin:0;color:#f4f7fb}
 #digit-chat h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 10px;color:#a8b8ca}
 #digit-chat .dc-list{display:flex;flex-direction:column;gap:6px}
+#digit-chat .dc-project-group{border:1px solid #344153;border-radius:10px;padding:6px}
+#digit-chat .dc-project-row{display:flex;align-items:center;gap:5px}
+#digit-chat .dc-project-row>.dc-item{flex:1;min-width:0}
+#digit-chat .dc-project-row>.dc-add{flex-shrink:0}
+#digit-chat .dc-child-list{display:flex;flex-direction:column;gap:4px;margin:4px 0 0 13px;padding-left:10px;border-left:1px solid #4d6076}
+#digit-chat .dc-child-list .dc-item{font-size:.9rem;padding:8px 10px}
+#digit-chat .dc-hint{color:#a8b8ca;font-size:.81rem;padding:7px 10px}
 #digit-chat .dc-item{width:100%;text-align:left;background:transparent;color:#dce7f2;border:1px solid transparent;white-space:normal;overflow-wrap:anywhere;padding:10px 12px;border-radius:9px;cursor:pointer;font:inherit}
 #digit-chat .dc-item:hover,#digit-chat .dc-item[aria-current="true"]{background:#31455b;border-color:#4d6076}
 #digit-chat .dc-chat{min-width:0;display:flex;flex-direction:column}
@@ -43,10 +50,8 @@ if (!theme::render('head', get_defined_vars())) {
 <div class="dc-shell">
   <aside class="dc-sidebar" aria-label="Projects and conversations">
     <div class="dc-heading"><h1>Digit</h1><button class="dc-action dc-add" id="dc-new-project" type="button">+ Project</button></div>
-    <h2>Projects</h2>
-    <nav class="dc-list" id="dc-projects" aria-label="Projects"></nav>
-    <div class="dc-heading"><h2>Conversations</h2><button class="dc-action dc-add" id="dc-new-conversation" type="button">+ New</button></div>
-    <nav class="dc-list" id="dc-conversations" aria-label="Conversations"></nav>
+    <h2>Projects and chats</h2>
+    <nav class="dc-list" id="dc-projects" aria-label="Projects and their chats"></nav>
   </aside>
   <div class="dc-chat">
     <header class="dc-head"><div class="dc-head-title" id="dc-title">Select a conversation</div><div class="dc-sub" id="dc-project-title">Conversation history is isolated by project and thread</div></header>
@@ -78,7 +83,6 @@ if (!theme::render('head', get_defined_vars())) {
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>;
     const form = document.getElementById('chat-form');
     const projects = document.getElementById('dc-projects');
-    const conversations = document.getElementById('dc-conversations');
     const history = document.getElementById('chat-history');
     const status = document.getElementById('chat-status');
     const error = document.getElementById('chat-error');
@@ -122,31 +126,67 @@ if (!theme::render('head', get_defined_vars())) {
         b.addEventListener('click', action);
         return b;
     }
+    function newConversation(projectId, projectTitle) {
+        const title = prompt('New chat in ' + projectTitle);
+        if (title && title.trim()) {
+            workspace('create_conversation', {project_id: projectId, title: title.trim()});
+        }
+    }
     function render() {
         projects.replaceChildren();
         for (const p of state.projects) {
-            projects.append(button(p.title, Number(state.project) === Number(p.id),
-                () => workspace('open_project', {project_id: p.id})));
-        }
-        conversations.replaceChildren();
-        for (const c of state.conversations) {
-            conversations.append(button(c.title, Number(state.conversation) === Number(c.id),
-                () => workspace('open_conversation', {project_id: state.project, conversation_id: c.id})));
+            const group = document.createElement('div');
+            group.className = 'dc-project-group';
+            const row = document.createElement('div');
+            row.className = 'dc-project-row';
+            const isOpen = Number(state.project) === Number(p.id);
+            const open = button((isOpen ? '▾ ' : '▸ ') + p.title, isOpen,
+                () => workspace('open_project', {project_id: p.id}));
+            open.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.className = 'dc-action dc-add';
+            add.textContent = '+ Chat';
+            add.title = 'Create a chat inside ' + p.title;
+            add.setAttribute('aria-label', 'New chat in ' + p.title);
+            add.addEventListener('click', () => newConversation(p.id, p.title));
+            row.append(open, add);
+            group.append(row);
+            if (isOpen) {
+                const children = document.createElement('div');
+                children.className = 'dc-child-list';
+                if (!state.conversations.length) {
+                    const hint = document.createElement('span');
+                    hint.className = 'dc-hint';
+                    hint.textContent = 'No chats yet. Select + Chat to create one here.';
+                    children.append(hint);
+                }
+                for (const chat of state.conversations) {
+                    children.append(button(chat.title,
+                        Number(state.conversation) === Number(chat.id),
+                        () => workspace('open_conversation',
+                            {project_id: p.id, conversation_id: chat.id})));
+                }
+                group.append(children);
+            }
+            projects.append(group);
         }
         projectInput.value = state.project || '';
         conversationInput.value = state.conversation || '';
         send.disabled = !state.conversation || busy;
         message.disabled = !state.conversation || busy;
-        document.getElementById('dc-title').textContent = state.history?.title || 'Select a conversation';
-        document.getElementById('dc-project-title').textContent = state.history?.project_title || 'Select a project and conversation';
+        document.getElementById('dc-title').textContent =
+            state.history?.title || 'Select a chat in a project';
+        document.getElementById('dc-project-title').textContent =
+            state.history?.project_title || 'Each chat belongs to its selected project';
         if (!state.conversation) {
-            empty('Choose or create a conversation to continue with Digit.');
+            empty('Choose a project, then create or select a chat beneath it.');
         } else {
             history.replaceChildren();
             for (const m of state.history?.messages || []) {
                 addMessage(m.role === 'digit' ? 'Digit' : 'You', m.content);
             }
-            if (!history.children.length) empty('This conversation has no messages yet.');
+            if (!history.children.length) empty('This chat has no messages yet.');
         }
     }
     async function readJson(response) {
@@ -186,13 +226,6 @@ if (!theme::render('head', get_defined_vars())) {
     document.getElementById('dc-new-project').addEventListener('click', () => {
         const title = prompt('Project name');
         if (title && title.trim()) workspace('create_project', {title: title.trim()});
-    });
-    document.getElementById('dc-new-conversation').addEventListener('click', () => {
-        if (!state.project) { showError('Select a project first.'); return; }
-        const title = prompt('Conversation name');
-        if (title && title.trim()) workspace('create_conversation', {
-            project_id: state.project, title: title.trim()
-        });
     });
     async function awaitReply(id, expectedProject, expectedConversation) {
         const until = Date.now() + 85000;
