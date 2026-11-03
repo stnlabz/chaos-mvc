@@ -11,41 +11,138 @@ final class chat_model extends model
     private const MAX_REPLY = 511;
     private const DELIVERY_TTL = 90;
 
-    public function databaseState(): string
+    private const TABLES = [
+        'chat_projects', 'chat_conversations', 'chat_messages',
+        'chat_deliveries', 'chat_schema'
+    ];
+
+    private function tableExists(string $table): bool
     {
-        foreach (['chat_projects', 'chat_conversations', 'chat_messages', 'chat_deliveries'] as $table) {
-            $row = $this->fetch(
-                'SELECT COUNT(*) AS n FROM information_schema.tables ' .
-                'WHERE table_schema = DATABASE() AND table_name = ?',
-                [$table]
-            );
-            if ((int) ($row['n'] ?? 0) !== 1) {
-                return 'missing';
-            }
+        if (!in_array($table, self::TABLES, true)) {
+            return false;
         }
-        return 'current';
+        return (bool) $this->fetch(
+            'SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() ' .
+            'AND table_name = ? LIMIT 1', [$table]
+        );
     }
 
-    /** Admin-only explicit installation; never called from visitor routes. */
+    private function hasRepositoryColumn(): bool
+    {
+        return (bool) $this->fetch(
+            'SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() ' .
+            'AND table_name = ? AND column_name = ? LIMIT 1',
+            ['chat_conversations', 'github_repo']
+        );
+    }
+
+    private function targetVersion(): string
+    {
+        $raw = file_get_contents(__DIR__ . '/../module.json');
+        $meta = is_string($raw) ? json_decode($raw, true) : null;
+        $version = is_array($meta) ? ($meta['schema_version'] ?? '') : '';
+        if (!is_string($version) || !preg_match('/^\d+\.\d+\.\d+$/D', $version)) {
+            throw new RuntimeException('Chat schema target is invalid.');
+        }
+        return $version;
+    }
+
+    private function schemaVersion(): ?string
+    {
+        if (!$this->tableExists('chat_schema')) {
+            return null;
+        }
+        $row = $this->fetch('SELECT schema_version FROM chat_schema WHERE id = 1 LIMIT 1');
+        $version = is_array($row) ? ($row['schema_version'] ?? null) : null;
+        return is_string($version) && preg_match('/^\d+\.\d+\.\d+$/D', $version)
+            ? $version : null;
+    }
+
+    private function patchFile(string $from, string $to): ?string
+    {
+        if (!preg_match('/^\d+\.\d+\.\d+$/D', $from) ||
+            !preg_match('/^\d+\.\d+\.\d+$/D', $to)) {
+            return null;
+        }
+        $file = __DIR__ . '/../sql/patches/' . $from . '-to-' . $to . '.sql';
+        return is_file($file) && !is_link($file) ? $file : null;
+    }
+
+    public function databaseState(): string
+    {
+        $present = 0;
+        foreach (array_slice(self::TABLES, 0, 4) as $table) {
+            if ($this->tableExists($table)) {
+                $present++;
+            }
+        }
+        if ($present === 0 && !$this->tableExists('chat_schema')) {
+            return 'missing';
+        }
+        if ($present !== 4) {
+            return 'invalid';
+        }
+        // The pre-versioned 0.3.x Chat SQL is the established 1.0.0 baseline.
+        if (!$this->tableExists('chat_schema')) {
+            return !$this->hasRepositoryColumn() &&
+                $this->patchFile('1.0.0', $this->targetVersion()) !== null
+                ? 'update' : 'invalid';
+        }
+        $installed = $this->schemaVersion();
+        $target = $this->targetVersion();
+        if ($installed === null) {
+            return 'invalid';
+        }
+        if ($installed === $target) {
+            return $this->hasRepositoryColumn() ? 'current' : 'invalid';
+        }
+        return $this->patchFile($installed, $target) !== null ? 'update' : 'invalid';
+    }
+
+    private function executeSqlFile(string $file): void
+    {
+        if (!is_file($file) || is_link($file)) {
+            throw new RuntimeException('Chat SQL file is unavailable.');
+        }
+        $contents = file_get_contents($file);
+        if (!is_string($contents) || trim($contents) === '') {
+            throw new RuntimeException('Chat SQL file is empty.');
+        }
+        $statements = preg_split('/;\s*(?:\r?\n|$)/', $contents);
+        if (!is_array($statements)) {
+            throw new RuntimeException('Chat SQL file could not be parsed.');
+        }
+        foreach ($statements as $sql) {
+            $sql = trim($sql);
+            if ($sql !== '') {
+                $this->query($sql);
+            }
+        }
+    }
+
     public function installSchema(): void
     {
         if ($this->databaseState() !== 'missing') {
-            throw new RuntimeException('Chat database already installed.');
+            throw new RuntimeException('Chat schema is already present.');
         }
-        $path = __DIR__ . '/../sql/schema.sql';
-        $sql = file_get_contents($path);
-        if (!is_string($sql) || $sql === '') {
-            throw new RuntimeException('Chat SQL file unavailable.');
-        }
-        foreach (explode(';', $sql) as $statement) {
-            // The schema uses only straightforward DDL without semicolons in literals.
-            $statement = trim($statement);
-            if ($statement !== '') {
-                $this->db->exec($statement);
-            }
-        }
+        $this->executeSqlFile(__DIR__ . '/../sql/schema.sql');
         if ($this->databaseState() !== 'current') {
-            throw new RuntimeException('Chat SQL installation incomplete.');
+            throw new RuntimeException('Chat schema installation incomplete.');
+        }
+    }
+
+    public function updateSchema(): void
+    {
+        if ($this->databaseState() !== 'update') {
+            throw new RuntimeException('No supported Chat schema update pending.');
+        }
+        $installed = $this->schemaVersion() ?? '1.0.0';
+        $this->executeSqlFile(
+            $this->patchFile($installed, $this->targetVersion())
+            ?? throw new RuntimeException('Chat migration patch missing.')
+        );
+        if ($this->databaseState() !== 'current') {
+            throw new RuntimeException('Chat schema update incomplete.');
         }
     }
 
@@ -115,7 +212,7 @@ final class chat_model extends model
     {
         $this->project($account, $project);
         return $this->fetchAll(
-            'SELECT id, title FROM chat_conversations WHERE account_id = ? ' .
+            'SELECT id, title, github_repo FROM chat_conversations WHERE account_id = ? ' .
             'AND project_id = ? ORDER BY updated_at DESC, id DESC',
             [$account, $project]
         );
@@ -135,7 +232,7 @@ final class chat_model extends model
     private function scope(int $account, int $project, int $conversation): array
     {
         $row = $this->fetch(
-            'SELECT c.id, c.title, p.title AS project_title, p.context_text ' .
+            'SELECT c.id, c.title, c.github_repo, p.title AS project_title, p.context_text ' .
             'FROM chat_conversations c INNER JOIN chat_projects p ' .
             'ON p.id = c.project_id AND p.account_id = c.account_id ' .
             'WHERE c.account_id = ? AND c.project_id = ? AND c.id = ?',
@@ -158,7 +255,47 @@ final class chat_model extends model
             ') recent ORDER BY id ASC',
             [$account, $project, $conversation]
         );
-        return ['title' => $scope['title'], 'project_title' => $scope['project_title'], 'messages' => $rows];
+        return ['title' => $scope['title'], 'project_title' => $scope['project_title'],
+            'github_repo' => $scope['github_repo'], 'messages' => $rows];
+    }
+
+    /** Only explicit GitHub owner/repo; no URLs or external supplied commands. */
+    public function assignRepository(
+        int $account, int $project, int $conversation, string $repository
+    ): void {
+        $this->scope($account, $project, $conversation);
+        $repository = trim($repository);
+        if ($repository !== '' &&
+            (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,78}\/[A-Za-z0-9][A-Za-z0-9_.-]{0,78}$/D', $repository) ||
+             str_contains($repository, '..'))) {
+            throw new InvalidArgumentException('Enter a GitHub repository as owner/name.');
+        }
+        $this->query(
+            'UPDATE chat_conversations SET github_repo = ? ' .
+            'WHERE id = ? AND account_id = ? AND project_id = ?',
+            [$repository === '' ? null : $repository, $conversation, $account, $project]
+        );
+    }
+
+    /** Provide a fixed, read-only GitHub command bound to the selected chat. */
+    private function repositoryCommand(
+        int $account, int $project, int $conversation, string $message
+    ): ?string {
+        $scope = $this->scope($account, $project, $conversation);
+        $repo = $scope['github_repo'];
+        // A client cannot choose an arbitrary repository through chat command text.
+        if (!preg_match('/^\/?(?:repo|github)\s+(summary|commits|issues|prs|tree(?:\s+[A-Za-z0-9_.\/-]+)?|file\s+[A-Za-z0-9_.\/-]+|inspect\s+[A-Za-z0-9_.\/-]+)\s*$/iD', $message, $match)) {
+            return null;
+        }
+        if (!is_string($repo) || $repo === '') {
+            throw new InvalidArgumentException('Assign a GitHub repository to this chat first.');
+        }
+        $operation = strtolower($match[1]);
+        if (str_contains($operation, '..') || str_contains($operation, '//') ||
+            str_contains($operation, '/.') || str_starts_with($operation, '/')) {
+            throw new InvalidArgumentException('Invalid repository path.');
+        }
+        return '/github ' . $repo . ' ' . $operation;
     }
 
     /** Clip on Unicode character boundaries; native Web Transport expects valid UTF-8. */
@@ -235,7 +372,8 @@ final class chat_model extends model
         if (!preg_match('/^[a-f0-9]{64}$/D', $sessionHash)) {
             throw new InvalidArgumentException('Invalid session.');
         }
-        $transport = $this->contextText($account, $project, $conversation, $message);
+        $command = $this->repositoryCommand($account, $project, $conversation, $message);
+        $transport = $command ?? $this->contextText($account, $project, $conversation, $message);
         if (strlen($transport) > self::MAX_REQUEST) {
             $transport = $message;
         }
