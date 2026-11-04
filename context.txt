@@ -1,0 +1,119 @@
+ChAoS MVC — CONTINUITY CONTEXT
+Updated: 2026-11-03 (America/Los_Angeles)
+Purpose: Concise, factual handoff for future development sessions.
+This file records working decisions and recent observations. It is not an
+instruction to bypass normal tests, module authorization, or review.
+
+OWNERSHIP AND SOURCE BOUNDARIES
+- ChAoS MVC is maintained by the ChAoS Foundation.
+- This GitHub repository (stnlabz/chaos-mvc) contains FRAMEWORK CORE and
+  example/reference userland. It is NOT the source repository for the live
+  chaos-mvc.org website's custom Chat, Developers, or Certification modules.
+- Do not push website/module changes into this Core repository. Read Core
+  when necessary for API contracts, then patch only user-supplied module
+  files or the correct owning repository after authorization.
+- The framework README and docs/CURRENT_ISSUES.md report v1.2.2 released
+  November 2, 2026. Use the release/tag and running installation as the
+  authority when confirming deployed versions.
+
+ENGINEERING RULES
+- Small, deterministic, traceable changes; one identified issue, one focused
+  correction. Avoid speculative rewrites and added configuration systems.
+- Respect Controller / Model / View separation, explicit module routes,
+  existing Core and ABI boundaries, PDO-only data access, and lowercase naming.
+- Instantiate models only at the point of use, not in constructors, per the
+  developer's established module convention.
+- Preserve module-specific ownership; don't move functionality into Core
+  because it is convenient.
+- Preserve existing working behavior when fixing another feature.
+- The operator maintains a strict three-strike accountability rule. Report
+  what was actually changed, what was tested, and what remains unverified.
+  Do not assert deployment or successful live behavior from source edits.
+- Do not invent secrets, public listeners, extra token files, new configs,
+  or transports when a working established path exists.
+
+LIVE APPLICATION: CHAOS-MVC.ORG (NOT THIS REPO)
+- ChAoS MVC Chat is a custom site user module supplied as ZIPs during
+  development; it is not present here under user/modules.
+- Latest Chat package provided in the conversation:
+  chat-shared-speaker-fix-v0.5.8.zip (2026-11-03). This is a package
+  candidate, not proof the production site currently runs that version.
+- Shared STN-LABZ Project #3, Chat #10: intended to be visible to all
+  authenticated users with Chat access, including Laurie's level-7 account,
+  while unrelated private chats remain isolated. Earlier live testing
+  showed Poe and Laurie exchanging messages in one shared conversation.
+- Shared Chat #10 previously supplied Digit a synthetic multi-speaker
+  transcript; Digit began inventing dialogue attributed to Poe, Laurie,
+  and herself. v0.5.8 changed this specific chat to send only the current
+  actual user message to Digit. The tradeoff: no automatic prior-message
+  context for that shared conversation. Later live transcript showed
+  direct replies without fabricated multi-party dialogue in that sample.
+- Project #3, Channel/Chat #8 named Agent-Coms: Rictus and Digit have
+  independently appeared under their own names in a two-agent exchange.
+  The site uses explicit agent routing; "rictus:" directs to Rictus,
+  "agents:" initiates a bounded two-agent sequence. Transport and agent
+  attribution were observed in live chat, but Digit's follow-up delivery
+  has sometimes timed out; this is NOT fully qualified.
+- Digit Web logs on 2026-11-04 UTC repeatedly showed:
+  [WEB] poll failed code=-2 (-1=connection, -2=invalid job).
+  An actual Digit Web job parser / Chat job schema comparison remains
+  outstanding. Do not assume prompt changes repair an invalid job.
+- The user directed that Digit be left unchanged for now after the shared
+  speaker fix. Do not resume Digit model, transport, or prompt alterations
+  without a new request.
+
+RICTUS AND DIGIT TRANSPORT — SEPARATE OWNERS
+- Rictus source repository: poemei/rictus (verify current owner/URL
+  before using; earlier sessions used this path).
+- Digit source repository: stnlabz/digit; deployed components may differ
+  from public repository contents, so inspect the actual installed module
+  when investigating an error.
+- Both Rictus and Digit run on the same VPS. Their Chat transport is the
+  ChAoS MVC web channel, NOT IRC; don't conflate these even though both
+  agents have independent IRC facilities.
+- Local Chat transport was successfully probed on the VPS using:
+    POST http://127.0.0.1/chat/transport
+    {"type":"poll_rictus"}
+  returning HTTP 204 (no job) on 2026-11-04 UTC.
+- Rictus Web v1.0.3 source was changed to poll the existing local Chat
+  endpoint without Rictus-only web.conf or RICTUS_WEB_TOKEN. This source
+  change must not be mistaken for live deployment or completed acceptance.
+  The user strongly rejected needless new authentication/configuration.
+- Rictus responses appeared in web Chat under Rictus, confirming a
+  practical round trip. Rictus has also occasionally generated dialogue
+  or incomplete instructions; distinguish language-model behavior from
+  failed transport delivery.
+- Agent-to-agent communication across independent channels is intentionally
+  DEFERRED for later STN-LABZ work. Avoid building it into ChAoS MVC Core.
+
+RELEASE QUALIFICATION / AUTHORITY
+- Rictus is intended to be an independent engineering/release-readiness
+  gatekeeper; Digit is the engineering agent; final authorization belongs
+  to the human operator.
+- A language-model reply such as "chaos-mvc: ready to release" is NOT
+  release evidence. Without a specific candidate SHA/version, test results,
+  reproducible inspection, and authorization, release status is UNKNOWN
+  / NOT QUALIFIED. Do not infer approval from conversation text.
+- Keep deterministic qualification separate from chat prompting and
+  transport. No release or deployment action may be taken solely because
+  an agent wrote "ready".
+- Certifications are separate website module data. A previously missing
+  "security" case in the Developer profile view caused a generic badge;
+  the user corrected it. The profile then visibly displayed four
+  certifications, including Certified Security Developer. Do not
+  reintroduce that already-resolved issue.
+
+NEXT ACTIONS (ONLY WHEN REQUESTED)
+1. For any Chat issue, obtain the CURRENT deployed Chat module files/ZIP.
+   Do not assume a past ZIP matches production.
+2. If Digit follow-up fails, inspect Digit's DEPLOYED Web Module parser,
+   the exact claimed job payload, and logs before changing prompts.
+3. For release qualification, inspect actual candidate, evidence sources,
+   and existing Rictus command/controller contracts, then implement a
+   deterministic evidence gate outside Chat and Core.
+4. Keep 1.2.2 Core maintenance separate from chaos-mvc.org site module
+   changes and separate from STN-LABZ agent projects.
+
+CONTINUITY NOTE
+This record is descriptive, not a credential store or a substitute for the
+actual source tree, module archive, runtime logs, or operator approval.
