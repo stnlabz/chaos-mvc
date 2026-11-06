@@ -1,0 +1,37 @@
+ChAoS MVC — CONTINUITY CONTEXT
+Updated: 2026-11-03 (America/Los_Angeles)
+Purpose: Concise, factual handoff for future development sessions.
+This file records working decisions and recent observations. It is not an
+instruction to bypass normal tests, module authorization, or review.
+
+OWNERSHIP AND SOURCE BOUNDARIES
+- ChAoS MVC is maintained by the ChAoS Foundation.
+- This GitHub repository (stnlabz/chaos-mvc) contains FRAMEWORK CORE and
+  example/reference userland. It is NOT the source repository for the live
+  chaos-mvc.org website's custom Developers, or Certification modules.
+- Do not push website/module changes into this Core repository. Read Core
+  when necessary for API contracts, then patch only user-supplied module
+  files or the correct owning repository after authorization.
+- The framework README and docs/CURRENT_ISSUES.md report v1.2.2 released
+  November 2, 2026. Use the release/tag and running installation as the
+  authority when confirming deployed versions.
+
+ENGINEERING RULES
+- Small, deterministic, traceable changes; one identified issue, one focused
+  correction. Avoid speculative rewrites and added configuration systems.
+- Respect Controller / Model / View separation, explicit module routes,
+  existing Core and ABI boundaries, PDO-only data access, and lowercase naming.
+- Instantiate models only at the point of use, not in constructors, per the
+  developer's established module convention.
+- Preserve module-specific ownership; don't move functionality into Core
+  because it is convenient.
+- Preserve existing working behavior when fixing another feature.
+- The operator maintains a strict three-strike accountability rule. Report
+  what was actually changed, what was tested, and what remains unverified.
+  Do not assert deployment or successful live behavior from source edits.
+- Do not invent secrets, public listeners, extra token files, new configs,
+  or transports when a working established path exists.
+
+CONTINUITY NOTE
+This record is descriptive, not a credential store or a substitute for the
+actual source tree, module archive, runtime logs, or operator approval.
