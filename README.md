@@ -32,7 +32,7 @@ Become a Chaos Certified Developer via our **Developers Portal** and 4 Levels of
 
 ## ChAoS MVC Security Certification
 Security certification criteria are being formalized around reproducible evidence, independently checked security findings, and release qualification.
-[Security Certification](https://www.chaos-mvc.org/security-certification)
+[Security Certification](https://www.chaos-mvc.org/certification/security)
 
 
 ---
