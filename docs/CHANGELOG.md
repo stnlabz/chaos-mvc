@@ -6,12 +6,6 @@
 
 ## v1.2.2 — November 2, 2026
 
-### Authenticated Display Name for Digit Chat — 20261103
-
-- The authorized login flow now copies the existing account `display_name` into the PHP session.
-- Existing sessions missing that field can load the display name from their authenticated account in the Chat module without forcing logout.
-- The Chat module queues the display name alongside the request; Digit Web Transport maps it to the router's conversational sender without changing Digit Core or conveying session IDs, CSRF tokens, or elevated account authority.
-- Source changes are committed; live deployment and native qualification of this enhancement remain pending.
 
 ### Core Updater Concurrency — 20261102
 
