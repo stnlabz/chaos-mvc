@@ -27,7 +27,7 @@ Chaos MVC emphasizes:
 - minimal framework overhead
 
 ## Become Chaos Certified
-Become a Chaos Certified Developer via our **Developers Portal** and 3 Levels of **Certification**
+Become a Chaos Certified Developer via our **Developers Portal** and 4 Levels of **Certification**
 [Chaos Certified](https://www.chaos-mvc.org/certification)
 
 ## ChAoS MVC Security Certification
